@@ -5,7 +5,7 @@ __dIS__ is a CLI Program designed specificly for compressing videos for Discord 
 You can run the program with ``dotnet run -- <arguments>`` or compile an executable file using [dotnet publish](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-publish)
 
 # NuGet Packages
-'''
+```
 Xabe.FFmpeg
 System.CommandLine
 ```
