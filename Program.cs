@@ -1,7 +1,9 @@
 ﻿using System.CommandLine;
 using System.CommandLine.Invocation;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using Xabe.FFmpeg;
+using Xabe.FFmpeg.Exceptions;
 using YoutubeDLSharp;
 using YoutubeDLSharp.Metadata;
 
@@ -103,11 +105,11 @@ audioCodecInput.AddValidator(validate =>
 
 Option<string> videoCodecInput = new(new[] { "-vc", "--video-codec" }, "Video codec");
 videoCodecInput.SetDefaultValue("libx264");
-videoCodecInput.AddCompletions("libx264", "libx265", "libvpx", "libvpx-vp9", "libaom-av1");
+videoCodecInput.AddCompletions("libx264", "libx265", "libvpx-vp9");
 videoCodecInput.AddValidator(validate =>
 {
     var videoCodecValue = validate.GetValueOrDefault<string>();
-    var videoCodecs = new[] { "libx264", "libx265", "libvpx", "libvpx-vp9", "libaom-av1" };
+    var videoCodecs = new[] { "libx264", "libx265", "libvpx-vp9" };
     if (videoCodecs.Contains(videoCodecValue)) return;
     Console.WriteLine("Invalid video codec");
     Environment.Exit(1);
@@ -136,7 +138,6 @@ async Task HandleInput(InvocationContext invocationContext)
     var videoCodecValue = invocationContext.ParseResult.GetValueForOption(videoCodecInput);
 
     youtubeDl.OutputFolder = outputValue!;
-    string? parameter;
 
     if (fileValue == null && linkValue == null)
     {
@@ -172,7 +173,7 @@ async Task HandleInput(InvocationContext invocationContext)
         {
             // ReSharper disable once CompareOfFloatsByEqualityOperator
             if (p.Progress is 0) return;
-            Console.Write($"Progress: {p.Progress:P2} Download speed: {p.DownloadSpeed}  \r");
+            Console.Write($"Progress: {p.Progress:P2} | Download speed: {p.DownloadSpeed}\t\r");
         });
         
         RunResult<string>? videoDownload;
@@ -206,84 +207,193 @@ async Task HandleInput(InvocationContext invocationContext)
         {
             "libx264" => "mp4",
             "libx265" => "mp4",
-            "libvpx" => "mkv",
             "libvpx-vp9" => "webm",
-            "libaom-av1" => "mkv",
-            _ => "mp4"
+            _ => throw new Exception("Invalid video codec")
         };
-       
-        // If compressed file already exists, we delete it
-        var compPath = $"{outputValue}{sep}{videoId}-comp.{videoExtension}";
-        if (File.Exists(compPath))
-            File.Delete(compPath);
 
         if (!new[] { "144p", "240p", "360p", "480p", "720p", "1080p", "1440p", "2160p" }.Contains(resolutionValue))
             resolutionValue = null;
+        
+        // Linux && macOS: /dev/null && \
+        // Windows: "NUL;"
+        var ffmpegSeparator = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "NUL;" : "/dev/null && \\";
+        
+        var resolutionChange = resolutionValue != null;
 
-        if (resolutionValue != null)
+        string? libxParam;
+        string? libvpxVp9ParamPostInput;
+        var videoPathConverted = $"{outputValue}{sep}{videoId}-comp.{videoExtension}";
+
+        // get video resolution
+        IMediaInfo? video;
+        try
         {
-            // get video resolution
-            IMediaInfo? video;
-            try
+            video = await FFmpeg.GetMediaInfo(videoPath);
+        }
+        catch (ArgumentException)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("Invalid video file");
+            Console.ResetColor();
+            return;
+        }
+        
+        // Get Video Stream Width and Height
+        var videoStream = video.VideoStreams.First();
+        var videoWidth = videoStream.Width;
+        var videoHeight = videoStream.Height;
+        
+        // check if it's a vertical video
+        // We do this by checking if the video width is less than the video height
+        var isVertical = videoWidth < videoHeight;
+
+        string? resolution;
+        (int, int) width = (0, 0), height = (0, 0);
+        try
+        {
+            // get the resolution
+            resolution = resolutionValue?.Replace("p", "");
+
+            // The width of a video is always 4/3 of the height
+            var resolutionHeight = int.Parse(resolution);
+            var resolutionWidth = (int) (resolutionHeight * 4 / 3.0);
+        
+            // The width and height are swapped if the video is vertical
+            width = isVertical ? (resolutionHeight, resolutionWidth) : (resolutionWidth, resolutionHeight);
+            height = isVertical ? (resolutionWidth, resolutionHeight) : (resolutionHeight, resolutionWidth);
+        }
+        catch (Exception)
+        {
+            // ignored
+        }
+
+        libxParam = $"-i {videoPath} " +
+                    (resolutionChange ? $"-vf scale={width}:{height} " : "") +
+                    $"-c:v {videoCodecValue} " +
+                    $"-crf {crfValue} " +
+                    $"-c:a {audioCodecValue} " +
+                    $"-b:a {audioBitrateValue}k " +
+                    $"{videoPathConverted}";
+
+        var libvpxVp9ParamPreInput = $"-i {videoPath} " +
+                                     $"{(resolutionChange ? $"-vf scale={width}:{height} " : "")}" +
+                                     $"-c:v {videoCodecValue} " +
+                                     "-pix_fmt yuv420p10le " +
+                                     "-pass 1 " +
+                                     "-quality good " +
+                                     "-threads 4 " +
+                                     "-profile:v 2 " +
+                                     "-lag-in-frames 25 " +
+                                     $"-crf {crfValue} " +
+                                     "-b:v 0 " +
+                                     "-g 240 " +
+                                     "-cpu-used 0 " +
+                                     "-auto-alt-ref 1 " +
+                                     "-arnr-maxframes 7 " +
+                                     "-arnr-strength 4 " +
+                                     "-aq-mode 0 " +
+                                     "-tile-rows 0 " +
+                                     "-tile-columns 1 " +
+                                     "-enable-tpl 1 " +
+                                     "-row-mt 1 " +
+                                     $"-an -f null {ffmpegSeparator} ";
+
+        libvpxVp9ParamPostInput = $"-i {videoPath} " +
+                                  $"{(resolutionChange ? $"-vf scale={width}:{height} " : "")}" +
+                                  $"-c:v {videoCodecValue} " +
+                                  $"-c:a {audioCodecValue} " +
+                                  "-pix_fmt yuv420p10le " +
+                                  "-pass 2 " + 
+                                  "-quality good " +
+                                  "-threads 4 " +
+                                  "-profile:v 2 " +
+                                  "-lag-in-frames 25 " +
+                                  $"-crf {crfValue} " +
+                                  "-b:v 0 " +
+                                  "-g 240 " +
+                                  "-cpu-used 0 " +
+                                  "-auto-alt-ref 1 " +
+                                  "-arnr-maxframes 7 " +
+                                  "-arnr-strength 4 " +
+                                  "-aq-mode 0 " +
+                                  "-tile-rows 0 " +
+                                  "-tile-columns 1 " +
+                                  "-enable-tpl 1 " +
+                                  "-row-mt 1 " +
+                                  $"-b:a {audioBitrateValue}k {outputValue}{sep}{videoId}-comp.{videoExtension}";
+
+        if (File.Exists(videoPathConverted))
+        {
+            Console.WriteLine("A file with same name already exists. Do you want to overwrite it? (y/n)");
+            var answer = Console.ReadLine();
+            if (answer is not "y" or "Y")
             {
-                video = await FFmpeg.GetMediaInfo(videoPath);
-            }
-            catch (ArgumentException)
-            { 
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Invalid video file");
-                Console.ResetColor();
+                Console.WriteLine("Aborting...");
                 return;
             }
-            
-            // Get Video Stream Width and Height
-            var videoStream = video.VideoStreams.First();
-            var videoWidth = videoStream.Width;
-            var videoHeight = videoStream.Height;
-
-            // check if it's a vertical video
-            var isVertical = videoWidth < videoHeight;
-
-            // get the resolution
-            var resolution = resolutionValue.Replace("p", "");
-
-            // if video is vertical, swap width and height
-            // 16:9 = 16 / 9
-            // 9:16 = 9 / 16
-            var (width, height) = isVertical
-                ? (int.Parse(resolution), int.Parse(resolution) * 9 / 16)
-                : (int.Parse(resolution) * 16 / 9, int.Parse(resolution));
-
-            parameter =
-                $"-i {videoPath} -c:v {videoCodecValue} " +
-                $"-crf {crfValue} -c:a {audioCodecValue} " +
-                $"-b:a {audioBitrateValue}k " +
-                $"-vf scale={width}:{height} {outputValue}{sep}{videoId}-comp.{videoExtension}";
+            File.Delete(videoPathConverted);
         }
-        else
+        
+        switch (videoCodecValue)
         {
-            parameter =
-                $"-i {videoPath} -c:v {videoCodecValue} " +
-                $"-crf {crfValue} -c:a {audioCodecValue} " +
-                $"-b:a {audioBitrateValue}k {outputValue}{sep}{videoId}-comp.{videoExtension}";
+            case "libx264" or "libx265":
+            {
+                var conversion = FFmpeg.Conversions.New()
+                    .AddParameter(libxParam);
+                
+                conversion.OnProgress += (_, args) =>
+                {
+                    Console.ForegroundColor = (ConsoleColor) new Random().Next(1, 16);
+                    var percent = args.Duration.TotalSeconds / args.TotalLength.TotalSeconds;
+                    var eta = args.TotalLength - args.Duration;
+                    Console.Write($"\rProgress: {percent:P2} | ETA: {eta}");
+                    Console.ResetColor();
+                };
+                
+                await conversion.Start();
+                
+                break;
+            }
+            case "libvpx-vp9":
+            {
+                var libvpxVp9Pass1 = FFmpeg.Conversions.New()
+                    .AddParameter(libvpxVp9ParamPreInput);
+                var libvpxVp9Pass2 = FFmpeg.Conversions.New()
+                    .AddParameter(libvpxVp9ParamPostInput);
+
+                libvpxVp9Pass2.OnProgress += (_, args) =>
+                {
+                    Console.ForegroundColor = (ConsoleColor) new Random().Next(1, 16);
+                    var percent = args.Duration.TotalSeconds / args.TotalLength.TotalSeconds;
+                    var eta = args.TotalLength - args.Duration;
+                    Console.Write($"\rProgress: {percent:P2} | ETA: {eta}");
+                    Console.ResetColor();
+                };
+                
+                await libvpxVp9Pass1.Start();
+                Console.WriteLine("Pass 1 done");
+                try
+                {
+                    await libvpxVp9Pass2.Start();
+                }
+                catch (ConversionException e)
+                {
+                    if (e.Message.Contains("Only VP8 or VP9 or AV1 video and Vorbis or Opus"))
+                        Console.WriteLine("You cannot use AAC audio codec with VP9. Please use Vorbis or Opus.");
+                    else
+                        Console.WriteLine("Something went wrong. Please check your input and try again.");
+                    return;
+                }
+
+                break;
+            }
+            default:
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("Invalid video codec");
+                Console.ResetColor();
+                return;
         }
-
-
-        var conversion = FFmpeg.Conversions
-            .New()
-            .AddParameter(parameter);
-
-        conversion.OnProgress += (_, args) =>
-        {
-            Console.ForegroundColor = (ConsoleColor)new Random().Next(1, 16);
-            var remaining = args.TotalLength - args.Duration;
-            var progress = args.Duration / args.TotalLength;
-            Console.Clear();
-            Console.Write($"\rTime Left: {remaining}  Progress: {progress:P2}");
-        };
-
-        await conversion.Start();
-        Console.ResetColor();
+        
         Console.WriteLine();
         Console.WriteLine("Done");
     }
