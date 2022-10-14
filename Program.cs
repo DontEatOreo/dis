@@ -15,7 +15,7 @@ YoutubeDl youtubeDl = new()
 
 Regex twitterRegex = new(@"^1[45]\d{17}$", RegexOptions.Compiled);
 Regex youtubeRegex = new(@"^([a-zA-Z0-9_-]{11})$", RegexOptions.Compiled);
-Regex redditRegex = new(@"^[xy][a-zA-Z0-9]{5}$", RegexOptions.Compiled);
+Regex redditRegex = new(@"^x[a-zA-Z0-9]{5}$", RegexOptions.Compiled);
 Regex tiktokRegex = new(@"^[67]\d{18}$", RegexOptions.Compiled);
 
 Dictionary<Regex, string> urlRegex = new()
@@ -31,7 +31,8 @@ var sep = Path.DirectorySeparatorChar;
 Option<string> fileInput = new(new[] { "-i", "--input" }, "A path to a video file");
 fileInput.AddValidator(validate =>
 {
-    if (File.Exists(validate.Token?.Value)) return;
+    var file = validate.GetValueOrDefault<string>();
+    if (File.Exists(file)) return;
     Console.WriteLine("File does not exist");
     Environment.Exit(1);
 });
@@ -275,8 +276,10 @@ async Task HandleInput(InvocationContext invocationContext)
         conversion.OnProgress += (_, args) =>
         {
             Console.ForegroundColor = (ConsoleColor)new Random().Next(1, 16);
-            Console.Write(
-                $"\r[{args.Duration} / {args.TotalLength}] {args.Duration.TotalSeconds / args.TotalLength.TotalSeconds:P2}");
+            var remaining = args.TotalLength - args.Duration;
+            var progress = args.Duration / args.TotalLength;
+            Console.Clear();
+            Console.Write($"\rTime Left: {remaining}  Progress: {progress:P2}");
         };
 
         await conversion.Start();
