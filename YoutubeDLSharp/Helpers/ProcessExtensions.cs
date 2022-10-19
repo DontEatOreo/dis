@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
+using System.Runtime.InteropServices;
 
-namespace YoutubeDLSharp.Helpers;
+namespace dis.YoutubeDLSharp.Helpers;
 
 /// <summary>
 /// Process extensions for killing full process tree.
@@ -17,7 +18,7 @@ internal static class ProcessExtensions
 
     public static void KillTree(this Process process, TimeSpan timeout)
     {
-        if (OsHelper.IsWindows)
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             RunProcessAndWaitForExit(
                 "taskkill",
@@ -63,12 +64,11 @@ internal static class ProcessExtensions
 
     private static void KillProcessUnix(int processId, TimeSpan timeout)
     {
-        string stdout;
         RunProcessAndWaitForExit(
             "kill",
             $"-TERM {processId}",
             timeout,
-            out stdout);
+            out _);
     }
 
     private static int RunProcessAndWaitForExit(string fileName, string arguments, TimeSpan timeout, out string stdout)

@@ -1,23 +1,27 @@
-﻿using Newtonsoft.Json;
-namespace YoutubeDLSharp.Helpers;
+﻿using System.Runtime.InteropServices;
+using Newtonsoft.Json;
 
-internal class DownloadHelper
+namespace dis.YoutubeDLSharp.Helpers;
+
+internal static class DownloadHelper
 {
     /// <summary>
     /// Downloads the YT-DLP binary depending on OS
     /// </summary>
     /// <param name="directoryPath">The optional directory of where it should be saved to</param>
     /// <exception cref="Exception"></exception>
-    internal static async Task DownloadYtDlp(string directoryPath = null)
+    internal static async Task DownloadYtDlp(string? directoryPath = default)
     {
-        const string baseGithubUrl = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp";
+        const string? baseGithubUrl = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp";
         
-        var downloadUrl = OsHelper.GetOsVersion() switch
+        var downloadUrl = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) switch
         {
-            OsVersion.Windows => $"{baseGithubUrl}.exe",
-            OsVersion.Osx => $"{baseGithubUrl}_macos",
-            OsVersion.Linux => baseGithubUrl,
-            _ => throw new Exception("Your OS isn't supported")
+            true => $"{baseGithubUrl}.exe",
+            false => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) switch
+            {
+                true => $"{baseGithubUrl}_macos",
+                false => baseGithubUrl
+            }
         };
 
         if (string.IsNullOrEmpty(directoryPath)) { directoryPath = Directory.GetCurrentDirectory(); }
@@ -40,12 +44,14 @@ internal class DownloadHelper
         
         var ffmpegVersion = JsonConvert.DeserializeObject<FFmpegApi.Root>(await (await httpClient.GetAsync(ffmpegApiUrl)).Content.ReadAsStringAsync());
         
-        var downloadUrl = OsHelper.GetOsVersion() switch
+        var downloadUrl = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) switch
         {
-            OsVersion.Windows => ffmpegVersion?.Bin.Windows64.Ffmpeg,
-            OsVersion.Osx => ffmpegVersion?.Bin.Osx64.Ffmpeg,
-            OsVersion.Linux => ffmpegVersion?.Bin.Linux64.Ffmpeg,
-            _ => throw new Exception("Your OS isn't supported")
+            true => ffmpegVersion?.Bin.Windows64.Ffmpeg,
+            false => RuntimeInformation.IsOSPlatform(OSPlatform.OSX) switch
+            {
+                true => ffmpegVersion?.Bin.Osx64.Ffmpeg,
+                false => ffmpegVersion?.Bin.Linux64.Ffmpeg
+            }
         };
         
         var downloadLocation = Path.Combine(directoryPath, Path.GetFileName(downloadUrl) ?? string.Empty);
@@ -59,7 +65,7 @@ internal class DownloadHelper
     /// <param name="uri">The URI of the file to download</param>
     /// <returns>Returns a byte array of the file that was downloaded</returns>
     /// <exception cref="InvalidOperationException"></exception>
-    private static async Task<byte[]> DownloadFileBytesAsync(string uri)
+    private static async Task<byte[]> DownloadFileBytesAsync(string? uri)
     {
         if (!Uri.TryCreate(uri, UriKind.Absolute, out _))
             throw new InvalidOperationException("URI is invalid.");
@@ -74,6 +80,14 @@ internal class FFmpegApi
 {
     public class Bin
     {
+        public Bin(Windows64 windows64, Linux64 linux64, LinuxArm64 linuxArm64, Osx64 osx64)
+        {
+            Windows64 = windows64;
+            Linux64 = linux64;
+            LinuxArm64 = linuxArm64;
+            Osx64 = osx64;
+        }
+
         [JsonProperty("windows-64")]
         public Windows64 Windows64 { get; set; }
 
@@ -89,30 +103,55 @@ internal class FFmpegApi
 
     public class Linux64
     {
+        public Linux64(string ffmpeg)
+        {
+            Ffmpeg = ffmpeg;
+        }
+
         [JsonProperty("ffmpeg")]
         public string Ffmpeg { get; set; }
     }
 
     public class LinuxArm64
     {
+        public LinuxArm64(string ffmpeg)
+        {
+            Ffmpeg = ffmpeg;
+        }
+
         [JsonProperty("ffmpeg")]
         public string Ffmpeg { get; set; }
     }
 
     public class Osx64
     {
+        public Osx64(string ffmpeg)
+        {
+            Ffmpeg = ffmpeg;
+        }
+
         [JsonProperty("ffmpeg")]
         public string Ffmpeg { get; set; }
     }
 
     public class Root
     {
+        public Root(Bin bin)
+        {
+            Bin = bin;
+        }
+
         [JsonProperty("bin")]
         public Bin Bin { get; set; }
     }
 
     public class Windows64
     {
+        public Windows64(string ffmpeg)
+        {
+            Ffmpeg = ffmpeg;
+        }
+
         [JsonProperty("ffmpeg")]
         public string Ffmpeg { get; set; }
     }

@@ -1,11 +1,12 @@
 ﻿using System.Diagnostics;
 using System.Text.RegularExpressions;
+using dis.YoutubeDLSharp.Helpers;
+using dis.YoutubeDLSharp.Options;
 using Newtonsoft.Json;
-using YoutubeDLSharp.Helpers;
 using YoutubeDLSharp.Metadata;
 using YoutubeDLSharp.Options;
 
-namespace YoutubeDLSharp;
+namespace dis.YoutubeDLSharp;
 
 /// <summary>
 /// A class providing methods for downloading videos using youtube-dl.
@@ -32,7 +33,7 @@ public sealed class YoutubeDl
     /// Template of the name of the downloaded file on youtube-dl style.
     /// See https://github.com/ytdl-org/youtube-dl#output-template.
     /// </summary>
-    public string OutputFileTemplate { get; set; } = "%(title)s.%(ext)s";
+    public string OutputFileTemplate { get; init; } = "%(title)s.%(ext)s";
     /// <summary>
     /// If set to true, file names a re restricted to ASCII characters.
     /// </summary>
@@ -53,8 +54,8 @@ public sealed class YoutubeDl
     /// <summary>
     /// Gets the product version of the youtube-dl executable file.
     /// </summary>
-    public string Version
-        => FileVersionInfo.GetVersionInfo(Utils.GetFullPath(YoutubeDlPath)).FileVersion;
+    public string? Version
+        => FileVersionInfo.GetVersionInfo(Utils.GetFullPath(YoutubeDlPath) ?? string.Empty).FileVersion;
 
     /// <summary>
     /// Creates a new instance of the YoutubeDL class.
@@ -81,11 +82,11 @@ public sealed class YoutubeDl
     /// <param name="options">The OptionSet of youtube-dl options.</param>
     /// <param name="ct">A CancellationToken used to cancel the process.</param>
     /// <returns>A RunResult object containing the output of youtube-dl as an array of string.</returns>
-    public async Task<RunResult<string[]>> RunWithOptions(string[] urls, OptionSet options, CancellationToken ct)
+    public async Task<RunResult<string[]>> RunWithOptions(string[]? urls, OptionSet options, CancellationToken ct)
     {
         var output = new List<string>();
         var process = new YoutubeDlProcess();
-        process.OutputReceived += (_, e) => output.Add(e.Data);
+        process.OutputReceived += (_, e) => output.Add(e.Data!);
         var (code, errors) = await _runner.RunThrottled(process, urls, options, ct);
         return new RunResult<string[]>(code == 0, errors, output.ToArray());
     }
@@ -111,8 +112,8 @@ public sealed class YoutubeDl
     /// <param name="flat">If set to true, does not extract information for each video in a playlist.</param>
     /// <param name="overrideOptions">Override options of the default option set for this run.</param>
     /// <returns>A RunResult object containing a VideoData object with the requested video information.</returns>
-    public async Task<RunResult<VideoData>> RunVideoDataFetch(string url,
-        CancellationToken ct = default, bool flat = true, OptionSet overrideOptions = null)
+    public async Task<RunResult<VideoData?>> RunVideoDataFetch(string url,
+        CancellationToken ct = default, bool flat = true, OptionSet? overrideOptions = null)
     {
         var opts = GetDownloadOptions();
         opts.DumpSingleJson = true;
@@ -121,11 +122,11 @@ public sealed class YoutubeDl
         {
             opts = opts.OverrideOptions(overrideOptions);
         }
-        VideoData videoData = null;
+        VideoData? videoData = null;
         var process = new YoutubeDlProcess();
-        process.OutputReceived += (o, e) => videoData = JsonConvert.DeserializeObject<VideoData>(e.Data);
+        process.OutputReceived += (_, e) => videoData = JsonConvert.DeserializeObject<VideoData>(e.Data);
         var (code, errors) = await _runner.RunThrottled(process, new[] { url }, opts, ct);
-        return new RunResult<VideoData>(code == 0, errors, videoData);
+        return new RunResult<VideoData?>(code == 0, errors, videoData);
     }
 
     /// <summary>
@@ -140,12 +141,12 @@ public sealed class YoutubeDl
     /// <param name="output">A progress provider used to capture the standard output.</param>
     /// <param name="overrideOptions">Override options of the default option set for this run.</param>
     /// <returns>A RunResult object containing the path to the downloaded and converted video.</returns>
-    public async Task<RunResult<string>> RunVideoDownload(string url,
+    public async Task<RunResult<string?>> RunVideoDownload(string url,
         string format = "bestvideo+bestaudio/best",
         DownloadMergeFormat mergeFormat = DownloadMergeFormat.Unspecified,
         VideoRecodeFormat recodeFormat = VideoRecodeFormat.None,
-        CancellationToken ct = default, IProgress<DownloadProgress> progress = null,
-        IProgress<string> output = null, OptionSet overrideOptions = null)
+        CancellationToken ct = default, IProgress<DownloadProgress>? progress = null,
+        IProgress<string> output = null, OptionSet? overrideOptions = null)
     {
         var opts = GetDownloadOptions();
         opts.Format = format;
@@ -155,7 +156,7 @@ public sealed class YoutubeDl
         {
             opts = opts.OverrideOptions(overrideOptions);
         }
-        string outputFile = String.Empty;
+        string? outputFile = String.Empty;
         var process = new YoutubeDlProcess();
         // Report the used ytdl args
         output?.Report($"Arguments: {process.ConvertToArgs(new[] { url }, opts)}\n");
@@ -170,7 +171,7 @@ public sealed class YoutubeDl
             output?.Report(e.Data);
         };
         var (code, errors) = await _runner.RunThrottled(process, new[] { url }, opts, ct, progress);
-        return new RunResult<string>(code == 0, errors, outputFile);
+        return new RunResult<string?>(code == 0, errors, outputFile);
     }
 
     /// <summary>
@@ -187,27 +188,27 @@ public sealed class YoutubeDl
     /// <param name="output">A progress provider used to capture the standard output.</param>
     /// <param name="overrideOptions">Override options of the default option set for this run.</param>
     /// <returns>A RunResult object containing the paths to the downloaded and converted videos.</returns>
-    public async Task<RunResult<string[]>> RunVideoPlaylistDownload(string url,
+    public async Task<RunResult<string?[]>> RunVideoPlaylistDownload(string url,
         int? start = 1, int? end = null,
-        int[] items = null,
+        int[]? items = null,
         string format = "bestvideo+bestaudio/best",
         VideoRecodeFormat recodeFormat = VideoRecodeFormat.None,
-        CancellationToken ct = default, IProgress<DownloadProgress> progress = null,
-        IProgress<string> output = null, OptionSet overrideOptions = null)
+        CancellationToken ct = default, IProgress<DownloadProgress>? progress = null,
+        IProgress<string> output = null, OptionSet? overrideOptions = null)
     {
         var opts = GetDownloadOptions();
         opts.NoPlaylist = false;
         opts.PlaylistStart = start;
         opts.PlaylistEnd = end;
         if (items != null)
-            opts.PlaylistItems = String.Join(",", items);
+            opts.PlaylistItems = string.Join(",", items);
         opts.Format = format;
         opts.RecodeVideo = recodeFormat;
         if (overrideOptions != null)
         {
             opts = opts.OverrideOptions(overrideOptions);
         }
-        var outputFiles = new List<string>();
+        var outputFiles = new List<string?>();
         var process = new YoutubeDlProcess();
         // Report the used ytdl args
         output?.Report($"Arguments: {process.ConvertToArgs(new[] { url }, opts)}\n");
@@ -223,7 +224,7 @@ public sealed class YoutubeDl
             output?.Report(e.Data);
         };
         var (code, errors) = await _runner.RunThrottled(process, new[] { url }, opts, ct, progress);
-        return new RunResult<string[]>(code == 0, errors, outputFiles.ToArray());
+        return new RunResult<string?[]>(code == 0, errors, outputFiles.ToArray());
     }
 
     /// <summary>
@@ -236,9 +237,9 @@ public sealed class YoutubeDl
     /// <param name="output">A progress provider used to capture the standard output.</param>
     /// <param name="overrideOptions">Override options of the default option set for this run.</param>
     /// <returns>A RunResult object containing the path to the downloaded and converted video.</returns>
-    public async Task<RunResult<string>> RunAudioDownload(string url, AudioConversionFormat format = AudioConversionFormat.Best,
-        CancellationToken ct = default, IProgress<DownloadProgress> progress = null,
-        IProgress<string> output = null, OptionSet overrideOptions = null)
+    public async Task<RunResult<string?>> RunAudioDownload(string url, AudioConversionFormat format = AudioConversionFormat.Best,
+        CancellationToken ct = default, IProgress<DownloadProgress>? progress = null,
+        IProgress<string> output = null, OptionSet? overrideOptions = null)
     {
         var opts = GetDownloadOptions();
         opts.Format = "bestaudio/best";
@@ -264,7 +265,7 @@ public sealed class YoutubeDl
             output?.Report(e.Data);
         };
         var (code, errors) = await _runner.RunThrottled(process, new[] { url }, opts, ct, progress);
-        return new RunResult<string>(code == 0, errors, outputFile);
+        return new RunResult<string?>(code == 0, errors, outputFile);
     }
 
     /// <summary>
@@ -280,13 +281,13 @@ public sealed class YoutubeDl
     /// <param name="output">A progress provider used to capture the standard output.</param>
     /// <param name="overrideOptions">Override options of the default option set for this run.</param>
     /// <returns>A RunResult object containing the paths to the downloaded and converted videos.</returns>
-    public async Task<RunResult<string[]>> RunAudioPlaylistDownload(string url,
+    public async Task<RunResult<string?[]>> RunAudioPlaylistDownload(string url,
         int? start = 1, int? end = null,
         int[] items = null, AudioConversionFormat format = AudioConversionFormat.Best,
-        CancellationToken ct = default, IProgress<DownloadProgress> progress = null,
-        IProgress<string> output = null, OptionSet overrideOptions = null)
+        CancellationToken ct = default, IProgress<DownloadProgress>? progress = null,
+        IProgress<string> output = null, OptionSet? overrideOptions = null)
     {
-        var outputFiles = new List<string>();
+        var outputFiles = new List<string?>();
         var opts = GetDownloadOptions();
         opts.NoPlaylist = false;
         opts.PlaylistStart = start;
@@ -315,7 +316,7 @@ public sealed class YoutubeDl
             output?.Report(e.Data);
         };
         var (code, errors) = await _runner.RunThrottled(process, new[] { url }, opts, ct, progress);
-        return new RunResult<string[]>(code == 0, errors, outputFiles.ToArray());
+        return new RunResult<string?[]>(code == 0, errors, outputFiles.ToArray());
     }
 
     /// <summary>
@@ -346,7 +347,7 @@ public sealed class YoutubeDl
     /// Downloads the latest YT-DLP binary
     /// </summary>
     /// <param name="directoryPath">Optional directory path of where you want the YT-DLP binary saved</param>
-    public static async Task DownloadYtDlpBinary(string directoryPath = null) { await DownloadHelper.DownloadYtDlp(directoryPath); }
+    public static async Task DownloadYtDlpBinary(string? directoryPath = null) { await DownloadHelper.DownloadYtDlp(directoryPath); }
     /// <summary>
     /// Downloads the latest FFmpeg binary
     /// </summary>

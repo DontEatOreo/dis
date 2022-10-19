@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel;
 using System.Globalization;
+using dis.YoutubeDLSharp.Options;
 
 namespace YoutubeDLSharp.Options;
 

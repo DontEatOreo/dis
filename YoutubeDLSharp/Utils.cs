@@ -1,6 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 
-namespace YoutubeDLSharp;
+namespace dis.YoutubeDLSharp;
 
 /// <summary>
 /// Utility methods.
@@ -69,7 +69,7 @@ public static class Utils
     /// </summary>
     /// <param name="fileName">The relative path string.</param>
     /// <returns>The absolute path or null if the file was not found.</returns>
-    public static string GetFullPath(string fileName)
+    public static string? GetFullPath(string fileName)
     {
         if (File.Exists(fileName))
             return Path.GetFullPath(fileName);

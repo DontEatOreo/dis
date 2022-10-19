@@ -1,6 +1,7 @@
-﻿using YoutubeDLSharp.Options;
+﻿using YoutubeDLSharp;
+using YoutubeDLSharp.Options;
 
-namespace YoutubeDLSharp.Helpers;
+namespace dis.YoutubeDLSharp.Helpers;
 
 /// <summary>
 /// Provides methods for throttled execution of processes.
@@ -18,10 +19,10 @@ public class ProcessRunner
         TotalCount = initialCount;
     }
 
-    public async Task<(int, string[])> RunThrottled(YoutubeDlProcess process, string[] urls, OptionSet options,
-        CancellationToken ct, IProgress<DownloadProgress> progress = null)
+    public async Task<(int exitCode, string?[])> RunThrottled(YoutubeDlProcess process, string[]? urls, OptionSet options,
+        CancellationToken ct, IProgress<DownloadProgress>? progress = default)
     {
-        var errors = new List<string>();
+        var errors = new List<string?>();
         process.ErrorReceived += (_, e) => errors.Add(e.Data);
         await _semaphore.WaitAsync(ct);
         try
@@ -43,11 +44,8 @@ public class ProcessRunner
 
     private async Task DecrementCount(byte decr)
     {
-        var decrs = new Task[decr];
-        for (var i = 0; i < decr; i++)
-            decrs[i] = _semaphore.WaitAsync();
+        await _semaphore.WaitAsync(decr);
         TotalCount -= decr;
-        await Task.WhenAll(decrs);
     }
 
     public async Task SetTotalCount(byte count)

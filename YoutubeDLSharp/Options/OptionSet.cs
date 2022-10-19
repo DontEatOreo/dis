@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using dis.YoutubeDLSharp.Options;
 
 namespace YoutubeDLSharp.Options;
 
@@ -49,7 +50,7 @@ public partial class OptionSet : ICloneable
     /// </summary>
     /// <param name="overrideOptions">All non-default option values of this option set will be copied to the cloned option set.</param>
     /// <returns>A cloned option set with all specified options overriden.</returns>
-    public OptionSet OverrideOptions(OptionSet overrideOptions)
+    public OptionSet OverrideOptions(OptionSet? overrideOptions)
     {
         var cloned = (OptionSet) Clone();
         cloned.CustomOptions = cloned.CustomOptions

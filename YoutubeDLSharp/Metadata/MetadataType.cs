@@ -1,5 +1,6 @@
 ﻿using System.Runtime.Serialization;
-namespace YoutubeDLSharp.Metadata;
+
+namespace dis.YoutubeDLSharp.Metadata;
 
 /// <summary>
 /// Possible types of media fetched by youtube-dl.

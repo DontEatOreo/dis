@@ -1,4 +1,6 @@
-﻿namespace YoutubeDLSharp.Options
+﻿using dis.YoutubeDLSharp.Options;
+
+namespace YoutubeDLSharp.Options
 {
     internal class OptionComparer : IEqualityComparer<IOption> 
     {

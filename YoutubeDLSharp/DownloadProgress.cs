@@ -1,4 +1,4 @@
-﻿namespace YoutubeDLSharp;
+﻿namespace dis.YoutubeDLSharp;
 
 /// <summary>
 /// Specifies possible download states of a video.
@@ -30,15 +30,15 @@ public class DownloadProgress
     /// <summary>
     /// The total download size string as outputted by youtube-dl.
     /// </summary>
-    public string TotalDownloadSize { get; }
+    public string? TotalDownloadSize { get; }
     /// <summary>
     /// The download speed string as outputted by youtube-dl.
     /// </summary>
-    public string DownloadSpeed { get; }
+    public string? DownloadSpeed { get; }
     /// <summary>
     /// The estimated remaining time of the download as outputted by youtube-dl.
     /// </summary>
-    public string Eta { get; }
+    public string? Eta { get; }
     /// <summary>
     /// The current video index (starting at 1) if mutliple items are downloaded at once.
     /// </summary>
@@ -46,15 +46,15 @@ public class DownloadProgress
     /// <summary>
     /// Additional optional progress information.
     /// </summary>
-    public string Data { get; }
+    public string? Data { get; }
 
     /// <summary>
     /// Creates a new instance of class DownloadProgress.
     /// </summary>
     public DownloadProgress(
         DownloadState status, float progress = 0,
-        string totalDownloadSize = null, string downloadSpeed = null, string eta = null,
-        int index = 1, string data = null
+        string? totalDownloadSize = default, string? downloadSpeed = default, string? eta = default,
+        int index = 1, string? data = default
     )
     {
         State = status;

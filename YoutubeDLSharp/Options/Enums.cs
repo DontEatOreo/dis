@@ -1,4 +1,4 @@
-﻿namespace YoutubeDLSharp.Options;
+﻿namespace dis.YoutubeDLSharp.Options;
 
 /// <summary>
 /// Possible video merging formats.

@@ -1,9 +1,20 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace YoutubeDLSharp.Metadata;
+namespace dis.YoutubeDLSharp.Metadata;
 
 public class ThumbnailData
 {
+    public ThumbnailData(string id, string url, int? preference, int? width, int? height, string resolution, int? filesize)
+    {
+        Id = id;
+        Url = url;
+        Preference = preference;
+        Width = width;
+        Height = height;
+        Resolution = resolution;
+        Filesize = filesize;
+    }
+
     [JsonPropertyName("id")]
     public string Id { get; set; }
     [JsonPropertyName("url")]

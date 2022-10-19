@@ -1,4 +1,4 @@
-﻿namespace YoutubeDLSharp;
+﻿namespace dis.YoutubeDLSharp;
 
 /// <summary>
 /// Encapsulates the output of a youtube-dl download operation.
@@ -22,7 +22,7 @@ public class RunResult<T>
     /// <summary>
     /// Creates a new instance of class RunResult.
     /// </summary>
-    public RunResult(bool success, string[] error, T result)
+    public RunResult(bool success, string?[] error, T result)
     {
         Success = success;
         ErrorOutput = error;

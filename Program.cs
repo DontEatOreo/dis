@@ -2,9 +2,9 @@
 using System.CommandLine.Invocation;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using dis.YoutubeDLSharp;
 using Xabe.FFmpeg;
 using Xabe.FFmpeg.Exceptions;
-using YoutubeDLSharp;
 using YoutubeDLSharp.Metadata;
 
 RootCommand rootCommand = new();
@@ -29,6 +29,8 @@ Dictionary<Regex, string> urlRegex = new()
 };
 
 var sep = Path.DirectorySeparatorChar;
+
+Option<bool> verbose = new(new[] { "-v", "--verbose" }, "Enable verbose logging");
 
 Option<string> fileInput = new(new[] { "-i", "--input" }, "A path to a video file");
 fileInput.AddValidator(validate =>
@@ -73,7 +75,7 @@ resolutionInput.AddCompletions("144p", "240p", "360p", "480p", "720p", "1080p", 
 resolutionInput.AddValidator(validate =>
 {
     var resolutionValue = validate.GetValueOrDefault<string>();
-    var resolutions = new[] { "144p", "240p", "360p", "480p", "720p", "1080p", "1440p", "2160p" };
+    var resolutions = new[] { "144", "240", "360", "480", "720", "1080", "1440", "2160" };
     if (resolutions.Contains(resolutionValue)) return;
     Console.WriteLine("Invalid resolution");
     Environment.Exit(1);
@@ -117,7 +119,7 @@ videoCodecInput.AddValidator(validate =>
 
 rootCommand.TreatUnmatchedTokensAsErrors = true;
 
-foreach(var option in new Option[] { fileInput, linkInput, output , crfInput, resolutionInput, audioBitrateInput, audioCodecInput, videoCodecInput })
+foreach(var option in new Option[] { verbose, fileInput, linkInput, output , crfInput, resolutionInput, audioBitrateInput, audioCodecInput, videoCodecInput })
     rootCommand.AddOption(option);
 
 if (args.Length == 0) args = new[] { "-h" };
@@ -128,6 +130,7 @@ await rootCommand.InvokeAsync(args);
 
 async Task HandleInput(InvocationContext invocationContext)
 {
+    var verboseValue = invocationContext.ParseResult.GetValueForOption(verbose);
     var fileValue = invocationContext.ParseResult.GetValueForOption(fileInput);
     var linkValue = invocationContext.ParseResult.GetValueForOption(linkInput);
     var outputValue = invocationContext.ParseResult.GetValueForOption(output);
@@ -138,6 +141,8 @@ async Task HandleInput(InvocationContext invocationContext)
     var videoCodecValue = invocationContext.ParseResult.GetValueForOption(videoCodecInput);
 
     youtubeDl.OutputFolder = outputValue!;
+    
+    if (videoCodecValue == "libvpx-vp9") audioCodecValue = "libopus";
 
     if (fileValue == null && linkValue == null)
     {
@@ -157,7 +162,7 @@ async Task HandleInput(InvocationContext invocationContext)
             if (regex.IsMatch(linkValue))
                 linkValue = url + linkValue;
 
-        RunResult<VideoData>? videoInfo;
+        RunResult<VideoData?> videoInfo;
         try
         {
             videoInfo = await youtubeDl.RunVideoDataFetch(linkValue);
@@ -167,16 +172,15 @@ async Task HandleInput(InvocationContext invocationContext)
             Console.WriteLine("Invalid link");
             return;
         }
-        var videoId = videoInfo.Data.Id;
+        var videoId = videoInfo.Data?.Id;
         
         var progress = new Progress<DownloadProgress>(p => 
         {
-            // ReSharper disable once CompareOfFloatsByEqualityOperator
             if (p.Progress is 0) return;
             Console.Write($"Progress: {p.Progress:P2} | Download speed: {p.DownloadSpeed}\t\r");
         });
         
-        RunResult<string>? videoDownload;
+        RunResult<string?> videoDownload;
         try
         {
             videoDownload = await youtubeDl.RunVideoDownload(linkValue, progress: progress);
@@ -196,9 +200,9 @@ async Task HandleInput(InvocationContext invocationContext)
             return;
         }
         
-        var videoPath = $"{outputValue}{sep}{videoId}.{videoInfo.Data.Extension}";
+        var videoPath = $"{outputValue}{sep}{videoId}.{videoInfo.Data?.Extension}";
         
-        await ConvertVideoTask(videoPath, videoId);
+        await ConvertVideoTask(videoPath, videoId!);
     }
 
     async Task ConvertVideoTask(string videoPath, string videoId)
@@ -214,15 +218,14 @@ async Task HandleInput(InvocationContext invocationContext)
         if (!new[] { "144p", "240p", "360p", "480p", "720p", "1080p", "1440p", "2160p" }.Contains(resolutionValue))
             resolutionValue = null;
         
-        // Linux && macOS: /dev/null && \
-        // Windows: "NUL;"
-        var ffmpegSeparator = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "NUL;" : "/dev/null && \\";
+        var ffmpegSeparator = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "NUL;" : "/dev/null ";
         
         var resolutionChange = resolutionValue != null;
 
         string? libxParam;
         string? libvpxVp9ParamPostInput;
-        var videoPathConverted = $"{outputValue}{sep}{videoId}-comp.{videoExtension}";
+        var videoPathConverted = 
+            $"{outputValue}{sep}{videoId}{(videoExtension != Path.GetExtension(videoPath).Replace(".", "") ? $".{videoExtension}" : $"-comp.{videoExtension}")}";
 
         // get video resolution
         IMediaInfo? video;
@@ -248,7 +251,8 @@ async Task HandleInput(InvocationContext invocationContext)
         var isVertical = videoWidth < videoHeight;
 
         string? resolution;
-        (int, int) width = (0, 0), height = (0, 0);
+        // (int, int) width = (0,0), height = (0, 0);
+        int width = 0, height = 0;
         try
         {
             // get the resolution
@@ -259,8 +263,8 @@ async Task HandleInput(InvocationContext invocationContext)
             var resolutionWidth = (int) (resolutionHeight * 4 / 3.0);
         
             // The width and height are swapped if the video is vertical
-            width = isVertical ? (resolutionHeight, resolutionWidth) : (resolutionWidth, resolutionHeight);
-            height = isVertical ? (resolutionWidth, resolutionHeight) : (resolutionHeight, resolutionWidth);
+            width = isVertical ? resolutionHeight : resolutionWidth;
+            height = isVertical ? resolutionWidth : resolutionHeight;
         }
         catch (Exception)
         {
@@ -320,7 +324,7 @@ async Task HandleInput(InvocationContext invocationContext)
                                   "-tile-columns 1 " +
                                   "-enable-tpl 1 " +
                                   "-row-mt 1 " +
-                                  $"-b:a {audioBitrateValue}k {outputValue}{sep}{videoId}-comp.{videoExtension}";
+                                  $"-b:a {audioBitrateValue}k {videoPathConverted}";
 
         if (File.Exists(videoPathConverted))
         {
@@ -349,8 +353,19 @@ async Task HandleInput(InvocationContext invocationContext)
                     Console.Write($"\rProgress: {percent:P2} | ETA: {eta}");
                     Console.ResetColor();
                 };
-                
-                await conversion.Start();
+
+                try
+                {
+                    await conversion.Start();
+                }
+                catch (ConversionException e)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Something went wrong");
+                    if (verboseValue) Console.WriteLine(e);
+                    Console.ResetColor();
+                    return;
+                }
                 
                 break;
             }
@@ -369,8 +384,19 @@ async Task HandleInput(InvocationContext invocationContext)
                     Console.Write($"\rProgress: {percent:P2} | ETA: {eta}");
                     Console.ResetColor();
                 };
-                
-                await libvpxVp9Pass1.Start();
+
+                try
+                {
+                    await libvpxVp9Pass1.Start();
+                }
+                catch (ConversionException e)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Something went wrong");
+                    if (verboseValue) Console.WriteLine(e);
+                    Console.ResetColor();
+                    return;
+                }
                 Console.WriteLine("Pass 1 done");
                 try
                 {
@@ -378,10 +404,12 @@ async Task HandleInput(InvocationContext invocationContext)
                 }
                 catch (ConversionException e)
                 {
-                    if (e.Message.Contains("Only VP8 or VP9 or AV1 video and Vorbis or Opus"))
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    if (verboseValue) Console.WriteLine(e);
+                    if (e.Message.Contains("corrupt decoded")) Console.WriteLine("Corrupted Video!");
+                    if (e.Message.Contains("Only VP8 or VP9 or AV1 video and Vorbis or Opus")) 
                         Console.WriteLine("You cannot use AAC audio codec with VP9. Please use Vorbis or Opus.");
-                    else
-                        Console.WriteLine("Something went wrong. Please check your input and try again.");
+                    Console.ResetColor();
                     return;
                 }
 

@@ -1,10 +1,10 @@
 ﻿using System.Diagnostics;
 using System.Globalization;
 using System.Text.RegularExpressions;
-using YoutubeDLSharp.Helpers;
+using dis.YoutubeDLSharp.Helpers;
 using YoutubeDLSharp.Options;
 
-namespace YoutubeDLSharp;
+namespace dis.YoutubeDLSharp;
 
 /// <summary>
 /// A low-level wrapper for the youtube-dl executable.
@@ -51,7 +51,7 @@ public class YoutubeDlProcess
         ExecutablePath = executablePath;
     }
 
-    internal string ConvertToArgs(string[] urls, OptionSet options)
+    internal string ConvertToArgs(string[]? urls, OptionSet options)
         => (urls != null ? string.Join(" ", urls) : string.Empty) + options;
 
     /// <summary>
@@ -60,7 +60,7 @@ public class YoutubeDlProcess
     /// <param name="urls">The video URLs to be passed to youtube-dl.</param>
     /// <param name="options">An OptionSet specifying the options to be passed to youtube-dl.</param>
     /// <returns>The exit code of the youtube-dl process.</returns>
-    public async Task<int> RunAsync(string[] urls, OptionSet options)
+    public async Task<int> RunAsync(string[]? urls, OptionSet options)
         => await RunAsync(urls, options, CancellationToken.None);
 
     /// <summary>
@@ -71,8 +71,8 @@ public class YoutubeDlProcess
     /// <param name="ct">A CancellationToken used to cancel the download.</param>
     /// <param name="progress">A progress provider used to get download progress information.</param>
     /// <returns>The exit code of the youtube-dl process.</returns>
-    public async Task<int> RunAsync(string[] urls, OptionSet options,
-        CancellationToken ct, IProgress<DownloadProgress> progress = null)
+    public async Task<int> RunAsync(string[]? urls, OptionSet options,
+        CancellationToken ct, IProgress<DownloadProgress>? progress = null)
     {
         var tcs = new TaskCompletionSource<int>();
         var process = new Process();
@@ -113,11 +113,11 @@ public class YoutubeDlProcess
                 {
                     float progValue = float.Parse(match.Groups[1].ToString(), CultureInfo.InvariantCulture) / 100.0f;
                     Group totalGroup = match.Groups["total"];
-                    string total = totalGroup.Success ? totalGroup.Value : null;
+                    string? total = totalGroup.Success ? totalGroup.Value : null;
                     Group speedGroup = match.Groups["speed"];
-                    string speed = speedGroup.Success ? speedGroup.Value : null;
+                    string? speed = speedGroup.Success ? speedGroup.Value : null;
                     Group etaGroup = match.Groups["eta"];
-                    string eta = etaGroup.Success ? etaGroup.Value : null;
+                    string? eta = etaGroup.Success ? etaGroup.Value : null;
                     progress?.Report(
                         new DownloadProgress(
                             DownloadState.Downloading, progress: progValue, totalDownloadSize: total, downloadSpeed: speed, eta: eta

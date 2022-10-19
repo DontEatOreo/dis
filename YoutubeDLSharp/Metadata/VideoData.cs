@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using dis.YoutubeDLSharp.Metadata;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
 namespace YoutubeDLSharp.Metadata;

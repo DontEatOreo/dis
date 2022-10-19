@@ -1,4 +1,4 @@
-﻿namespace YoutubeDLSharp.Options;
+﻿namespace dis.YoutubeDLSharp.Options;
 
 /// <summary>
 /// Interface for one youtube-dl option.

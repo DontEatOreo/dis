@@ -1,11 +1,46 @@
 ﻿using System.Text.Json.Serialization;
-namespace YoutubeDLSharp.Metadata;
+
+namespace dis.YoutubeDLSharp.Metadata;
 
 /// <summary>
 /// Represents information for one available download format for one video as extracted by youtube-dl.
 /// </summary>
 public class FormatData
 {
+    public FormatData(string url, string manifestUrl, string extension, string format, string formatId, string formatNote, int? width, int? height, string resolution, string hdr, double? bitrate, double? audioBitrate, string audioCodec, double? audioSamplingRate, double? videoBitrate, float? frameRate, string videoCodec, string containerFormat, long? fileSize, long? approximateFileSize, string playerUrl, string protocol, string fragmentBaseUrl, int? preference, string language, int? languagePreference, int? quality, int? sourcePreference, float? stretchedRatio, bool? noResume)
+    {
+        Url = url;
+        ManifestUrl = manifestUrl;
+        Extension = extension;
+        Format = format;
+        FormatId = formatId;
+        FormatNote = formatNote;
+        Width = width;
+        Height = height;
+        Resolution = resolution;
+        Hdr = hdr;
+        Bitrate = bitrate;
+        AudioBitrate = audioBitrate;
+        AudioCodec = audioCodec;
+        AudioSamplingRate = audioSamplingRate;
+        VideoBitrate = videoBitrate;
+        FrameRate = frameRate;
+        VideoCodec = videoCodec;
+        ContainerFormat = containerFormat;
+        FileSize = fileSize;
+        ApproximateFileSize = approximateFileSize;
+        PlayerUrl = playerUrl;
+        Protocol = protocol;
+        FragmentBaseUrl = fragmentBaseUrl;
+        Preference = preference;
+        Language = language;
+        LanguagePreference = languagePreference;
+        Quality = quality;
+        SourcePreference = sourcePreference;
+        StretchedRatio = stretchedRatio;
+        NoResume = noResume;
+    }
+
     [JsonPropertyName("url")]
     public string Url { get; set; }
     [JsonPropertyName("manifest_url")]
