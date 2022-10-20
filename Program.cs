@@ -1,6 +1,7 @@
 ﻿using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using dis.YoutubeDLSharp;
 using Xabe.FFmpeg;
@@ -121,6 +122,7 @@ videoCodecInput.AddValidator(validate =>
 });
 
 rootCommand.TreatUnmatchedTokensAsErrors = true;
+
 
 foreach (var option in new Option[]
          {
@@ -245,14 +247,18 @@ async Task HandleInput(InvocationContext invocationContext)
         string? libxParam;
         string? libvpxVp9ParamPostInput;
         
-        // 1. outputValue is the output folder
-        // 2. sep is the separator for the current OS
-        // 3. randomFilenameValue is a boolean that determines if the output file should have a random name
-        // 4. videoId is the video ID
-        // 5. videoPath.EndsWith(videoExtension) ? "-comp" : "" is a ternary operator that adds "-comp" to the end of the file name if the input file name matches the output file name
-        // 6. videoExtension is the output extension
-        var videoPathConverted =
-            $"{outputValue}{sep}{(randomFilenameValue ? new string(Enumerable.Repeat("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", 10).Select(s => s[new Random().Next(s.Length)]).ToArray()) : videoId)}{(videoPath.EndsWith(videoExtension) ? "-comp" : "")}.{videoExtension}";
+        var rndNumString = 
+            BitConverter.ToString(RandomNumberGenerator.GetBytes(4)).Replace("-", string.Empty);
+        var videoPathConverted = 
+            $"{outputValue}{sep}{(randomFilenameValue ? rndNumString : videoId)}{(videoPath.EndsWith(videoExtension) ? "-comp" : string.Empty)}.{videoExtension}";
+        
+        // If a user presses Ctrl+C, the program will delete the converted video and the log file
+        Console.CancelKeyPress += (_, _) =>
+        {
+            if (File.Exists(videoPathConverted)) File.Delete(videoPathConverted);
+            if (File.Exists("ffmpeg2pass-0.log")) File.Delete("ffmpeg2pass-0.log");
+            Console.WriteLine("\nCancelled");
+        };
 
         // get video resolution
         IMediaInfo? video;
@@ -397,7 +403,7 @@ async Task HandleInput(InvocationContext invocationContext)
                     return;
                 }
         
-                Console.WriteLine($"Done!\nConverted video saved at {videoPathConverted}");
+                Console.WriteLine($"\nDone!\nConverted video saved at {videoPathConverted}");
                 break;
             }
             case "libvpx-vp9":
@@ -451,5 +457,6 @@ async Task HandleInput(InvocationContext invocationContext)
 
         if (deleteOriginalValue) File.Delete(videoPath);
         if (File.Exists("ffmpeg2pass-0.log")) File.Delete("ffmpeg2pass-0.log");
+
     }
 }
