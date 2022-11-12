@@ -1,37 +1,38 @@
 ﻿using System.CommandLine;
 using System.CommandLine.Invocation;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
-using dis.YoutubeDLSharp;
 using Xabe.FFmpeg;
 using Xabe.FFmpeg.Exceptions;
+using YoutubeDLSharp;
 using YoutubeDLSharp.Metadata;
+
+var tempDir = Path.GetTempPath();
+var separator = Path.DirectorySeparatorChar;
 
 RootCommand rootCommand = new();
 
-YoutubeDl youtubeDl = new()
+YoutubeDL youtubeDl = new()
 {
+    FFmpegPath = "ffmpeg",
+    YoutubeDLPath = "yt-dlp",
     OutputFileTemplate = "%(id)s.%(ext)s",
-    OverwriteFiles = false,
+    OverwriteFiles = false
 };
 
-Regex twitterRegex = new(@"^1[45]\d{17}$", RegexOptions.Compiled);
+Regex twitterRegex = new(@"^[0-9]{19}$", RegexOptions.Compiled);
 Regex youtubeRegex = new(@"^([a-zA-Z0-9_-]{11})$", RegexOptions.Compiled);
-Regex redditRegex = new(@"^x[a-zA-Z0-9]{5}$", RegexOptions.Compiled);
-Regex tiktokRegex = new(@"^[67]\d{18}$", RegexOptions.Compiled);
+Regex redditRegex = new(@"^[xy][a-zA-Z0-9]{5}$", RegexOptions.Compiled);
+Regex tikTokRegex = new(@"^[67][0-9]{18}$", RegexOptions.Compiled);
 
 Dictionary<Regex, string> urlRegex = new()
 {
     { twitterRegex, "https:/twitter.com/i/status/" },
     { youtubeRegex, "https://youtu.be/" },
     { redditRegex, "https://reddit.com/" },
-    { tiktokRegex, "https://www.tiktok.com/@dis/video/" }
+    { tikTokRegex, "https://www.tiktok.com/@dis/video/" }
 };
 
-var sep = Path.DirectorySeparatorChar;
-
-Option<bool> verbose = new(new[] { "-v" ,"--verbose" }, "Enable verbose logging.\nMainly for seeing what went wrong when compression fails.");
 Option<bool> randomFilename = new(new[] { "-rn", "-rd", "-rnd", "--random" }, "Randomize the filename");
 Option<bool> deleteOriginal = new(new[] { "-d", "-dl", "-del", "--delete" }, "Delete the original file");
 
@@ -97,36 +98,10 @@ audioBitrateInput.AddValidator(validate =>
     Environment.Exit(1);
 });
 
-Option<string> audioCodecInput = new(new[] { "-ac", "--audio-codec" }, "Audio codec");
-audioCodecInput.SetDefaultValue("aac");
-audioCodecInput.AddCompletions("aac", "libmp3lame", "libopus", "libvorbis");
-audioCodecInput.AddValidator(validate =>
-{
-    var audioCodecValue = validate.GetValueOrDefault<string>();
-    var audioCodecs = new[] { "aac", "libmp3lame", "libopus", "libvorbis" };
-    if (audioCodecs.Contains(audioCodecValue)) return;
-    Console.WriteLine("Invalid audio codec");
-    Environment.Exit(1);
-});
-
-Option<string> videoCodecInput = new(new[] { "-vc", "--video-codec" }, "Video codec");
-videoCodecInput.SetDefaultValue("libx264");
-videoCodecInput.AddCompletions("libx264", "libx265", "libvpx-vp9");
-videoCodecInput.AddValidator(validate =>
-{
-    var videoCodecValue = validate.GetValueOrDefault<string>();
-    var videoCodecs = new[] { "libx264", "libx265", "libvpx-vp9" };
-    if (videoCodecs.Contains(videoCodecValue)) return;
-    Console.WriteLine("Invalid video codec");
-    Environment.Exit(1);
-});
-
 rootCommand.TreatUnmatchedTokensAsErrors = true;
-
 
 foreach (var option in new Option[]
          {
-             verbose,
              randomFilename,
              deleteOriginal,
              fileInput,
@@ -135,11 +110,9 @@ foreach (var option in new Option[]
              crfInput,
              resolutionInput,
              audioBitrateInput,
-             audioCodecInput,
-             videoCodecInput
          }) rootCommand.AddOption(option);
 
-if (args.Length == 0) args = new[] { "-h" };
+if (args.Length is 0) args = new[] { "-h" };
 
 rootCommand.SetHandler(HandleInput);
 
@@ -147,39 +120,37 @@ await rootCommand.InvokeAsync(args);
 
 async Task HandleInput(InvocationContext invocationContext)
 {
-    var verboseValue = invocationContext.ParseResult.GetValueForOption(verbose);
     var fileValue = invocationContext.ParseResult.GetValueForOption(fileInput);
     var linkValue = invocationContext.ParseResult.GetValueForOption(linkInput);
     var outputValue = invocationContext.ParseResult.GetValueForOption(output);
     var crfValue = invocationContext.ParseResult.GetValueForOption(crfInput);
-    
+
     var resolutionValue = invocationContext.ParseResult.GetValueForOption(resolutionInput);
     if (resolutionValue is not null && !resolutionValue.EndsWith("p")) resolutionValue += "p";
 
     var audioBitrateValue = invocationContext.ParseResult.GetValueForOption(audioBitrateInput);
-    var audioCodecValue = invocationContext.ParseResult.GetValueForOption(audioCodecInput);
-    var videoCodecValue = invocationContext.ParseResult.GetValueForOption(videoCodecInput);
     var randomFilenameValue = invocationContext.ParseResult.GetValueForOption(randomFilename);
     var deleteOriginalValue = invocationContext.ParseResult.GetValueForOption(deleteOriginal);
 
     youtubeDl.OutputFolder = outputValue!;
     
-    if (videoCodecValue == "libvpx-vp9") audioCodecValue = "libopus";
-
-    if (fileValue == null && linkValue == null)
+    if (fileValue is null && linkValue is null)
     {
         Console.WriteLine("You must provide either a file or a link");
         return;
     }
 
-    if (fileValue != null && linkValue == null)
+    if (fileValue is not null && linkValue is null)
     {
         var fileName = Path.GetFileNameWithoutExtension(fileValue);
         await ConvertVideoTask(fileValue, fileName);
     }
 
-    if (fileValue == null && linkValue != null)
+    if (fileValue is null && linkValue is not null)
     {
+        youtubeDl.OutputFolder = tempDir; // Set the output folder to the temp directory
+        
+        // We loop through the regexes if the link is a video id in-order to construct a full URL
         foreach (var (regex, url) in urlRegex)
             if (regex.IsMatch(linkValue))
                 linkValue = url + linkValue;
@@ -192,9 +163,12 @@ async Task HandleInput(InvocationContext invocationContext)
         catch (Exception)
         {
             Console.WriteLine("Invalid link");
+#if DEBUG
+            Console.WriteLine($"Url: {linkValue}");
+#endif
             return;
         }
-        var videoId = videoInfo.Data?.Id;
+        var videoId = videoInfo.Data?.ID;
         
         var progress = new Progress<DownloadProgress>(p => 
         {
@@ -219,44 +193,39 @@ async Task HandleInput(InvocationContext invocationContext)
         if (!videoDownload.Success)
         {
             Console.WriteLine("There was an error downloading the video");
+#if DEBUG
+            foreach (var error in videoDownload.ErrorOutput) Console.WriteLine(error);
+#endif
             return;
         }
         
-        var videoPath = $"{outputValue}{sep}{videoId}.{videoInfo.Data?.Extension}";
+        var videoPath = $"{tempDir}{videoId}.{videoInfo.Data?.Extension}";
+#if DEBUG
+        Console.WriteLine($"Video downloaded to {videoPath}");
+#endif
         
         await ConvertVideoTask(videoPath, videoId!);
     }
 
     async Task ConvertVideoTask(string videoPath, string videoId)
     {
-        var videoExtension = videoCodecValue switch
-        {
-            "libx264" => "mp4",
-            "libx265" => "mp4",
-            "libvpx-vp9" => "webm",
-            _ => throw new Exception("Invalid video codec")
-        };
-
         if (!new[] { "144p", "240p", "360p", "480p", "720p", "1080p", "1440p", "2160p" }.Contains(resolutionValue))
             resolutionValue = null;
         
-        var ffmpegSeparator = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "NUL;" : "/dev/null ";
+        var resolutionChange = resolutionValue is not null;
         
-        var resolutionChange = resolutionValue != null;
+        var generator = RandomNumberGenerator.Create(); // RandomNumberGenerator uses the OS "CSPRNG"
+        var randomNumber = new byte[4]; // Create a byte array with a length of 4
+        generator.GetBytes(randomNumber); // Fill the byte array with random bytes
+        var uuid = BitConverter.ToUInt32(randomNumber, 0).ToString("X8"); // Convert the byte array to a uint32 and convert it to a hex string
 
-        string? libxParam;
-        string? libvpxVp9ParamPostInput;
-        
-        var rndNumString = 
-            BitConverter.ToString(RandomNumberGenerator.GetBytes(4)).Replace("-", string.Empty);
-        var videoPathConverted = 
-            $"{outputValue}{sep}{(randomFilenameValue ? rndNumString : videoId)}{(videoPath.EndsWith(videoExtension) ? "-comp" : string.Empty)}.{videoExtension}";
-        
+        // If the video is already in the output folder, we add "-comp" to the end of the filename to avoid overwriting the original file
+        var videoPathConverted = $"{outputValue}{separator}{(randomFilenameValue ? uuid : videoId)}{(videoPath == $"{outputValue}{separator}{videoId}.mp4" ? "-comp" : string.Empty)}.mp4"; 
+
         // If a user presses Ctrl+C, the program will delete the converted video and the log file
         Console.CancelKeyPress += (_, _) =>
         {
             if (File.Exists(videoPathConverted)) File.Delete(videoPathConverted);
-            if (File.Exists("ffmpeg2pass-0.log")) File.Delete("ffmpeg2pass-0.log");
             Console.WriteLine("\nCancelled");
         };
 
@@ -266,97 +235,40 @@ async Task HandleInput(InvocationContext invocationContext)
         {
             video = await FFmpeg.GetMediaInfo(videoPath);
         }
-        catch (ArgumentException)
+        catch (ConversionException e)
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("Invalid video file");
+#if DEBUG
+            Console.WriteLine(e);
+            Console.WriteLine(e.InputParameters);
+#endif
             Console.ResetColor();
             return;
         }
         
         // Get Video Stream Width and Height
-        var videoStream = video.VideoStreams.First();
-        var videoWidth = videoStream.Width;
+        var videoStream = video.VideoStreams.FirstOrDefault();
+        var audioStream = video.AudioStreams.FirstOrDefault();
+        var videoWidth = videoStream!.Width;
         var videoHeight = videoStream.Height;
         
         // check if it's a vertical video
-        // We do this by checking if the video width is less than the video height
-        var isVertical = videoWidth < videoHeight;
+        var verticalVideo = videoWidth < videoHeight;
 
-        int width = 0, height = 0;
-        try
+        var resolution = resolutionValue switch
         {
-            // get the resolution
-            var resolution = resolutionValue?.Replace("p", "");
+            "144p" => verticalVideo ? (videoWidth: 144, videoHeight: 256) : (videoWidth: 256, videoHeight: 144),
+            "240p" => verticalVideo ? (videoWidth: 240, videoHeight: 426) : (videoWidth: 426, videoHeight: 240),
+            "360p" => verticalVideo ? (videoWidth: 360, videoHeight: 640) : (videoWidth: 640, videoHeight: 360),
+            "480p" => verticalVideo ? (videoWidth: 480, videoHeight: 854) : (videoWidth: 854, videoHeight: 480),
+            "720p" => verticalVideo ? (videoWidth: 720, videoHeight: 1280) : (videoWidth: 1280, videoHeight: 720),
+            "1080p" => verticalVideo ? (videoWidth: 1080, videoHeight: 1920) : (videoWidth: 1920, videoHeight: 1080),
+            "1440p" => verticalVideo ? (videoWidth: 1440, videoHeight: 2560) : (videoWidth: 2560, videoHeight: 1440),
+            "2160p" => verticalVideo ? (videoWidth: 2160, videoHeight: 3840) : (videoWidth: 3840, videoHeight: 2160),
+            _ => (videoWidth, videoHeight)
+        };
 
-            // The width of a video is always 4/3 of the height
-            var resolutionHeight = int.Parse(resolution!);
-            var resolutionWidth = (int) (resolutionHeight * 4 / 3.0);
-        
-            // The width and height are swapped if the video is vertical
-            width = isVertical ? resolutionHeight : resolutionWidth;
-            height = isVertical ? resolutionWidth : resolutionHeight;
-        }
-        catch (Exception)
-        {
-            // ignored
-        }
-
-        libxParam = $"-i {videoPath} " +
-                    (resolutionChange ? $"-vf scale={width}:{height} " : "") +
-                    $"-c:v {videoCodecValue} " +
-                    $"-crf {crfValue} " +
-                    $"-c:a {audioCodecValue} " +
-                    $"-b:a {audioBitrateValue}k " +
-                    $"{videoPathConverted}";
-
-        var libvpxVp9ParamPreInput = $"-i {videoPath} " +
-                                     $"{(resolutionChange ? $"-vf scale={width}:{height} " : "")}" +
-                                     $"-c:v {videoCodecValue} " +
-                                     "-pix_fmt yuv420p10le " +
-                                     "-pass 1 " +
-                                     "-quality good " +
-                                     "-threads 4 " +
-                                     "-profile:v 2 " +
-                                     "-lag-in-frames 25 " +
-                                     $"-crf {crfValue} " +
-                                     "-b:v 0 " +
-                                     "-g 240 " +
-                                     "-cpu-used 0 " +
-                                     "-auto-alt-ref 1 " +
-                                     "-arnr-maxframes 7 " +
-                                     "-arnr-strength 4 " +
-                                     "-aq-mode 0 " +
-                                     "-tile-rows 0 " +
-                                     "-tile-columns 1 " +
-                                     "-enable-tpl 1 " +
-                                     "-row-mt 1 " +
-                                     $"-an -f null {ffmpegSeparator} ";
-        
-        libvpxVp9ParamPostInput = $"-i {videoPath} " +
-                                  $"{(resolutionChange ? $"-vf scale={width}:{height} " : "")}" +
-                                  $"-c:v {videoCodecValue} " +
-                                  $"-c:a {audioCodecValue} " +
-                                  "-pix_fmt yuv420p10le " +
-                                  "-pass 2 " + 
-                                  "-quality good " +
-                                  "-threads 4 " +
-                                  "-profile:v 2 " +
-                                  "-lag-in-frames 25 " +
-                                  $"-crf {crfValue} " +
-                                  "-b:v 0 " +
-                                  "-g 240 " +
-                                  "-cpu-used 0 " +
-                                  "-auto-alt-ref 1 " +
-                                  "-arnr-maxframes 7 " +
-                                  "-arnr-strength 4 " +
-                                  "-aq-mode 0 " +
-                                  "-tile-rows 0 " +
-                                  "-tile-columns 1 " +
-                                  "-enable-tpl 1 " +
-                                  "-row-mt 1 " +
-                                  $"-b:a {audioBitrateValue}k {videoPathConverted}";
-        
         // if a file with same name exists offer to delete it
         if (File.Exists(videoPathConverted))
         {
@@ -376,87 +288,42 @@ async Task HandleInput(InvocationContext invocationContext)
             }
         }
 
-        switch (videoCodecValue)
+        var conversion = FFmpeg.Conversions.New()
+            .AddStream(videoStream)
+            .AddStream(audioStream)
+            .SetOutput(videoPathConverted);
+
+        var parameter = $"-c:v libx264 -crf {crfValue}";
+        parameter += resolutionChange
+            ? $" -vf scale=h={resolution.videoHeight}:w={resolution.videoWidth} -pix_fmt yuv420p -c:a aac -b:a {audioBitrateValue}k"
+            : $" -pix_fmt yuv420p -c:a aac -b:a {audioBitrateValue}k";
+
+        conversion.AddParameter(parameter);
+        
+        conversion.OnProgress += (_, args) =>
         {
-            case "libx264" or "libx265":
-            {
-                var conversion = FFmpeg.Conversions.New()
-                    .AddParameter(libxParam);
+            var percent = args.Duration.TotalSeconds / args.TotalLength.TotalSeconds;
+            var eta = args.TotalLength - args.Duration;
+            Console.Write($"\rProgress: {percent:P2} | ETA: {eta}");
+        };
         
-                conversion.OnProgress += (_, args) =>
-                {
-                    var percent = args.Duration.TotalSeconds / args.TotalLength.TotalSeconds;
-                    var eta = args.TotalLength - args.Duration;
-                    Console.Write($"\rProgress: {percent:P2} | ETA: {eta}");
-                };
-        
-                try
-                {
-                    await conversion.Start();
-                }
-                catch (ConversionException e)
-                {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("Something went wrong");
-                    if (verboseValue) Console.WriteLine(e);
-                    Console.ResetColor();
-                    return;
-                }
-        
-                Console.WriteLine($"\nDone!\nConverted video saved at {videoPathConverted}");
-                break;
-            }
-            case "libvpx-vp9":
-            {
-                var libvpxVp9Pass1 = FFmpeg.Conversions.New()
-                    .AddParameter(libvpxVp9ParamPreInput);
-                var libvpxVp9Pass2 = FFmpeg.Conversions.New()
-                    .AddParameter(libvpxVp9ParamPostInput);
-        
-                libvpxVp9Pass2.OnProgress += (_, args) =>
-                {
-                    var percent = args.Duration.TotalSeconds / args.TotalLength.TotalSeconds;
-                    var eta = args.TotalLength - args.Duration;
-                    Console.Write($"\rProgress: {percent:P2} | ETA: {eta}");
-                };
-        
-                try
-                {
-                    await libvpxVp9Pass1.Start();
-                }
-                catch (ConversionException e)
-                {
-                    Console.WriteLine("Something went wrong");
-                    if (verboseValue) Console.WriteLine(e);
-                    return;
-                }
-        
-                Console.WriteLine("Pass 1 done");
-                try
-                {
-                    await libvpxVp9Pass2.Start();
-                }
-                catch (ConversionException e)
-                {
-                    if (verboseValue) Console.WriteLine(e);
-                    else if (e.Message.Contains("corrupt decoded")) Console.WriteLine("Corrupted Video!");
-                    else if (e.Message.Contains("Only VP8 or VP9 or AV1 video and Vorbis or Opus"))
-                        Console.WriteLine("You cannot use AAC audio codec with VP9. Please use Vorbis or Opus.");
-                    else Console.WriteLine("Something went wrong");
-                    return;
-                }
-                Console.WriteLine($"\nPass 2 done.\nFile saved as {videoPathConverted}");
-                break;
-            }
-            default:
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Invalid video codec");
-                Console.ResetColor();
-                return;
+        try
+        {
+            await conversion.Start();
         }
-
-        if (deleteOriginalValue) File.Delete(videoPath);
-        if (File.Exists("ffmpeg2pass-0.log")) File.Delete("ffmpeg2pass-0.log");
-
+        catch (ConversionException e)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+#if DEBUG
+            Console.WriteLine(e);
+            Console.WriteLine($"FFmpeg Parameters: {e.InputParameters}");
+#endif
+            Console.ResetColor();
+            return;
+        }
+        
+        Console.WriteLine($"\nDone!\nConverted video saved at {videoPathConverted}");
+        
+        if(deleteOriginalValue) File.Delete(videoPath);
     }
 }
