@@ -1,11 +1,11 @@
 ﻿using System.CommandLine;
 using System.CommandLine.Invocation;
-using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using Xabe.FFmpeg;
 using Xabe.FFmpeg.Exceptions;
 using YoutubeDLSharp;
 using YoutubeDLSharp.Metadata;
+using YoutubeDLSharp.Options;
 
 var tempDir = Path.GetTempPath();
 var separator = Path.DirectorySeparatorChar;
@@ -20,7 +20,7 @@ YoutubeDL youtubeDl = new()
     OverwriteFiles = false
 };
 
-Regex twitterRegex = new(@"^[0-9]{19}$", RegexOptions.Compiled);
+Regex twitterRegex = new(@"^[1][4-5][0-9]{18}$", RegexOptions.Compiled);
 Regex youtubeRegex = new(@"^([a-zA-Z0-9_-]{11})$", RegexOptions.Compiled);
 Regex redditRegex = new(@"^[xy][a-zA-Z0-9]{5}$", RegexOptions.Compiled);
 Regex tikTokRegex = new(@"^[67][0-9]{18}$", RegexOptions.Compiled);
@@ -33,10 +33,12 @@ Dictionary<Regex, string> urlRegex = new()
     { tikTokRegex, "https://www.tiktok.com/@dis/video/" }
 };
 
-Option<bool> randomFilename = new(new[] { "-rn", "-rd", "-rnd", "--random" }, "Randomize the filename");
-Option<bool> deleteOriginal = new(new[] { "-d", "-dl", "-del", "--delete" }, "Delete the original file");
+System.CommandLine.Option<bool> randomFilename = new(new[] { "-rn", "-rd", "-rnd", "--random" }, "Randomize the filename");
+System.CommandLine.Option<bool> deleteOriginal = new(new[] { "-d", "-dl", "-del", "--delete" }, "Delete the original file");
+System.CommandLine.Option<bool> keepWatermark = new(new[] { "-k", "-kw", "-kwm", "--keep" }, "Keep the watermark");
+System.CommandLine.Option<bool> sponsorBlock = new(new[] { "-sb", "-sponsorblock", "--sponsorblock" }, "Remove the sponsorblock from the video");
 
-Option<string> fileInput = new(new[] { "-i", "--input" }, "A path to a video file");
+System.CommandLine.Option<string> fileInput = new(new[] { "-i", "--input" }, "A path to a video file");
 fileInput.AddValidator(validate =>
 {
     var file = validate.GetValueOrDefault<string>();
@@ -45,7 +47,7 @@ fileInput.AddValidator(validate =>
     Environment.Exit(1);
 });
 
-Option<string> linkInput = new(new[] { "-l", "--link" }, "A URL link to a video");
+System.CommandLine.Option<string> linkInput = new(new[] { "-l", "--link" }, "A URL link to a video");
 linkInput.AddValidator(validate =>
 {
     if (urlRegex.Any(x => x.Key.IsMatch(validate.Token?.Value!)) ||
@@ -54,7 +56,7 @@ linkInput.AddValidator(validate =>
     Environment.Exit(1);
 });
 
-Option<string> output = new(new[] { "-o", "--output" }, "Directory to save the compressed video to\n");
+System.CommandLine.Option<string> output = new(new[] { "-o", "--output" }, "Directory to save the compressed video to\n");
 output.SetDefaultValue(Environment.CurrentDirectory);
 output.AddValidator(validate =>
 {
@@ -64,7 +66,7 @@ output.AddValidator(validate =>
     Environment.Exit(1);
 });
 
-Option<int> crfInput = new(new[] { "-c", "--crf" }, "CRF value");
+System.CommandLine.Option<int> crfInput = new(new[] { "-c", "--crf" }, "CRF value");
 crfInput.SetDefaultValue(26);
 crfInput.AddValidator(validate =>
 {
@@ -74,18 +76,19 @@ crfInput.AddValidator(validate =>
     Environment.Exit(1);
 });
 
-Option<string> resolutionInput = new(new[] { "-r", "--resolution" }, "Resolution");
+System.CommandLine.Option<string> resolutionInput = new(new[] { "-r", "--resolution" }, "Resolution");
 resolutionInput.AddCompletions("144p", "240p", "360p", "480p", "720p", "1080p", "1440p", "2160p");
 resolutionInput.AddValidator(validate =>
 {
     var resolutionValue = validate.GetValueOrDefault<string>();
-    var resolutions = new[] { "144", "240", "360", "480", "720", "1080", "1440", "2160" };
-    if (resolutions.Contains(resolutionValue)) return;
+    var resolutions = new[] { "144p", "240p", "360p", "480p", "720p", "1080p", "1440p", "2160p" };
+    if (resolutions.Any(x => x.Contains(resolutionValue!)) 
+        || resolutions.Contains(resolutionValue + "p")) return;
     Console.WriteLine("Invalid resolution");
     Environment.Exit(1);
 });
 
-Option<string> audioBitrateInput = new(new[] { "-a", "-ab", "--audio-bitrate" }, "Audio bitrate");
+System.CommandLine.Option<string> audioBitrateInput = new(new[] { "-a", "-ab", "--audio-bitrate" }, "Audio bitrate");
 audioBitrateInput.SetDefaultValue("128");
 audioBitrateInput.AddCompletions("32", "64", "96", "128", "192", "256", "320");
 audioBitrateInput.AddValidator(validate =>
@@ -110,6 +113,8 @@ foreach (var option in new Option[]
              crfInput,
              resolutionInput,
              audioBitrateInput,
+             keepWatermark,
+             sponsorBlock
          }) rootCommand.AddOption(option);
 
 if (args.Length is 0) args = new[] { "-h" };
@@ -131,6 +136,8 @@ async Task HandleInput(InvocationContext invocationContext)
     var audioBitrateValue = invocationContext.ParseResult.GetValueForOption(audioBitrateInput);
     var randomFilenameValue = invocationContext.ParseResult.GetValueForOption(randomFilename);
     var deleteOriginalValue = invocationContext.ParseResult.GetValueForOption(deleteOriginal);
+    var keepWaterMarkValue = invocationContext.ParseResult.GetValueForOption(keepWatermark);
+    var sponsorBlockValue = invocationContext.ParseResult.GetValueForOption(sponsorBlock);
 
     youtubeDl.OutputFolder = outputValue!;
     
@@ -163,9 +170,6 @@ async Task HandleInput(InvocationContext invocationContext)
         catch (Exception)
         {
             Console.WriteLine("Invalid link");
-#if DEBUG
-            Console.WriteLine($"Url: {linkValue}");
-#endif
             return;
         }
         var videoId = videoInfo.Data?.ID;
@@ -179,7 +183,22 @@ async Task HandleInput(InvocationContext invocationContext)
         RunResult<string?> videoDownload;
         try
         {
-            videoDownload = await youtubeDl.RunVideoDownload(linkValue, progress: progress);
+            videoDownload = linkValue switch
+            {
+                var l when l.Contains("tiktok.com") && keepWaterMarkValue => await youtubeDl.RunVideoDownload(linkValue,
+                    progress: progress,
+                    overrideOptions: new OptionSet
+                    {
+                        Format = "download_addr-2"
+                    }),
+                var l when l.Contains("youtu.be") && sponsorBlockValue => await youtubeDl.RunVideoDownload(linkValue,
+                    progress: progress,  
+                    overrideOptions: new OptionSet
+                    {
+                        SponsorblockRemove = "all"
+                    }),
+                _ => await youtubeDl.RunVideoDownload(linkValue, progress: progress)
+            };
         }
         catch (Exception)
         {
@@ -193,34 +212,33 @@ async Task HandleInput(InvocationContext invocationContext)
         if (!videoDownload.Success)
         {
             Console.WriteLine("There was an error downloading the video");
-#if DEBUG
-            foreach (var error in videoDownload.ErrorOutput) Console.WriteLine(error);
-#endif
             return;
         }
         
         var videoPath = $"{tempDir}{videoId}.{videoInfo.Data?.Extension}";
-#if DEBUG
-        Console.WriteLine($"Video downloaded to {videoPath}");
-#endif
-        
         await ConvertVideoTask(videoPath, videoId!);
     }
 
-    async Task ConvertVideoTask(string videoPath, string videoId)
+    async Task ConvertVideoTask(string? videoPath, string videoId)
     {
         if (!new[] { "144p", "240p", "360p", "480p", "720p", "1080p", "1440p", "2160p" }.Contains(resolutionValue))
             resolutionValue = null;
         
         var resolutionChange = resolutionValue is not null;
         
-        var generator = RandomNumberGenerator.Create(); // RandomNumberGenerator uses the OS "CSPRNG"
-        var randomNumber = new byte[4]; // Create a byte array with a length of 4
-        generator.GetBytes(randomNumber); // Fill the byte array with random bytes
-        var uuid = BitConverter.ToUInt32(randomNumber, 0).ToString("X8"); // Convert the byte array to a uint32 and convert it to a hex string
-
-        // If the video is already in the output folder, we add "-comp" to the end of the filename to avoid overwriting the original file
-        var videoPathConverted = $"{outputValue}{separator}{(randomFilenameValue ? uuid : videoId)}{(videoPath == $"{outputValue}{separator}{videoId}.mp4" ? "-comp" : string.Empty)}.mp4"; 
+        var uuid = Guid.NewGuid().ToString("N")[..8];
+        
+        // 1. If the user provided a file, we get the filename without the extension
+        // 2. If the user provided a link, we get the video id
+        // 3. If the user wants a random filename, we generate a random string
+        // 4. If the filename ends with .mp4, we add _comp.mp4 to the end of the filename
+        // 5. If the filename doesn't end with .mp4, we add .mp4 to the end of the filename
+        // 6. We set the output path to the output folder + the filename
+        var outputFilename = videoPath is not null ? Path.GetFileNameWithoutExtension(videoPath) : videoId;
+        if (randomFilenameValue) outputFilename = uuid;
+        if (outputFilename.EndsWith(".mp4")) outputFilename += "_comp.mp4";
+        else outputFilename += ".mp4";
+        var videoPathConverted = $"{outputValue}{separator}{outputFilename}";
 
         // If a user presses Ctrl+C, the program will delete the converted video and the log file
         Console.CancelKeyPress += (_, _) =>
@@ -235,14 +253,10 @@ async Task HandleInput(InvocationContext invocationContext)
         {
             video = await FFmpeg.GetMediaInfo(videoPath);
         }
-        catch (ConversionException e)
+        catch (ConversionException)
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("Invalid video file");
-#if DEBUG
-            Console.WriteLine(e);
-            Console.WriteLine(e.InputParameters);
-#endif
             Console.ResetColor();
             return;
         }
@@ -311,19 +325,14 @@ async Task HandleInput(InvocationContext invocationContext)
         {
             await conversion.Start();
         }
-        catch (ConversionException e)
+        catch (ConversionException)
         {
             Console.ForegroundColor = ConsoleColor.Red;
-#if DEBUG
-            Console.WriteLine(e);
-            Console.WriteLine($"FFmpeg Parameters: {e.InputParameters}");
-#endif
             Console.ResetColor();
             return;
         }
-        
-        Console.WriteLine($"\nDone!\nConverted video saved at {videoPathConverted}");
-        
-        if(deleteOriginalValue) File.Delete(videoPath);
+        Console.WriteLine($"\nDone!\nConverted video saved at {outputFilename}");
+
+        if(deleteOriginalValue) File.Delete(videoPath ?? string.Empty);
     }
 }

@@ -6,7 +6,7 @@ You can run the program with ``dotnet run -- <arguments>``, compile an executabl
 
 # NuGet Packages
 ```
-Xabe.FFmpeg
 System.CommandLine
+Xabe.FFmpeg
 YoutubeDLSharp
 ```
