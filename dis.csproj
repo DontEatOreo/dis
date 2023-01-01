@@ -5,13 +5,13 @@
         <TargetFramework>net7.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <Version>3.1.0</Version>
+        <Version>3.2.0</Version>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
       <PackageReference Include="Xabe.FFmpeg" Version="5.2.0" />
-      <PackageReference Include="YoutubeDLSharp" Version="1.0.0-beta" />
+      <PackageReference Include="YoutubeDLSharp" Version="1.0.0-beta2" />
     </ItemGroup>
 
 </Project>
