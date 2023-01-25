@@ -6,6 +6,9 @@ You can run the program with ``dotnet run -- <arguments>``, compile an executabl
 
 # NuGet Packages
 ```
+CliWrap
+Microsoft.AspNetCore.StaticFiles
+Pastel
 System.CommandLine
 Xabe.FFmpeg
 YoutubeDLSharp
