@@ -1,5 +1,5 @@
 # dis
-**dis** is a command-line interface program engineered for compressing videos for Discord utilizing YT-DLP and FFmpeg. It empowers users with the capability to alter video specifications such as Resolution and Audio Bitrate.
+**dis** is a command-line interface program engineered for compressing videos for Discord utilizing YT-DLP and FFmpeg.
 
 ## Usage
 Compressing a video sourced from an online location (e.g: Discord Server, YouTube, Twitter, Reddit, etc...):
