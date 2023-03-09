@@ -28,7 +28,7 @@ try
 }
 catch (Exception)
 {
-    Console.Error.WriteLine($"{"FFmpeg is not installed".Pastel(ConsoleColor.Red)}");
+    Console.Error.WriteLine("FFmpeg is not installed".Pastel(ConsoleColor.Red));
     Environment.Exit(1);
 }
 try
@@ -40,11 +40,11 @@ try
 }
 catch (Exception)
 {
-    Console.Error.WriteLine($"{"yt-dlp is not installed".Pastel(ConsoleColor.Red)}");
+    Console.Error.WriteLine("yt-dlp is not installed".Pastel(ConsoleColor.Red));
     Environment.Exit(1);
 }
 
-var tempDir = Path.GetTempPath();
+var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()[..4]);
 
 string[] resolutionList =
 {
@@ -116,7 +116,7 @@ Option<string> inputOption =
         "A path to a video file or a link to a video");
 inputOption.AddValidator(validate =>
 {
-    var value = validate.GetValueOrDefault<string>();
+    var value = validate.GetValueOrDefault<string>()?.Trim();
     if (File.Exists(value) || Uri.IsWellFormedUriString(value, UriKind.Absolute))
         return;
     Console.Error.WriteLine("File does not exist".Pastel(ConsoleColor.Red));
@@ -132,7 +132,7 @@ outputOption.AddValidator(validate =>
     var outputValue = validate.GetValueOrDefault<string>();
     if (Directory.Exists(outputValue))
         return;
-    Console.Error.WriteLine($"{"Output directory does not exist".Pastel(ConsoleColor.Red)}");
+    Console.Error.WriteLine("Output directory does not exist".Pastel(ConsoleColor.Red));
     Environment.Exit(1);
 });
 
@@ -143,12 +143,12 @@ foreach (var key in validVideoCodesMap.Keys)
     videoCodecOption.AddCompletions(key);
 videoCodecOption.AddValidator(validate =>
 {
-    var videoCodecValue = validate.GetValueOrDefault<string>();
+    var videoCodecValue = validate.GetValueOrDefault<string>()?.Trim();
     if (videoCodecValue is null)
         return;
     if (validVideoCodesMap.ContainsKey(videoCodecValue))
         return;
-    Console.Error.WriteLine($"{"Invalid video codec".Pastel(ConsoleColor.Red)}");
+    Console.Error.WriteLine("Invalid video codec".Pastel(ConsoleColor.Red));
     Environment.Exit(1);
 });
 
@@ -161,7 +161,7 @@ crfInput.AddValidator(validate =>
     var crfValue = validate.GetValueOrDefault<int>();
     if (crfValue is >= 0 and <= 63)
         return;
-    Console.Error.WriteLine($"{"CRF value must be between 0 and 63 (Avoid values below 20)".Pastel(ConsoleColor.Red)}");
+    Console.Error.WriteLine("CRF value must be between 0 and 63 (Avoid values below 20)".Pastel(ConsoleColor.Red));
     Environment.Exit(1);
 });
 
@@ -171,13 +171,13 @@ Option<string> resolutionOption =
 resolutionOption.AddCompletions(resolutionList);
 resolutionOption.AddValidator(validate =>
 {
-    var resolutionValue = validate.GetValueOrDefault<string>();
+    var resolutionValue = validate.GetValueOrDefault<string>()?.Trim();
     if (resolutionValue is null)
         return;
     if (resolutionList.Contains(resolutionValue))
         return;
 
-    Console.Error.WriteLine($"{"Invalid resolution".Pastel(ConsoleColor.Red)}");
+    Console.Error.WriteLine("Invalid resolution".Pastel(ConsoleColor.Red));
     Environment.Exit(1);
 });
 
@@ -192,7 +192,7 @@ audioBitrateInput.AddValidator(validate =>
         return;
     if (audioBitrateValue > 0)
         return;
-    Console.Error.WriteLine($"{"Invalid audio bitrate".Pastel(ConsoleColor.Red)}");
+    Console.Error.WriteLine("Invalid audio bitrate".Pastel(ConsoleColor.Red));
     Environment.Exit(1);
 });
 
@@ -221,26 +221,26 @@ rootCommand.SetHandler(Handler);
 
 await rootCommand.InvokeAsync(args);
 
-async Task Handler(InvocationContext invocationContext)
+async Task Handler(InvocationContext context)
 {
-    var input = invocationContext.ParseResult.GetValueForOption(inputOption);
+    var input = context.ParseResult.GetValueForOption(inputOption);
     var isLink = Uri.IsWellFormedUriString(input, UriKind.Absolute);
-    var output = invocationContext.ParseResult.GetValueForOption(outputOption)!;
-    var resolution = invocationContext.ParseResult.GetValueForOption(resolutionOption);
+    var output = context.ParseResult.GetValueForOption(outputOption)!;
+    var resolution = context.ParseResult.GetValueForOption(resolutionOption);
 
-    var crf = invocationContext.ParseResult.GetValueForOption(crfInput)!;
-    var audioBitrate = invocationContext.ParseResult.GetValueForOption(audioBitrateInput)!;
+    var crf = context.ParseResult.GetValueForOption(crfInput)!;
+    var audioBitrate = context.ParseResult.GetValueForOption(audioBitrateInput)!;
 
-    var randomFileName = invocationContext.ParseResult.GetValueForOption(randomFilenameOption);
-    var keepWaterMark = invocationContext.ParseResult.GetValueForOption(keepWatermarkOption);
-    var sponsorBlock = invocationContext.ParseResult.GetValueForOption(sponsorBlockOption);
-    var videoCodecValue = invocationContext.ParseResult.GetValueForOption(videoCodecOption);
+    var randomFileName = context.ParseResult.GetValueForOption(randomFilenameOption);
+    var keepWaterMark = context.ParseResult.GetValueForOption(keepWatermarkOption);
+    var sponsorBlock = context.ParseResult.GetValueForOption(sponsorBlockOption);
+    var videoCodecValue = context.ParseResult.GetValueForOption(videoCodecOption);
 
     youtubeDl.OutputFolder = output;
 
     if (input is null)
     {
-        Console.Error.WriteLine($"{"You must provide either a file or a link".Pastel(ConsoleColor.Red)}");
+        Console.Error.WriteLine("You must provide either a file or a link".Pastel(ConsoleColor.Red));
         return;
     }
 
@@ -258,32 +258,37 @@ async Task Handler(InvocationContext invocationContext)
             break;
         // if it's an url
         case true:
-        {
-            var runResult = await DownloadTask(input, keepWaterMark, sponsorBlock);
-            if (!runResult.Item1)
-                return;
-
-            var videoPath = Directory.GetFiles(tempDir,
-                    $"{runResult.videoId}*", SearchOption.TopDirectoryOnly)
-                .FirstOrDefault(x => new FileExtensionContentTypeProvider()
-                                         .TryGetContentType(x, out var contentType) &&
-                                     contentType.StartsWith("video"));
-            if (videoPath is null)
             {
-                Console.Error.WriteLine($"{"There was an error downloading the video".Pastel(ConsoleColor.Red)}");
-                return;
-            }
+                var runResult = await DownloadTask(input, keepWaterMark, sponsorBlock);
+                if (!runResult.Item1)
+                    return;
 
-            await ConvertVideo(videoPath,
-                resolution,
-                randomFileName,
-                output,
-                crf,
-                audioBitrate,
-                videoCodecValue);
-            File.Delete(videoPath);
-            break;
-        }
+                // get all files in tempDir of content type video using FileExtensionContentTypeProvider
+                FileExtensionContentTypeProvider provider = new();
+                var videoPath = Directory.GetFiles(tempDir)
+                    .Where(file => provider.TryGetContentType(file, out var contentType)
+                                   && contentType.StartsWith("video"))
+                    .ToArray();
+
+                if (videoPath.FirstOrDefault() is null)
+                {
+                    Console.Error.WriteLine("There was an error downloading the video".Pastel(ConsoleColor.Red));
+                    return;
+                }
+
+                foreach (var path in videoPath)
+                {
+                    await ConvertVideo(path,
+                        resolution,
+                        randomFileName,
+                        output,
+                        crf,
+                        audioBitrate,
+                        videoCodecValue);
+                }
+                Directory.Delete(tempDir, true);
+                break;
+            }
     }
 }
 
@@ -312,31 +317,43 @@ async Task<(bool, string? videoId)> DownloadTask(string url, bool keepWaterMarkV
      * Previously you could've download TikTok videos without water mark just by using the "download_addr-2".
      * But now TikTok has changed the format id to "h264_540p_randomNumber-0" so we need to get the random number
      */
-    var tikTokValue = videoInfo.Data.Formats
-        .Where(format => !string.IsNullOrEmpty(format.FormatId) && format.FormatId.Contains("h264_540p_"))
-        .Select(format => format.FormatId.Split('_').Last().Split('-').First())
-        .FirstOrDefault();
 
-    var videoDownload = url switch
+    bool videoDownload;
+    if (url.Contains("tiktok") && keepWaterMarkValue)
     {
-        _ when url.Contains("tiktok.com") && keepWaterMarkValue => await youtubeDl.RunVideoDownload(url,
+        var tikTokValue = videoInfo.Data.Formats
+            .Where(format => !string.IsNullOrEmpty(format.FormatId) && format.FormatId.Contains("h264_540p_"))
+            .Select(format => format.FormatId.Split('_').Last().Split('-').First())
+            .FirstOrDefault();
+
+        await youtubeDl.RunVideoDownload(url,
             progress: progress,
             overrideOptions: new YoutubeDLSharp.Options.OptionSet
             {
                 Format = $"h264_540p_{tikTokValue}-0"
-            }),
-        _ when url.Contains("youtu") && sponsorBlockValue => await youtubeDl.RunVideoDownload(url,
+            });
+        videoDownload = true;
+    }
+    else if (url.Contains("youtu") && sponsorBlockValue)
+    {
+        await youtubeDl.RunVideoDownload(url,
             progress: progress,
             overrideOptions: new YoutubeDLSharp.Options.OptionSet
             {
                 SponsorblockRemove = "all"
-            }),
-        _ => await youtubeDl.RunVideoDownload(url, progress: progress)
-    };
+            });
+        videoDownload = true;
+    }
+    else
+    {
+        await youtubeDl.RunVideoDownload(url, progress: progress);
+        videoDownload = true;
+    }
+
     // New line after the progress bar
     Console.WriteLine();
 
-    if (videoDownload.Success)
+    if (videoDownload)
         return (true, videoId);
 
     Console.Error.WriteLine($"{"There was an error downloading the video".Pastel(ConsoleColor.Red)}");
@@ -365,7 +382,7 @@ async Task ConvertVideo(string videoFilePath,
     if (generateRandomFileName)
         outputFileName = $"{uuid}{Path.GetExtension(compressedVideoPath)}";
 
-    if (File.Exists(compressedVideoPath))
+    if (File.Exists(Path.Combine(outputDirectory, outputFileName)))
         outputFileName = $"{Path.GetFileNameWithoutExtension(outputFileName)}-{uuid}{Path.GetExtension(compressedVideoPath)}";
 
     var outputFilePath = Path.Combine(outputDirectory, outputFileName);
@@ -406,7 +423,7 @@ async Task ConvertVideo(string videoFilePath,
     FFmpegProgressBar(conversion);
     conversion.SetOutput(outputFilePath);
     await conversion.Start();
-    Console.WriteLine($"\nDone!\nConverted video saved at: {outputFilePath.Pastel(ConsoleColor.Green)}");
+    Console.WriteLine($"\nDone!\nConverted video saved at: {outputFilePath.Pastel("#8A2BE2")}");
 }
 
 string ReplaceVideoExtension(string videoPath, VideoCodec videoCodec)
@@ -422,7 +439,7 @@ string ReplaceVideoExtension(string videoPath, VideoCodec videoCodec)
     return Path.ChangeExtension(videoPath, extension);
 }
 
-void SetResolution(IVideoStream videoStream, string? resolution)
+void SetResolution(IVideoStream videoStream, string resolution)
 {
     double originalWidth = videoStream.Width;
     double originalHeight = videoStream.Height;
@@ -454,9 +471,24 @@ void AddOptimizedFilter(IConversion conversion, IVideoStream videoStream, VideoC
     switch (videoCodec)
     {
         case VideoCodec.av1:
-            conversion.AddParameter(string.Join(" ", av1Args));
-            conversion.AddParameter(videoStream.Framerate > 60 ? "-cpu-used 6" : "-cpu-used 4");
-            break;
+            {
+                conversion.AddParameter(string.Join(" ", av1Args));
+                {
+                    switch (videoStream.Framerate)
+                    {
+                        case < 24:
+                            conversion.AddParameter("-cpu-used 2");
+                            break;
+                        case > 60:
+                            conversion.AddParameter("-cpu-used 6");
+                            break;
+                        case > 30 and < 60:
+                            conversion.AddParameter("-cpu-used 4");
+                            break;
+                    }
+                    break;
+                }
+            }
         case VideoCodec.vp9:
             conversion.AddParameter(string.Join(" ", vp9Args));
             break;
@@ -468,8 +500,8 @@ void FFmpegProgressBar(IConversion conversion)
 {
     conversion.OnProgress += (_, args) =>
     {
-        const string startHex = "#05c880";
-        const string endHex = "#02422a";
+        const string startHex = "#FFC0CB";
+        const string endHex = "#8A2BE2";
         var percent = args.Duration.TotalSeconds / args.TotalLength.TotalSeconds;
         var eta = args.TotalLength - args.Duration;
         var progress = (int)Math.Round(percent * 100);
@@ -484,7 +516,7 @@ void FFmpegProgressBar(IConversion conversion)
             else
                 progressString.Append('░');
         }
-        Console.Write($"\rProgress: {progressString} {progress}% | ETA: {eta:hh\\:mm\\:ss}\t");
+        Console.Write($"\rProgress: {progressString} {progress}% | ETA: {eta:hh\\:mm\\:ss}");
     };
 }
 
