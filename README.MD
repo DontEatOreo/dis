@@ -17,7 +17,7 @@ dis -i https://youtu.be/xxxxxxx -vc h265 -a opus -r 720p -ab 128 -c 20
 
 # Requirements
 - [FFmpeg](https://ffmpeg.org/download.html)
-- [YT-DLP](https://https://github.com/yt-dlp/yt-dlp)
+- [YT-DLP](https://github.com/yt-dlp/yt-dlp)
 
 ## Notes
 - The Constant Rate Factor (CRF) is a video compression method that grants users control over the output video's quality, with higher values resulting in lower quality and vice versa. It is recommended to avoid values below 20 or above 60.
