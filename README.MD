@@ -1,5 +1,5 @@
 # dis
-**dis** is a command-line interface program engineered for compressing videos for Discord utilizing YT-DLP and FFmpeg.
+**dis** is a command-line interface program engineered for compressing videos for Discord and other similar platforms. utilizing YT-DLP and FFmpeg.
 
 ## Usage
 Compressing a video sourced from an online location (e.g: Discord Server, YouTube, Twitter, Reddit, etc...):
@@ -15,17 +15,11 @@ Compressing a video sourced from the internet and modifying its video codec to `
 dis -i https://youtu.be/xxxxxxx -vc h265 -a opus -r 720p -ab 128 -c 20
 ```
 
+# Requirements
+- [FFmpeg](https://ffmpeg.org/download.html)
+- [YT-DLP](https://https://github.com/yt-dlp/yt-dlp)
+
 ## Notes
 - The Constant Rate Factor (CRF) is a video compression method that grants users control over the output video's quality, with higher values resulting in lower quality and vice versa. It is recommended to avoid values below 20 or above 60.
 
 You can run the program with ``dotnet run -- <arguments>``, compile an executable file using [dotnet publish](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-publish) or download a compiled version from [Releases](https://github.com/DontEatOreo/dis/releases) Tab
-
-## NuGet Packages
-```
-CliWrap
-Microsoft.AspNetCore.StaticFiles
-Pastel
-System.CommandLine
-Xabe.FFmpeg
-YoutubeDLSharp
-```
