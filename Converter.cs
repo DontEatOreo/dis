@@ -1,3 +1,4 @@
+using Pastel;
 using Xabe.FFmpeg;
 using static dis.Globals;
 
@@ -32,13 +33,23 @@ public class Converter
 
         var outputFilePath = Path.Combine(outputDirectory, outputFileName);
 
+        Console.CancelKeyPress += (_, args) =>
+        {
+            if (args.SpecialKey is not ConsoleSpecialKey.ControlC)
+                return;
+            if (File.Exists(outputFilePath))
+                File.Delete(outputFilePath);
+            Directory.Delete(TempDir, true);
+            Console.WriteLine($"{Environment.NewLine}Canceled");
+        };
+
         var mediaInfo = await FFmpeg.GetMediaInfo(videoFilePath);
         var videoStream = mediaInfo.VideoStreams.FirstOrDefault();
         var audioStream = mediaInfo.AudioStreams.FirstOrDefault();
 
         if (videoStream is null && audioStream is null)
         {
-            Console.Error.WriteLine("There is no video or audio stream in the file");
+            await Console.Error.WriteLineAsync("There is no video or audio stream in the file".Pastel(ConsoleColor.Red));
             Environment.Exit(1);
         }
 
@@ -47,7 +58,7 @@ public class Converter
 
         var conversion = FFmpeg.Conversions.New()
             .SetPreset(ConversionPreset.VerySlow)
-            .SetPixelFormat(PixelFormat.yuv420p10le)
+            .SetPixelFormat(videoCodecEnum is VideoCodec.libx264 ? PixelFormat.yuv420p : PixelFormat.yuv420p10le)
             .AddParameter($"-crf {crf}");
 
         if (videoStream != null)
@@ -68,15 +79,7 @@ public class Converter
         Progress.FFmpegProgressBar(conversion);
         conversion.SetOutput(outputFilePath);
         await conversion.Start();
-        Console.CancelKeyPress += (_, args) =>
-        {
-            if (args.SpecialKey is not ConsoleSpecialKey.ControlC)
-                return;
-            File.Delete(outputFilePath);
-            File.Delete(videoFilePath);
-            Console.WriteLine("Canceled");
-        };
-        Console.WriteLine($"Converted video saved at: {outputFilePath}");
+        Console.WriteLine($"{Environment.NewLine}Converted video saved at: {outputFilePath}");
     }
 
     private static string ReplaceVideoExtension(string videoPath, VideoCodec videoCodec)
@@ -94,14 +97,14 @@ public class Converter
 
     private static void SetResolution(IVideoStream videoStream, string resolution)
     {
-        double originalWidth = videoStream.Width;
-        double originalHeight = videoStream.Height;
+        double width = videoStream.Width;
+        double height = videoStream.Height;
 
         // Parse the resolution input string (remove the "p" suffix)
         var resolutionInt = int.Parse(resolution[..^1]);
 
         // Calculate the aspect ratio of the input video
-        var aspectRatio = originalWidth / originalHeight;
+        var aspectRatio = width / height;
 
         // Calculate the output width and height based on the desired resolution and aspect ratio
         var outputWidth = (int)Math.Round(resolutionInt * aspectRatio);
@@ -111,38 +114,30 @@ public class Converter
         outputWidth -= outputWidth % 2;
         outputHeight -= outputHeight % 2;
 
-        // Set the output size
         videoStream.SetSize(outputWidth, outputHeight);
     }
 
 
     private static void AddOptimizedFilter(IConversion conversion, IVideoStream videoStream, VideoCodec videoCodec)
     {
-        switch (videoCodec)
+        if (videoCodec is VideoCodec.av1)
         {
-            case VideoCodec.av1:
+            conversion.AddParameter(string.Join(" ", Av1Args));
+            switch (videoStream.Framerate)
             {
-                conversion.AddParameter(string.Join(" ", Av1Args));
-                {
-                    switch (videoStream.Framerate)
-                    {
-                        case < 24:
-                            conversion.AddParameter("-cpu-used 2");
-                            break;
-                        case > 60:
-                            conversion.AddParameter("-cpu-used 6");
-                            break;
-                        case > 30 and < 60:
-                            conversion.AddParameter("-cpu-used 4");
-                            break;
-                    }
+                case < 24:
+                    conversion.AddParameter("-cpu-used 2");
                     break;
-                }
+                case > 60:
+                    conversion.AddParameter("-cpu-used 6");
+                    break;
+                case > 30 and < 60:
+                    conversion.AddParameter("-cpu-used 4");
+                    break;
             }
-            case VideoCodec.vp9:
-                conversion.AddParameter(string.Join(" ", Vp9Args));
-                break;
         }
+        if (videoCodec is VideoCodec.vp9)
+            conversion.AddParameter(string.Join(" ", Vp9Args));
         videoStream.SetCodec(videoCodec);
     }
 }

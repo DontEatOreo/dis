@@ -9,9 +9,14 @@ public class Progress
     {
         if (p.Progress is 0)
             return;
+
+        // Clear the previous progress message
+        Console.Write($"\r{new string(' ', Console.WindowWidth - 1)}\r");
+
+        // Write the new progress message
         Console.Write(p.DownloadSpeed != null
-            ? $"\rDownload Progress: {p.Progress:P2} | Download speed: {p.DownloadSpeed}\t"
-            : $"\rDownload Progress: {p.Progress:P2}\t");
+            ? $"Download Progress: {p.Progress:P2} | Download speed: {p.DownloadSpeed}"
+            : $"Download Progress: {p.Progress:P2}");
     });
 
     public static void FFmpegProgressBar(IConversion conversion)
@@ -21,7 +26,12 @@ public class Progress
             var percent = (int)Math.Round(args.Duration.TotalSeconds / args.TotalLength.TotalSeconds * 100);
             if (percent is 0)
                 return;
-            Console.Write($"\rProgress: {percent}%");
+
+            // Clear the previous progress message
+            Console.Write("\r" + new string(' ', Console.WindowWidth - 1) + "\r");
+
+            // Write the new progress message
+            Console.Write($"Progress: {args.Duration.TotalSeconds / args.TotalLength.TotalSeconds:P2}");
         };
     }
 }

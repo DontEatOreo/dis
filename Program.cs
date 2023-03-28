@@ -44,16 +44,26 @@ Option<bool> sponsorBlockOption =
         "Remove the sponsorblock from the video");
 keepWatermarkOption.SetDefaultValue(false);
 
-Option<string> inputOption =
+Option<string[]> inputOption =
     new(new[] { "-i", "--input", "-f", "--file" },
-        "A path to a video file or a link to a video");
+        "A path to a video file or a link to a video")
+    { AllowMultipleArgumentsPerToken = true };
 inputOption.AddValidator(validate =>
 {
-    var value = validate.GetValueOrDefault<string>()?.Trim();
-    if (File.Exists(value) || Uri.IsWellFormedUriString(value, UriKind.Absolute))
-        return;
-    Console.Error.WriteLine("File does not exist".Pastel(ConsoleColor.Red));
-    Environment.Exit(1);
+    var value = validate.GetValueOrDefault<string[]>();
+    if (value is null)
+    {
+        Console.Error.WriteLine("No input file or link was provided".Pastel(ConsoleColor.Red));
+        Environment.Exit(1);
+    }
+
+    foreach (var item in value)
+    {
+        if (File.Exists(item) || Uri.IsWellFormedUriString(item, UriKind.RelativeOrAbsolute))
+            continue;
+        Console.Error.WriteLine("Invalid input file or link".Pastel(ConsoleColor.Red));
+        Environment.Exit(1);
+    }
 });
 
 Option<string> outputOption =
@@ -157,9 +167,7 @@ await rootCommand.InvokeAsync(args);
 
 async Task Handler(InvocationContext context)
 {
-    var input = context.ParseResult.GetValueForOption(inputOption);
-    var isLink = Uri.IsWellFormedUriString(input, UriKind.Absolute);
-    var output = context.ParseResult.GetValueForOption(outputOption)!;
+    var videoUrls = context.ParseResult.GetValueForOption(inputOption)!;
     var resolution = context.ParseResult.GetValueForOption(resolutionOption);
 
     var crf = context.ParseResult.GetValueForOption(crfInput)!;
@@ -168,60 +176,51 @@ async Task Handler(InvocationContext context)
     var randomFileName = context.ParseResult.GetValueForOption(randomFilenameOption);
     var keepWaterMark = context.ParseResult.GetValueForOption(keepWatermarkOption);
     var sponsorBlock = context.ParseResult.GetValueForOption(sponsorBlockOption);
-    var videoCodecValue = context.ParseResult.GetValueForOption(videoCodecOption);
 
+    var videoCodec = context.ParseResult.GetValueForOption(videoCodecOption);
+    var output = context.ParseResult.GetValueForOption(outputOption)!;
     YoutubeDl.OutputFolder = output;
 
-    if (input is null)
+    var links = videoUrls.Where(video => Uri.IsWellFormedUriString(video, UriKind.RelativeOrAbsolute) && !File.Exists(video)).ToList();
+    var files = videoUrls.Where(File.Exists).ToList();
+
+    ParallelOptions parallelOptions = new() { MaxDegreeOfParallelism = Environment.ProcessorCount };
+
+    await Parallel.ForEachAsync(links, parallelOptions, async (uri, _) =>
     {
-        Console.Error.WriteLine("You must provide either a file or a link".Pastel(ConsoleColor.Red));
+        var (isDownloaded, _) = await Downloader.DownloadTask(uri, keepWaterMark, sponsorBlock).ConfigureAwait(false);
+        if (!isDownloaded)
+            Console.Error.WriteLine($"Failed to download: {uri}".Pastel(ConsoleColor.Red));
+    }).ConfigureAwait(false);
+
+    FileExtensionContentTypeProvider provider = new();
+
+    var videoPaths = Directory.GetFiles(TempDir)
+        .Where(file => provider.TryGetContentType(file, out var contentType)
+                       && contentType.StartsWith("video"))
+        .ToArray();
+
+    if (videoPaths.FirstOrDefault() is null)
+    {
+        Console.Error.WriteLine("There was an error downloading the video".Pastel(ConsoleColor.Red));
         return;
     }
 
-    switch (isLink)
+    try
     {
-        // If it's a local file
-        case false:
-            await Converter.ConvertVideo(input,
+        foreach (var path in files.Concat(videoPaths))
+        {
+            await Converter.ConvertVideo(path,
                 resolution,
                 randomFileName,
                 output,
                 crf,
                 audioBitrate,
-                videoCodecValue);
-            break;
-        // if it's an url
-        case true:
-            {
-                var runResult = await Downloader.DownloadTask(input, keepWaterMark, sponsorBlock);
-                if (!runResult.Item1)
-                    return;
-
-                // get all files in tempDir of content type video using FileExtensionContentTypeProvider
-                FileExtensionContentTypeProvider provider = new();
-                var videoPath = Directory.GetFiles(TempDir)
-                    .Where(file => provider.TryGetContentType(file, out var contentType)
-                                   && contentType.StartsWith("video"))
-                    .ToArray();
-
-                if (videoPath.FirstOrDefault() is null)
-                {
-                    Console.Error.WriteLine("There was an error downloading the video".Pastel(ConsoleColor.Red));
-                    return;
-                }
-
-                foreach (var path in videoPath)
-                {
-                    await Converter.ConvertVideo(path,
-                        resolution,
-                        randomFileName,
-                        output,
-                        crf,
-                        audioBitrate,
-                        videoCodecValue);
-                }
-                Directory.Delete(TempDir, true);
-                break;
-            }
+                videoCodec).ConfigureAwait(false);
+        }
+    }
+    finally
+    {
+        Directory.Delete(TempDir, true);
     }
 }

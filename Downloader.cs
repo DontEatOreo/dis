@@ -7,7 +7,7 @@ namespace dis;
 
 public class Downloader
 {
-    public static async Task<(bool, string? videoId)> DownloadTask(string url,
+    public static async ValueTask<(bool, string? videoId)> DownloadTask(string url,
         bool keepWaterMarkValue,
         bool sponsorBlockValue)
     {
@@ -16,7 +16,7 @@ public class Downloader
         RunResult<VideoData> videoInfo = await YoutubeDl.RunVideoDataFetch(url);
         if (!videoInfo.Success)
         {
-            Console.Error.WriteLine("Failed to fetch video data".Pastel(ConsoleColor.Red));
+            await Console.Error.WriteLineAsync("Failed to fetch video data".Pastel(ConsoleColor.Red));
             return (false, null);
         }
 
@@ -25,7 +25,7 @@ public class Downloader
         var isLive = videoInfo.Data.IsLive ?? false;
         if (isLive)
         {
-            Console.Error.WriteLine("Live streams are not supported".Pastel(ConsoleColor.Red));
+            await Console.Error.WriteLineAsync("Live streams are not supported".Pastel(ConsoleColor.Red));
             return (false, null);
         }
 

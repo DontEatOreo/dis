@@ -17,6 +17,10 @@ public class Globals
 
     public static readonly string TempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()[..4]);
 
+    #endregion
+
+    #region Lists
+
     public static readonly string[] ResolutionList =
     {
         "144p",
@@ -27,6 +31,25 @@ public class Globals
         "1080p",
         "1440p",
         "2160p"
+    };
+
+    public static readonly string[] Av1Args = {
+        "-lag-in-frames 48",
+        "-row-mt 1",
+        "-tile-rows 0",
+        "-tile-columns 1"
+    };
+
+    public static readonly string[] Vp9Args = {
+        "-row-mt 1",
+        "-lag-in-frames 25",
+        "-cpu-used 4",
+        "-auto-alt-ref 1",
+        "-arnr-maxframes 7",
+        "-arnr-strength 4",
+        "-aq-mode 0",
+        "-enable-tpl 1",
+        "-row-mt 1",
     };
 
     public static readonly Dictionary<string, VideoCodec> ValidVideoCodesMap = new()
@@ -51,25 +74,6 @@ public class Globals
         ("webm", VideoCodec.vp8),
         ("webm", VideoCodec.vp9),
         ("webm", VideoCodec.av1)
-    };
-
-    public static readonly string[] Av1Args = {
-        "-lag-in-frames 48",
-        "-row-mt 1",
-        "-tile-rows 0",
-        "-tile-columns 1"
-    };
-
-    public static readonly string[] Vp9Args = {
-        "-row-mt 1",
-        "-lag-in-frames 25",
-        "-cpu-used 4",
-        "-auto-alt-ref 1",
-        "-arnr-maxframes 7",
-        "-arnr-strength 4",
-        "-aq-mode 0",
-        "-enable-tpl 1",
-        "-row-mt 1",
     };
 
     #endregion
