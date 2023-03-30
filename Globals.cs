@@ -5,7 +5,7 @@ namespace dis;
 
 public class Globals
 {
-    public static readonly YoutubeDL YoutubeDl = new()
+    public readonly YoutubeDL YoutubeDl = new()
     {
         FFmpegPath = "ffmpeg",
         YoutubeDLPath = "yt-dlp",
@@ -13,15 +13,11 @@ public class Globals
         OverwriteFiles = false
     };
 
-    #region Strings
-
-    public static readonly string TempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()[..4]);
-
-    #endregion
+    public readonly string TempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()[..4]);
 
     #region Lists
 
-    public static readonly string[] ResolutionList =
+    public readonly string[] ResolutionList =
     {
         "144p",
         "240p",
@@ -33,14 +29,14 @@ public class Globals
         "2160p"
     };
 
-    public static readonly string[] Av1Args = {
+    public readonly string[] Av1Args = {
         "-lag-in-frames 48",
         "-row-mt 1",
         "-tile-rows 0",
         "-tile-columns 1"
     };
 
-    public static readonly string[] Vp9Args = {
+    public readonly string[] Vp9Args = {
         "-row-mt 1",
         "-lag-in-frames 25",
         "-cpu-used 4",
@@ -52,7 +48,7 @@ public class Globals
         "-row-mt 1",
     };
 
-    public static readonly Dictionary<string, VideoCodec> ValidVideoCodesMap = new()
+    public readonly Dictionary<string, VideoCodec> ValidVideoCodesMap = new()
     {
         { "h264", VideoCodec.libx264},
         { "libx264", VideoCodec.libx264},
@@ -67,7 +63,7 @@ public class Globals
         { "libaom-av1", VideoCodec.av1}
     };
 
-    public static readonly List<(string, VideoCodec)> ValidVideoExtensionsMap = new()
+    public readonly List<(string, VideoCodec)> ValidVideoExtensionsMap = new()
     {
         ("mp4", VideoCodec.libx264),
         ("mp4", VideoCodec.hevc),

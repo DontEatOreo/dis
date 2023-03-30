@@ -5,7 +5,7 @@ namespace dis;
 
 public class Progress
 {
-    public static readonly Progress<DownloadProgress> YtDlProgress = new(p =>
+    public readonly Progress<DownloadProgress> YtDlProgress = new(p =>
     {
         if (p.Progress is 0)
             return;
@@ -19,7 +19,7 @@ public class Progress
             : $"Download Progress: {p.Progress:P2}");
     });
 
-    public static void FFmpegProgressBar(IConversion conversion)
+    public void ProgressBar(IConversion conversion)
     {
         conversion.OnProgress += (_, args) =>
         {

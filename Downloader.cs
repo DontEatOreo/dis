@@ -1,19 +1,35 @@
 using Pastel;
 using YoutubeDLSharp;
 using YoutubeDLSharp.Metadata;
-using static dis.Globals;
+using YoutubeDLSharp.Options;
 
 namespace dis;
 
 public class Downloader
 {
-    public static async ValueTask<(bool, string? videoId)> DownloadTask(string url,
+    #region Constructor
+
+    private readonly Globals _globals;
+
+    private readonly Progress _progress;
+
+    public Downloader(Globals globals, Progress progress)
+    {
+        _globals = globals;
+        _progress = progress;
+    }
+
+    #endregion
+
+    #region Methods
+
+    public async ValueTask<(bool, string? videoId)> DownloadTask(string url,
         bool keepWaterMarkValue,
         bool sponsorBlockValue)
     {
-        YoutubeDl.OutputFolder = TempDir; // Set the output folder to the temp directory
+        _globals.YoutubeDl.OutputFolder = _globals.TempDir; // Set the output folder to the temp directory
 
-        RunResult<VideoData> videoInfo = await YoutubeDl.RunVideoDataFetch(url);
+        RunResult<VideoData> videoInfo = await _globals.YoutubeDl.RunVideoDataFetch(url);
         if (!videoInfo.Success)
         {
             await Console.Error.WriteLineAsync("Failed to fetch video data".Pastel(ConsoleColor.Red));
@@ -42,9 +58,9 @@ public class Downloader
                 .Select(format => format.FormatId.Split('_').Last().Split('-').First())
                 .FirstOrDefault();
 
-            await YoutubeDl.RunVideoDownload(url,
-                progress: Progress.YtDlProgress,
-                overrideOptions: new YoutubeDLSharp.Options.OptionSet
+            await _globals.YoutubeDl.RunVideoDownload(url,
+                progress: _progress.YtDlProgress,
+                overrideOptions: new OptionSet
                 {
                     Format = $"h264_540p_{tikTokValue}-0"
                 });
@@ -52,9 +68,9 @@ public class Downloader
         }
         else if (url.Contains("youtu") && sponsorBlockValue)
         {
-            await YoutubeDl.RunVideoDownload(url,
-                progress: Progress.YtDlProgress,
-                overrideOptions: new YoutubeDLSharp.Options.OptionSet
+            await _globals.YoutubeDl.RunVideoDownload(url,
+                progress: _progress.YtDlProgress,
+                overrideOptions: new OptionSet
                 {
                     SponsorblockRemove = "all"
                 });
@@ -62,7 +78,7 @@ public class Downloader
         }
         else
         {
-            var runDownload = await YoutubeDl.RunVideoDownload(url, progress: Progress.YtDlProgress);
+            var runDownload = await _globals.YoutubeDl.RunVideoDownload(url, progress: _progress.YtDlProgress);
             videoDownload = runDownload.Success;
         }
 
@@ -84,4 +100,6 @@ public class Downloader
         await Console.Error.WriteLineAsync($"{"There was an error downloading the video".Pastel(ConsoleColor.Red)}");
         return (false, null);
     }
+
+    #endregion
 }

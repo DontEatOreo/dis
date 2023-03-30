@@ -1,12 +1,27 @@
 using Pastel;
 using Xabe.FFmpeg;
-using static dis.Globals;
 
 namespace dis;
 
 public class Converter
 {
-    public static async Task ConvertVideo(string videoFilePath,
+    #region Constructor
+
+    private readonly Globals _globals;
+
+    private readonly Progress _progress;
+
+    public Converter(Globals globals, Progress progress)
+    {
+        _globals = globals;
+        _progress = progress;
+    }
+
+    #endregion
+
+    #region Methods
+
+    public async Task ConvertVideo(string videoFilePath,
         string? resolution,
         bool generateRandomFileName,
         string outputDirectory,
@@ -14,12 +29,12 @@ public class Converter
         int audioBitRate,
         string? videoCodec)
     {
-        if (!ResolutionList.Contains(resolution))
+        if (!_globals.ResolutionList.Contains(resolution))
             resolution = null;
 
         var videoCodecEnum = videoCodec is null
             ? VideoCodec.libx264
-            : ValidVideoCodesMap[videoCodec];
+            : _globals.ValidVideoCodesMap[videoCodec];
 
         var compressedVideoPath = ReplaceVideoExtension(videoFilePath, videoCodecEnum);
 
@@ -39,7 +54,7 @@ public class Converter
                 return;
             if (File.Exists(outputFilePath))
                 File.Delete(outputFilePath);
-            Directory.Delete(TempDir, true);
+            Directory.Delete(_globals.TempDir, true);
             Console.WriteLine($"{Environment.NewLine}Canceled");
         };
 
@@ -76,16 +91,16 @@ public class Converter
             conversion.AddStream(audioStream);
         }
 
-        Progress.FFmpegProgressBar(conversion);
+        _progress.ProgressBar(conversion);
         conversion.SetOutput(outputFilePath);
         await conversion.Start();
         Console.WriteLine($"{Environment.NewLine}Converted video saved at: {outputFilePath}");
     }
 
-    private static string ReplaceVideoExtension(string videoPath, VideoCodec videoCodec)
+    private string ReplaceVideoExtension(string videoPath, VideoCodec videoCodec)
     {
         var extension = string.Empty;
-        foreach (var item in ValidVideoExtensionsMap
+        foreach (var item in _globals.ValidVideoExtensionsMap
                      .Where(item => item.Item2 == videoCodec))
         {
             extension = item.Item1;
@@ -118,11 +133,11 @@ public class Converter
     }
 
 
-    private static void AddOptimizedFilter(IConversion conversion, IVideoStream videoStream, VideoCodec videoCodec)
+    private void AddOptimizedFilter(IConversion conversion, IVideoStream videoStream, VideoCodec videoCodec)
     {
         if (videoCodec is VideoCodec.av1)
         {
-            conversion.AddParameter(string.Join(" ", Av1Args));
+            conversion.AddParameter(string.Join(" ", _globals.Av1Args));
             switch (videoStream.Framerate)
             {
                 case < 24:
@@ -137,7 +152,9 @@ public class Converter
             }
         }
         if (videoCodec is VideoCodec.vp9)
-            conversion.AddParameter(string.Join(" ", Vp9Args));
+            conversion.AddParameter(string.Join(" ", _globals.Vp9Args));
         videoStream.SetCodec(videoCodec);
     }
+
+    #endregion
 }
