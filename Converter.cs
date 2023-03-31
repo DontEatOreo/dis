@@ -58,13 +58,13 @@ public class Converter
             Console.WriteLine($"{Environment.NewLine}Canceled");
         };
 
-        var mediaInfo = await FFmpeg.GetMediaInfo(videoFilePath);
+        var mediaInfo = await FFmpeg.GetMediaInfo(videoFilePath).ConfigureAwait(false);
         var videoStream = mediaInfo.VideoStreams.FirstOrDefault();
         var audioStream = mediaInfo.AudioStreams.FirstOrDefault();
 
         if (videoStream is null && audioStream is null)
         {
-            await Console.Error.WriteLineAsync("There is no video or audio stream in the file".Pastel(ConsoleColor.Red));
+            await Console.Error.WriteLineAsync("There is no video or audio stream in the file".Pastel(ConsoleColor.Red)).ConfigureAwait(false);
             Environment.Exit(1);
         }
 
@@ -93,7 +93,7 @@ public class Converter
 
         _progress.ProgressBar(conversion);
         conversion.SetOutput(outputFilePath);
-        await conversion.Start();
+        await conversion.Start().ConfigureAwait(false);
         Console.WriteLine($"{Environment.NewLine}Converted video saved at: {outputFilePath}");
     }
 

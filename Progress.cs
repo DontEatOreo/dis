@@ -14,7 +14,7 @@ public class Progress
         Console.Write($"\r{new string(' ', Console.WindowWidth - 1)}\r");
 
         // Write the new progress message
-        Console.Write(p.DownloadSpeed != null
+        Console.Write(p.DownloadSpeed is not null
             ? $"Download Progress: {p.Progress:P2} | Download speed: {p.DownloadSpeed}"
             : $"Download Progress: {p.Progress:P2}");
     });
