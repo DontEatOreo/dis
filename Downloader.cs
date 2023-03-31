@@ -29,10 +29,11 @@ public class Downloader
     {
         _globals.YoutubeDl.OutputFolder = _globals.TempDir; // Set the output folder to the temp directory
 
-        RunResult<VideoData> videoInfo = await _globals.YoutubeDl.RunVideoDataFetch(url);
+        RunResult<VideoData> videoInfo = await _globals.YoutubeDl.RunVideoDataFetch(url).ConfigureAwait(false);
         if (!videoInfo.Success)
         {
-            await Console.Error.WriteLineAsync("Failed to fetch video data".Pastel(ConsoleColor.Red));
+            await Console.Error.WriteLineAsync("Failed to fetch video data".Pastel(ConsoleColor.Red))
+                .ConfigureAwait(false);
             return (false, null);
         }
 
@@ -41,7 +42,7 @@ public class Downloader
         var isLive = videoInfo.Data.IsLive ?? false;
         if (isLive)
         {
-            await Console.Error.WriteLineAsync("Live streams are not supported".Pastel(ConsoleColor.Red));
+            await Console.Error.WriteLineAsync("Live streams are not supported".Pastel(ConsoleColor.Red)).ConfigureAwait(false);
             return (false, null);
         }
 
@@ -58,46 +59,61 @@ public class Downloader
                 .Select(format => format.FormatId.Split('_').Last().Split('-').First())
                 .FirstOrDefault();
 
-            await _globals.YoutubeDl.RunVideoDownload(url,
+            var runVideoDownload = await _globals.YoutubeDl.RunVideoDownload(url,
                 progress: _progress.YtDlProgress,
                 overrideOptions: new OptionSet
                 {
                     Format = $"h264_540p_{tikTokValue}-0"
-                });
-            videoDownload = true;
+                }).ConfigureAwait(false);
+            videoDownload = runVideoDownload.Success;
         }
         else if (url.Contains("youtu") && sponsorBlockValue)
         {
-            await _globals.YoutubeDl.RunVideoDownload(url,
+            var runDownload =
+                await _globals.YoutubeDl.RunVideoDownload(url,
                 progress: _progress.YtDlProgress,
                 overrideOptions: new OptionSet
                 {
                     SponsorblockRemove = "all"
-                });
-            videoDownload = true;
+                }).ConfigureAwait(false);
+            videoDownload = runDownload.Success;
+        }
+        else if (url.Contains("reddit"))
+        {
+            var runDownload = await _globals.YoutubeDl.RunVideoDownload(url,
+                    progress: _progress.YtDlProgress)
+                .ConfigureAwait(false);
+
+            var videoPath = Directory.GetFiles(_globals.TempDir).FirstOrDefault();
+            if (videoPath is null)
+                return default;
+            var extension = Path.GetExtension(videoPath);
+
+            var slashIndex = url.IndexOf("/comments/", StringComparison.Ordinal); // Get the index of the first slash
+            var endIndex =
+                url.IndexOf("/", slashIndex + 10, StringComparison.Ordinal); // Get the index of the second slash
+            videoId = url[(slashIndex + 10)..endIndex]; // Get the video id
+
+            File.Move(videoPath, Path.Combine(_globals.TempDir, $"{videoId}{extension}")); // Rename the file
+
+            videoDownload = runDownload.Success;
         }
         else
         {
-            var runDownload = await _globals.YoutubeDl.RunVideoDownload(url, progress: _progress.YtDlProgress);
+            var runDownload = await _globals.YoutubeDl.RunVideoDownload(url,
+                    progress: _progress.YtDlProgress)
+                .ConfigureAwait(false);
             videoDownload = runDownload.Success;
         }
 
         // New line after the progress bar
         Console.WriteLine();
 
-        // Use reddit post id instead of video id that way you can know from which post the video was downloaded
-        if (url.Contains("reddit"))
-        {
-            var slashIndex = url.IndexOf("/comments/", StringComparison.Ordinal); // Get the index of the first slash
-            var endIndex =
-                url.IndexOf("/", slashIndex + 10, StringComparison.Ordinal); // Get the index of the second slash
-            videoId = url[(slashIndex + 10)..endIndex]; // Get the video id
-        }
-
         if (videoDownload)
             return (true, videoId);
 
-        await Console.Error.WriteLineAsync($"{"There was an error downloading the video".Pastel(ConsoleColor.Red)}");
+        await Console.Error.WriteLineAsync($"{"There was an error downloading the video".Pastel(ConsoleColor.Red)}")
+            .ConfigureAwait(false);
         return (false, null);
     }
 
