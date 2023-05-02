@@ -11,12 +11,8 @@
     <ItemGroup>
       <PackageReference Include="Microsoft.AspNetCore.Hosting.Abstractions" Version="2.2.0" />
       <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
-      <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0-preview.2.23128.3" />
-      <PackageReference Include="Pastel" Version="4.1.0" />
+      <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0-preview.3.23174.8" />
       <PackageReference Include="Serilog.AspNetCore" Version="6.1.1-dev-00295" />
-      <PackageReference Include="Serilog.Extensions.Logging" Version="3.1.1-dev-10338" />
-      <PackageReference Include="Serilog.Sinks.Console" Version="4.1.1-dev-00910" />
-      <PackageReference Include="Serilog.Sinks.File" Version="5.0.1-dev-00947" />
       <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
       <PackageReference Include="Xabe.FFmpeg" Version="5.2.6" />
       <PackageReference Include="YoutubeDLSharp" Version="1.0.0-beta6" />
