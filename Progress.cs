@@ -10,13 +10,10 @@ public class Progress
         if (p.Progress is 0)
             return;
 
-        // Clear the previous progress message
-        Console.Write($"\r{new string(' ', Console.WindowWidth - 1)}\r");
-
         // Write the new progress message
         Console.Write(p.DownloadSpeed is not null
-            ? $"Download Progress: {p.Progress:P2} | Download speed: {p.DownloadSpeed}"
-            : $"Download Progress: {p.Progress:P2}");
+            ? $"\rDownload Progress: {p.Progress:P2} | Download speed: {p.DownloadSpeed}"
+            : $"\rDownload Progress: {p.Progress:P2}");
     });
 
     public void ProgressBar(IConversion conversion)
@@ -27,11 +24,8 @@ public class Progress
             if (percent is 0)
                 return;
 
-            // Clear the previous progress message
-            Console.Write("\r" + new string(' ', Console.WindowWidth - 1) + "\r");
-
             // Write the new progress message
-            Console.Write($"Progress: {args.Duration.TotalSeconds / args.TotalLength.TotalSeconds:P2}");
+            Console.Write($"\rProgress: {args.Duration.TotalSeconds / args.TotalLength.TotalSeconds:P2}");
         };
     }
 }
