@@ -30,7 +30,7 @@ var services = serviceScope.ServiceProvider;
 try
 {
     var commandLineApp = services.GetRequiredService<CommandLineApp>();
-    await commandLineApp.Run(args).ConfigureAwait(false);
+    await commandLineApp.Run(args);
 }
 catch (Exception ex)
 {

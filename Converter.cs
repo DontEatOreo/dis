@@ -1,4 +1,4 @@
-using Pastel;
+using Serilog;
 using Xabe.FFmpeg;
 
 namespace dis;
@@ -11,10 +11,13 @@ public class Converter
 
     private readonly Progress _progress;
 
-    public Converter(Globals globals, Progress progress)
+    private readonly ILogger _logger;
+
+    public Converter(Globals globals, Progress progress, ILogger logger)
     {
         _globals = globals;
         _progress = progress;
+        _logger = logger;
     }
 
     #endregion
@@ -64,7 +67,7 @@ public class Converter
 
         if (videoStream is null && audioStream is null)
         {
-            await Console.Error.WriteLineAsync("There is no video or audio stream in the file".Pastel(ConsoleColor.Red)).ConfigureAwait(false);
+            _logger.Error("There is no video or audio stream in the file");
             Environment.Exit(1);
         }
 
@@ -94,7 +97,7 @@ public class Converter
         _progress.ProgressBar(conversion);
         conversion.SetOutput(outputFilePath);
         await conversion.Start().ConfigureAwait(false);
-        Console.WriteLine($"{Environment.NewLine}Converted video saved at: {outputFilePath}");
+        _logger.Information("Converted video saved at: {OutputFilePath}", outputFilePath);
     }
 
     private string ReplaceVideoExtension(string videoPath, VideoCodec videoCodec)

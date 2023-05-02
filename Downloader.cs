@@ -1,4 +1,3 @@
-using Pastel;
 using YoutubeDLSharp;
 using YoutubeDLSharp.Metadata;
 using YoutubeDLSharp.Options;
@@ -7,19 +6,22 @@ namespace dis;
 
 public class Downloader
 {
-    #region Constructor
+    #region Ctor
 
     private readonly Globals _globals;
 
     private readonly Progress _progress;
 
-    public Downloader(Globals globals, Progress progress)
+    private readonly Serilog.ILogger _logger;
+
+    public Downloader(Globals globals, Progress progress, Serilog.ILogger logger)
     {
         _globals = globals;
         _progress = progress;
+        _logger = logger;
     }
 
-    #endregion
+    #endregion Ctor
 
     #region Methods
 
@@ -32,17 +34,17 @@ public class Downloader
         RunResult<VideoData> videoInfo = await _globals.YoutubeDl.RunVideoDataFetch(url).ConfigureAwait(false);
         if (!videoInfo.Success)
         {
-            await Console.Error.WriteLineAsync("Failed to fetch video data".Pastel(ConsoleColor.Red))
-                .ConfigureAwait(false);
+            _logger.Error("Failed to fetch video data");
             return (false, null);
         }
 
         var videoId = videoInfo.Data.ID;
 
         var isLive = videoInfo.Data.IsLive ?? false;
+        url = videoInfo.Data.WebpageUrl;
         if (isLive)
         {
-            await Console.Error.WriteLineAsync("Live streams are not supported".Pastel(ConsoleColor.Red)).ConfigureAwait(false);
+            _logger.Error("Live streams are not supported");
             return (false, null);
         }
 
@@ -64,7 +66,7 @@ public class Downloader
                 overrideOptions: new OptionSet
                 {
                     Format = $"h264_540p_{tikTokValue}-0"
-                }).ConfigureAwait(false);
+                });
             videoDownload = runVideoDownload.Success;
         }
         else if (url.Contains("youtu") && sponsorBlockValue)
@@ -75,14 +77,13 @@ public class Downloader
                 overrideOptions: new OptionSet
                 {
                     SponsorblockRemove = "all"
-                }).ConfigureAwait(false);
+                });
             videoDownload = runDownload.Success;
         }
         else if (url.Contains("reddit"))
         {
             var runDownload = await _globals.YoutubeDl.RunVideoDownload(url,
-                    progress: _progress.YtDlProgress)
-                .ConfigureAwait(false);
+                    progress: _progress.YtDlProgress);
 
             var videoPath = Directory.GetFiles(_globals.TempDir).FirstOrDefault();
             if (videoPath is null)
@@ -101,8 +102,7 @@ public class Downloader
         else
         {
             var runDownload = await _globals.YoutubeDl.RunVideoDownload(url,
-                    progress: _progress.YtDlProgress)
-                .ConfigureAwait(false);
+                    progress: _progress.YtDlProgress);
             videoDownload = runDownload.Success;
         }
 
@@ -112,8 +112,7 @@ public class Downloader
         if (videoDownload)
             return (true, videoId);
 
-        await Console.Error.WriteLineAsync($"{"There was an error downloading the video".Pastel(ConsoleColor.Red)}")
-            .ConfigureAwait(false);
+        _logger.Error("There was an error downloading the video");
         return (false, null);
     }
 

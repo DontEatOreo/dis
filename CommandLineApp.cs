@@ -51,7 +51,7 @@ public class CommandLineApp
         Option<string[]> inputOption =
             new(new[] { "-i", "--input", "-f", "--file" },
                     "A path to a video file or a link to a video")
-                { AllowMultipleArgumentsPerToken = true, IsRequired = true };
+            { AllowMultipleArgumentsPerToken = true, IsRequired = true };
         inputOption.AddValidator(validate =>
         {
             var value = validate.GetValueOrDefault<string[]>();
