@@ -1,9 +1,10 @@
+using System.CommandLine;
 using Xabe.FFmpeg;
 using YoutubeDLSharp;
 
 namespace dis;
 
-public class Globals
+public sealed class Globals
 {
     public readonly YoutubeDL YoutubeDl = new()
     {
@@ -13,9 +14,9 @@ public class Globals
         OverwriteFiles = false
     };
 
-    public readonly string TempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()[..4]);
+    public readonly string TempOutputDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()[..4]);
 
-    #region Lists
+    #region Arrays
 
     public readonly string[] ResolutionList =
     {
@@ -48,6 +49,10 @@ public class Globals
         "-row-mt 1",
     };
 
+    #endregion Arrays
+
+    #region Dictionaries
+
     public readonly Dictionary<string, VideoCodec> ValidVideoCodesMap = new()
     {
         { "h264", VideoCodec.libx264},
@@ -72,5 +77,53 @@ public class Globals
         ("webm", VideoCodec.av1)
     };
 
-    #endregion
+    #endregion Dictionaries
 }
+
+#region Structs
+
+public struct RunOptions
+{
+    public Option<string[]> Inputs { get; init; }
+    public Option<string> Output { get; init; }
+    public Option<string>? Resolution { get; init; }
+    public Option<string>? VideoCodec { get; init; }
+    public Option Crf { get; init; }
+    public Option AudioBitrate { get; init; }
+    public Option<bool>? RandomFilename { get; set; }
+    public Option<bool>? KeepWatermark { get; set; }
+    public Option<bool>? SponsorBlock { get; set; }
+}
+
+
+public struct ParsedOptions
+{
+    public string[] Inputs { get; init; }
+    public string? Resolution { get; init; }
+    public string? VideoCodec { get; init; }
+    public string Output { get; init; }
+    public int? Crf { get; init; }
+    public int? AudioBitrate { get; init; }
+    public bool RandomFileName { get; set; }
+    public bool KeepWatermark { get; set; }
+    public bool SponsorBlock { get; set; }
+}
+
+public struct VideoSettings
+{
+    public string? Resolution { get; set; }
+    public bool GenerateRandomFileName { get; init; }
+    public string OutputDirectory { get; init; }
+    public int Crf { get; init; }
+    public int AudioBitRate { get; init; }
+    public string? VideoCodec { get; set; }
+}
+
+public readonly struct DownloadOptions
+{
+    public string Url { get; init; }
+    public bool KeepWatermark { get; init; }
+    public bool SponsorBlock { get; init; }
+}
+
+#endregion Structs

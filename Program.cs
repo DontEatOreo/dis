@@ -1,8 +1,9 @@
 ﻿using dis;
+using dis.CommandLineApp;
+using dis.CommandLineApp.Downloaders;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Serilog;
 
 var host = Host.CreateDefaultBuilder()
@@ -11,9 +12,11 @@ var host = Host.CreateDefaultBuilder()
         services.AddSingleton<Globals>();
         services.AddSingleton<FileExtensionContentTypeProvider>();
         services.AddSingleton<CommandLineApp>();
-        services.AddSingleton<Progress>();
-        services.AddSingleton<Converter>();
-        services.AddSingleton<Downloader>();
+        services.AddSingleton<CommandLineOptions>();
+
+        services.AddTransient<Progress>();
+        services.AddTransient<Converter>();
+        services.AddTransient<Downloader>();
     })
     .UseSerilog((hostingContext, loggerConfiguration) =>
     {
@@ -34,6 +37,6 @@ try
 }
 catch (Exception ex)
 {
-    var logger = services.GetRequiredService<ILogger<Program>>();
-    logger.LogError(ex, "An error occurred while running the command line application");
+    var logger = services.GetRequiredService<ILogger>();
+    logger.Error(ex, "An error occurred while running the app");
 }

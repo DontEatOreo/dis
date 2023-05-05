@@ -3,104 +3,71 @@ using Xabe.FFmpeg;
 
 namespace dis;
 
-public class Converter
+/// <summary>
+/// Converts videos with specified settings.
+/// </summary>
+public sealed class Converter
 {
-    #region Constructor
-
     private readonly Globals _globals;
-
     private readonly Progress _progress;
-
     private readonly ILogger _logger;
 
-    public Converter(Globals globals, Progress progress, ILogger logger)
+    /// <summary>
+    /// Initializes a new instance of the Converter class.
+    /// </summary>
+    /// <param name="logger">The logger used for logging.</param>
+    /// <param name="globals">The globals used for configuration.</param>
+    /// <param name="progress">The progress tracker.</param>
+    public Converter(ILogger logger, Globals globals, Progress progress)
     {
+        _logger = logger;
         _globals = globals;
         _progress = progress;
-        _logger = logger;
     }
 
-    #endregion
-
-    #region Methods
-
-    public async Task ConvertVideo(string videoFilePath,
-        string? resolution,
-        bool generateRandomFileName,
-        string outputDirectory,
-        int crf,
-        int audioBitRate,
-        string? videoCodec)
+    /// <summary>
+    /// Converts a video to a specified video settings.
+    /// </summary>
+    /// <param name="videoFilePath">The path to the video to convert.</param>
+    /// <param name="settings">The settings to use for the conversion.</param>
+    /// <returns>A task that represents the asynchronous conversion operation.</returns>
+    public async Task ConvertVideo(string videoFilePath, VideoSettings settings)
     {
-        if (!_globals.ResolutionList.Contains(resolution))
-            resolution = null;
-
-        var videoCodecEnum = videoCodec is null
+        var videoCodecEnum = settings.VideoCodec is null
             ? VideoCodec.libx264
-            : _globals.ValidVideoCodesMap[videoCodec];
+            : _globals.ValidVideoCodesMap[settings.VideoCodec];
 
-        var compressedVideoPath = ReplaceVideoExtension(videoFilePath, videoCodecEnum);
+        if (!_globals.ResolutionList.Contains(settings.Resolution))
+            settings.Resolution = null;
 
-        var uuid = Guid.NewGuid().ToString()[..4];
-        var outputFileName = Path.GetFileName(compressedVideoPath);
-        if (generateRandomFileName)
-            outputFileName = $"{uuid}{Path.GetExtension(compressedVideoPath)}";
+        var compressedVideoPath = GetCompressedVideoPath(videoFilePath, videoCodecEnum);
+        var outputFilePath = ConstructFilePath(settings, compressedVideoPath);
 
-        if (File.Exists(Path.Combine(outputDirectory, outputFileName)))
-            outputFileName = $"{Path.GetFileNameWithoutExtension(outputFileName)}-{uuid}{Path.GetExtension(compressedVideoPath)}";
+        HandleCancellation(outputFilePath);
 
-        var outputFilePath = Path.Combine(outputDirectory, outputFileName);
+        var mediaInfo = await FFmpeg.GetMediaInfo(videoFilePath);
 
-        Console.CancelKeyPress += (_, args) =>
-        {
-            if (args.SpecialKey is not ConsoleSpecialKey.ControlC)
-                return;
-            if (File.Exists(outputFilePath))
-                File.Delete(outputFilePath);
-            Directory.Delete(_globals.TempDir, true);
-            Console.WriteLine($"{Environment.NewLine}Canceled");
-        };
-
-        var mediaInfo = await FFmpeg.GetMediaInfo(videoFilePath).ConfigureAwait(false);
         var videoStream = mediaInfo.VideoStreams.FirstOrDefault();
         var audioStream = mediaInfo.AudioStreams.FirstOrDefault();
 
-        if (videoStream is null && audioStream is null)
+        if (videoStream is null || audioStream is null)
         {
             _logger.Error("There is no video or audio stream in the file");
-            Environment.Exit(1);
+            return;
         }
 
-        if (videoStream != null && resolution != null)
-            SetResolution(videoStream, resolution);
+        if (settings.Resolution != null)
+            SetRes(videoStream, settings.Resolution);
 
-        var conversion = FFmpeg.Conversions.New()
-            .SetPreset(ConversionPreset.VerySlow)
-            .SetPixelFormat(videoCodecEnum is VideoCodec.libx264 ? PixelFormat.yuv420p : PixelFormat.yuv420p10le)
-            .AddParameter($"-crf {crf}");
-
-        if (videoStream != null)
-        {
-            AddOptimizedFilter(conversion, videoStream, videoCodecEnum);
-            conversion.AddStream(videoStream);
-        }
-
-        if (audioStream != null)
-        {
-            audioStream.SetBitrate(audioBitRate);
-            audioStream.SetCodec(videoCodecEnum is VideoCodec.vp8 or VideoCodec.vp9 or VideoCodec.av1
-                ? AudioCodec.libopus
-                : AudioCodec.aac);
-            conversion.AddStream(audioStream);
-        }
+        var conversion = ConfigureConversion(settings, videoStream, audioStream);
 
         _progress.ProgressBar(conversion);
         conversion.SetOutput(outputFilePath);
-        await conversion.Start().ConfigureAwait(false);
+        await conversion.Start();
         _logger.Information("Converted video saved at: {OutputFilePath}", outputFilePath);
     }
 
-    private string ReplaceVideoExtension(string videoPath, VideoCodec videoCodec)
+    private string GetCompressedVideoPath(string videoPath, VideoCodec videoCodec)
     {
         var extension = string.Empty;
         foreach (var item in _globals.ValidVideoExtensionsMap
@@ -113,51 +80,99 @@ public class Converter
         return Path.ChangeExtension(videoPath, extension);
     }
 
-    private static void SetResolution(IVideoStream videoStream, string resolution)
+    private static string ConstructFilePath(VideoSettings settings, string compressedVideoPath)
     {
-        double width = videoStream.Width;
-        double height = videoStream.Height;
+        var uuid = Guid.NewGuid().ToString()[..4];
+        var outputFileName = Path.GetFileName(compressedVideoPath);
+        if (settings.GenerateRandomFileName)
+            outputFileName = $"{uuid}{Path.GetExtension(compressedVideoPath)}";
 
-        // Parse the resolution input string (remove the "p" suffix)
-        var resolutionInt = int.Parse(resolution[..^1]);
+        var outputFilePath = Path.Combine(settings.OutputDirectory, outputFileName);
 
-        // Calculate the aspect ratio of the input video
-        var aspectRatio = width / height;
+        if (File.Exists(outputFilePath))
+            outputFileName = $"{Path.GetFileNameWithoutExtension(outputFileName)}-{uuid}{Path.GetExtension(compressedVideoPath)}";
 
-        // Calculate the output width and height based on the desired resolution and aspect ratio
-        var outputWidth = (int)Math.Round(resolutionInt * aspectRatio);
-        var outputHeight = resolutionInt;
-
-        // Round the output width and height to even numbers
-        outputWidth -= outputWidth % 2;
-        outputHeight -= outputHeight % 2;
-
-        videoStream.SetSize(outputWidth, outputHeight);
+        return Path.Combine(settings.OutputDirectory, outputFileName);
     }
 
+    private void HandleCancellation(string outputFilePath)
+    {
+        Console.CancelKeyPress += (_, args) =>
+        {
+            if (args.SpecialKey is not ConsoleSpecialKey.ControlC)
+                return;
+            if (File.Exists(outputFilePath))
+                File.Delete(outputFilePath);
+            Directory.Delete(_globals.TempOutputDir, true);
+            _logger.Information("{NewLine}Canceled", Environment.NewLine);
+        };
+    }
+
+    private static void SetRes(IVideoStream stream, string res)
+    {
+        double width = stream.Width;
+        double height = stream.Height;
+        var resInt = int.Parse(res[..^1]);
+        var aspectRatio = width / height;
+        var outputWidth = (int)Math.Round(resInt * aspectRatio);
+        var outputHeight = resInt;
+        outputWidth -= outputWidth % 2;
+        outputHeight -= outputHeight % 2;
+        stream.SetSize(outputWidth, outputHeight);
+    }
+
+    private IConversion ConfigureConversion(VideoSettings settings, IVideoStream? videoStream, IAudioStream? audioStream)
+    {
+        var videoCodecEnum = settings.VideoCodec is null
+            ? VideoCodec.libx264
+            : _globals.ValidVideoCodesMap[settings.VideoCodec];
+
+        var conversion = FFmpeg.Conversions.New()
+            .SetPreset(ConversionPreset.VerySlow)
+            .SetPixelFormat(videoCodecEnum is VideoCodec.libx264 ? PixelFormat.yuv420p : PixelFormat.yuv420p10le)
+            .AddParameter($"-crf {settings.Crf}");
+
+        if (videoStream != null)
+        {
+            AddOptimizedFilter(conversion, videoStream, videoCodecEnum);
+            conversion.AddStream(videoStream);
+        }
+
+        if (audioStream != null)
+        {
+            audioStream.SetBitrate(settings.AudioBitRate);
+            audioStream.SetCodec(videoCodecEnum is VideoCodec.vp8 or VideoCodec.vp9 or VideoCodec.av1
+                ? AudioCodec.libopus
+                : AudioCodec.aac);
+            conversion.AddStream(audioStream);
+        }
+
+        return conversion;
+    }
 
     private void AddOptimizedFilter(IConversion conversion, IVideoStream videoStream, VideoCodec videoCodec)
     {
-        if (videoCodec is VideoCodec.av1)
+        switch (videoCodec)
         {
-            conversion.AddParameter(string.Join(" ", _globals.Av1Args));
-            switch (videoStream.Framerate)
-            {
-                case < 24:
-                    conversion.AddParameter("-cpu-used 2");
-                    break;
-                case > 60:
-                    conversion.AddParameter("-cpu-used 6");
-                    break;
-                case > 30 and < 60:
-                    conversion.AddParameter("-cpu-used 4");
-                    break;
-            }
+            case VideoCodec.av1:
+                conversion.AddParameter(string.Join(" ", _globals.Av1Args));
+                SetCpuUsedForAv1(conversion, videoStream.Framerate);
+                break;
+            case VideoCodec.vp9:
+                conversion.AddParameter(string.Join(" ", _globals.Vp9Args));
+                break;
         }
-        if (videoCodec is VideoCodec.vp9)
-            conversion.AddParameter(string.Join(" ", _globals.Vp9Args));
         videoStream.SetCodec(videoCodec);
     }
 
-    #endregion
+    private static void SetCpuUsedForAv1(IConversion conversion, double framerate)
+    {
+        var cpuUsedParameter = framerate switch
+        {
+            < 24 => "-cpu-used 2",
+            > 60 => "-cpu-used 6",
+            _ => "-cpu-used 4"
+        };
+        conversion.AddParameter(cpuUsedParameter);
+    }
 }
