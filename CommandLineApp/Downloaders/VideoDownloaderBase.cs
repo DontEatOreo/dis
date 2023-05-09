@@ -8,7 +8,7 @@ namespace dis.CommandLineApp.Downloaders;
 public abstract class VideoDownloaderBase : IVideoDownloader
 {
     protected readonly YoutubeDL YoutubeDl;
-    protected readonly string Url;
+    protected string Url;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="VideoDownloaderBase"/> class.

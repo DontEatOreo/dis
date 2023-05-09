@@ -25,6 +25,8 @@ public class RedditDownloader : VideoDownloaderBase
     public override async Task<(string path, bool)> Download(IProgress<DownloadProgress> progressCallback)
     {
         var runVideoDownload = await YoutubeDl.RunVideoDownload(Url, progress: progressCallback);
+        var runDataFetch = await YoutubeDl.RunVideoDataFetch(Url);
+        Url = runDataFetch.Data.WebpageUrl; // replace url with web page url
 
         var videoPath = Directory.GetFiles(YoutubeDl.OutputFolder).FirstOrDefault();
         if (videoPath is null)
