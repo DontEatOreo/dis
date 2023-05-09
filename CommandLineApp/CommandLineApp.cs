@@ -134,7 +134,6 @@ public sealed class CommandLineApp
             try
             {
                 await _converter.ConvertVideo(path, settings);
-                _logger.Information("Converted video: {Path}", path);
             }
             catch (Exception ex)
             {
