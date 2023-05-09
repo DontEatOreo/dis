@@ -72,7 +72,9 @@ public sealed class Converter
             : $"{fileSize / 1024.0 / 1024.0:0.00} MiB";
 
         Console.WriteLine(); // New line after progress bar
-        _logger.Information("Converted video saved at: {OutputFilePath} | File Size: {FileSize}", outputFilePath, fileSizeStr);
+        _logger.Information("Converted video saved at: {OutputFilePath} | Size: {FileSize}",
+            outputFilePath,
+            fileSizeStr);
     }
 
     private string GetCompressedVideoPath(string videoPath, VideoCodec videoCodec)
