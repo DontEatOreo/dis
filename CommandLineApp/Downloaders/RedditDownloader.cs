@@ -28,17 +28,14 @@ public class RedditDownloader : VideoDownloaderBase
         var runDataFetch = await YoutubeDl.RunVideoDataFetch(Url);
         Url = runDataFetch.Data.WebpageUrl; // replace url with web page url
 
-        var videoPath = Directory.GetFiles(YoutubeDl.OutputFolder).FirstOrDefault();
-        if (videoPath is null)
-        {
-            return default;
-        }
-
-        var extension = Path.GetExtension(videoPath);
-
         var slashIndex = Url.IndexOf("/comments/", StringComparison.Ordinal);
-        var endIndex = Url.IndexOf("/", slashIndex + 10, StringComparison.Ordinal);
-        var videoId = Url[(slashIndex + 10)..endIndex];
+        // https://www.reddit.com/r/subreddit/comments/xxxxxxx/title/
+        // We only parse for "xxxxxxx" which is the video id
+        var videoId = Url.Substring(slashIndex + 10, 7); // 12i9qr
+
+        var oldId = runDataFetch.Data.ID;
+        var videoPath = Directory.GetFiles(YoutubeDl.OutputFolder).FirstOrDefault(f => f.Contains(oldId))!;
+        var extension = Path.GetExtension(videoPath);
 
         File.Move(videoPath, Path.Combine(YoutubeDl.OutputFolder, $"{videoId}{extension}"));
         var path = Directory.GetFiles(YoutubeDl.OutputFolder).FirstOrDefault()!;
