@@ -15,7 +15,7 @@ public abstract class VideoDownloaderBase : IVideoDownloader
     /// </summary>
     /// <param name="youtubeDl">The YoutubeDL instance to use for downloading.</param>
     /// <param name="url">The URL of the video to download.</param>
-    public VideoDownloaderBase(YoutubeDL youtubeDl, string url)
+    protected VideoDownloaderBase(YoutubeDL youtubeDl, string url)
     {
         YoutubeDl = youtubeDl;
         Url = url;

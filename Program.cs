@@ -5,6 +5,10 @@ using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using Serilog.Expressions;
+using Serilog.Settings.Configuration;
+
+var options = new ConfigurationReaderOptions(typeof(ConsoleLoggerConfigurationExtensions).Assembly, typeof(SerilogExpression).Assembly);
 
 var host = Host.CreateDefaultBuilder()
     .ConfigureServices((_, services) =>
@@ -18,10 +22,10 @@ var host = Host.CreateDefaultBuilder()
         services.AddTransient<Converter>();
         services.AddTransient<Downloader>();
     })
-    .UseSerilog((hostingContext, loggerConfiguration) =>
+    .UseSerilog((context, configuration) =>
     {
-        loggerConfiguration
-            .ReadFrom.Configuration(hostingContext.Configuration)
+        configuration
+            .ReadFrom.Configuration(context.Configuration, options)
             .Enrich.FromLogContext()
             .WriteTo.Console();
     })
