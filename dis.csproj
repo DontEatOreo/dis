@@ -13,6 +13,7 @@
       <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
       <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0-preview.3.23174.8" />
       <PackageReference Include="Serilog.AspNetCore" Version="7.0.0-dev-00302" />
+      <PackageReference Include="Serilog.Expressions" Version="3.4.2-dev-00119" />
       <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
       <PackageReference Include="Xabe.FFmpeg" Version="5.2.6" />
       <PackageReference Include="YoutubeDLSharp" Version="1.0.0-beta6" />
