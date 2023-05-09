@@ -64,7 +64,15 @@ public sealed class Converter
         _progress.ProgressBar(conversion);
         conversion.SetOutput(outputFilePath);
         await conversion.Start();
-        _logger.Information("Converted video saved at: {OutputFilePath}", outputFilePath);
+
+        // Converts the file size to a string with the appropriate unit
+        var fileSize = new FileInfo(outputFilePath).Length;
+        var fileSizeStr = fileSize < 1024 * 1024
+            ? $"{fileSize / 1024.0:0.00} KiB"
+            : $"{fileSize / 1024.0 / 1024.0:0.00} MiB";
+
+        Console.WriteLine(); // New line after progress bar
+        _logger.Information("Converted video saved at: {OutputFilePath} | File Size: {FileSize}", outputFilePath, fileSizeStr);
     }
 
     private string GetCompressedVideoPath(string videoPath, VideoCodec videoCodec)
