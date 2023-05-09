@@ -90,7 +90,14 @@ public sealed class CommandLineApp
 
         Console.WriteLine(); // New Line after download success
         foreach (var path in videoPaths)
-            _logger.Information("Downloaded video to: {Path}", path);
+        {
+            // Converts the file size to a string with the appropriate unit
+            var fileSize = new FileInfo(path).Length;
+            var fileSizeStr = fileSize < 1024 * 1024
+                ? $"{fileSize / 1024.0:0.00} KiB"
+                : $"{fileSize / 1024.0 / 1024.0:0.00} MiB";
+            _logger.Information("Downloaded video to: {Path} | Size: {Size}", path, fileSizeStr);
+        }
 
         return Task.CompletedTask;
     }

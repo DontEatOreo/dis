@@ -8,7 +8,7 @@ using Serilog;
 using Serilog.Expressions;
 using Serilog.Settings.Configuration;
 
-var options = new ConfigurationReaderOptions(typeof(ConsoleLoggerConfigurationExtensions).Assembly, typeof(SerilogExpression).Assembly);
+ConfigurationReaderOptions options = new(typeof(ConsoleLoggerConfigurationExtensions).Assembly, typeof(SerilogExpression).Assembly);
 
 var host = Host.CreateDefaultBuilder()
     .ConfigureServices((_, services) =>
