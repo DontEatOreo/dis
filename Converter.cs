@@ -50,7 +50,7 @@ public sealed class Converter
         var videoStream = mediaInfo.VideoStreams.FirstOrDefault();
         var audioStream = mediaInfo.AudioStreams.FirstOrDefault();
 
-        if (videoStream is null || audioStream is null)
+        if (videoStream is null)
         {
             _logger.Error("There is no video or audio stream in the file");
             return;
