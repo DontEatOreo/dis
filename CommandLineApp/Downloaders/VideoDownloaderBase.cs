@@ -8,14 +8,14 @@ namespace dis.CommandLineApp.Downloaders;
 public abstract class VideoDownloaderBase : IVideoDownloader
 {
     protected readonly YoutubeDL YoutubeDl;
-    protected string Url;
+    protected readonly Uri Url;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="VideoDownloaderBase"/> class.
     /// </summary>
     /// <param name="youtubeDl">The YoutubeDL instance to use for downloading.</param>
     /// <param name="url">The URL of the video to download.</param>
-    protected VideoDownloaderBase(YoutubeDL youtubeDl, string url)
+    protected VideoDownloaderBase(YoutubeDL youtubeDl, Uri url)
     {
         YoutubeDl = youtubeDl;
         Url = url;
@@ -26,5 +26,5 @@ public abstract class VideoDownloaderBase : IVideoDownloader
     /// </summary>
     /// <param name="progressCallback">The progress callback for reporting the download progress.</param>
     /// <returns>A tuple containing the path of the downloaded video and a boolean indicating if the download was successful.</returns>
-    public abstract Task<(string path, bool)> Download(IProgress<DownloadProgress> progressCallback);
+    public abstract Task<string?> Download(IProgress<DownloadProgress> progressCallback);
 }

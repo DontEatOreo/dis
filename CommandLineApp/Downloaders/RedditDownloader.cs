@@ -12,34 +12,34 @@ public class RedditDownloader : VideoDownloaderBase
     /// </summary>
     /// <param name="youtubeDl">The YoutubeDL instance to use for downloading.</param>
     /// <param name="url">The URL of the Reddit video to download.</param>
-    public RedditDownloader(YoutubeDL youtubeDl, string url)
-        : base(youtubeDl, url)
-    {
-    }
+    public RedditDownloader(YoutubeDL youtubeDl, Uri url)
+        : base(youtubeDl, url) { }
 
     /// <summary>
     /// Downloads the Reddit video specified by the URL and returns the path of the downloaded video.
     /// </summary>
     /// <param name="progressCallback">The progress callback for reporting the download progress.</param>
     /// <returns>A tuple containing the path of the downloaded video and a boolean indicating if the download was successful.</returns>
-    public override async Task<(string path, bool)> Download(IProgress<DownloadProgress> progressCallback)
+    public override async Task<string?> Download(IProgress<DownloadProgress> progressCallback)
     {
-        var runVideoDownload = await YoutubeDl.RunVideoDownload(Url, progress: progressCallback);
-        var runDataFetch = await YoutubeDl.RunVideoDataFetch(Url);
-        Url = runDataFetch.Data.WebpageUrl; // replace url with web page url
+        var fetch = await YoutubeDl.RunVideoDataFetch(Url.ToString());
+        if (!fetch.Success)
+            return default;
 
-        var slashIndex = Url.IndexOf("/comments/", StringComparison.Ordinal);
+        await YoutubeDl.RunVideoDownload(Url.ToString(), progress: progressCallback);
+        Uri uri = new(fetch.Data.WebpageUrl); // Convert to Uri to get segments
+
         // https://www.reddit.com/r/subreddit/comments/xxxxxxx/title/
-        // We only parse for "xxxxxxx" which is the video id
-        var videoId = Url.Substring(slashIndex + 10, 7); // 12i9qr
+        var videoId = uri.Segments[4].TrimEnd('/');
 
-        var oldId = runDataFetch.Data.ID;
+        var oldId = fetch.Data.ID;
         var videoPath = Directory.GetFiles(YoutubeDl.OutputFolder).FirstOrDefault(f => f.Contains(oldId))!;
         var extension = Path.GetExtension(videoPath);
 
-        File.Move(videoPath, Path.Combine(YoutubeDl.OutputFolder, $"{videoId}{extension}"));
-        var path = Directory.GetFiles(YoutubeDl.OutputFolder).FirstOrDefault()!;
+        var destFile = Path.Combine(YoutubeDl.OutputFolder, $"{videoId}{extension}");
+        File.Move(videoPath, destFile);
+        var path = Directory.GetFiles(YoutubeDl.OutputFolder).FirstOrDefault();
 
-        return (path, runVideoDownload.Success);
+        return path;
     }
 }

@@ -16,7 +16,7 @@ public class YouTubeDownloader : VideoDownloaderBase
     /// <param name="youtubeDl">The YoutubeDL instance to use for downloading.</param>
     /// <param name="url">The URL of the YouTube video to download.</param>
     /// <param name="sponsorBlockValue">A boolean indicating whether to remove sponsored segments using SponsorBlock or not.</param>
-    public YouTubeDownloader(YoutubeDL youtubeDl, string url, bool sponsorBlockValue)
+    public YouTubeDownloader(YoutubeDL youtubeDl, Uri url, bool sponsorBlockValue)
         : base(youtubeDl, url)
     {
         _sponsorBlockValue = sponsorBlockValue;
@@ -27,16 +27,15 @@ public class YouTubeDownloader : VideoDownloaderBase
     /// </summary>
     /// <param name="progressCallback">The progress callback for reporting the download progress.</param>
     /// <returns>A tuple containing the path of the downloaded video and a boolean indicating if the download was successful.</returns>
-    public override async Task<(string path, bool)> Download(IProgress<DownloadProgress> progressCallback)
+    public override async Task<string?> Download(IProgress<DownloadProgress> progressCallback)
     {
-        var overrideOptions = _sponsorBlockValue ? new OptionSet { SponsorblockRemove = "all" } : null;
+        OptionSet sponsorOptions = new() { SponsorblockRemove = "all" };
+        var overrideOptions = _sponsorBlockValue ? sponsorOptions : null;
 
-        var runVideoDownload = await YoutubeDl.RunVideoDownload(Url,
-            progress: progressCallback,
-            overrideOptions: overrideOptions);
+        await YoutubeDl.RunVideoDownload(Url.ToString(), progress: progressCallback, overrideOptions: overrideOptions);
 
         var path = Directory.GetFiles(YoutubeDl.OutputFolder).FirstOrDefault()!;
 
-        return (path, runVideoDownload.Success);
+        return path;
     }
 }
