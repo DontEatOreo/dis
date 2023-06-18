@@ -12,5 +12,5 @@ public interface IVideoDownloader
     /// </summary>
     /// <param name="progressCallback">The progress callback for reporting the download progress.</param>
     /// <returns>A tuple containing the path of the downloaded video and a boolean indicating if the download was successful.</returns>
-    Task<(string path, bool)> Download(IProgress<DownloadProgress> progressCallback);
+    Task<string?> Download(IProgress<DownloadProgress> progressCallback);
 }
