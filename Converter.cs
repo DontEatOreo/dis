@@ -80,10 +80,12 @@ public sealed class Converter
     private string GetCompressedVideoPath(string videoPath, VideoCodec videoCodec)
     {
         var extension = string.Empty;
-        foreach (var item in _globals.ValidVideoExtensionsMap
-                     .Where(item => item.Item2 == videoCodec))
+        foreach (var item in _globals.VideoExtMap)
         {
-            extension = item.Item1;
+            if (!videoPath.EndsWith(item.Key))
+                continue;
+
+            extension = item.Key;
             break;
         }
 
@@ -93,14 +95,16 @@ public sealed class Converter
     private static string ConstructFilePath(VideoSettings settings, string compressedVideoPath)
     {
         var uuid = Guid.NewGuid().ToString()[..4];
-        var outputFileName = Path.GetFileName(compressedVideoPath);
+        var originalFileName = Path.GetFileName(compressedVideoPath);
+        var outputFilePath = Path.Combine(settings.OutputDirectory, originalFileName);
+        var originalFileExtension = Path.GetExtension(compressedVideoPath);
+
+        var outputFileName = File.Exists(outputFilePath)
+            ? $"{Path.GetFileNameWithoutExtension(originalFileName)}-{uuid}{originalFileExtension}"
+            : originalFileName;
+
         if (settings.GenerateRandomFileName)
-            outputFileName = $"{uuid}{Path.GetExtension(compressedVideoPath)}";
-
-        var outputFilePath = Path.Combine(settings.OutputDirectory, outputFileName);
-
-        if (File.Exists(outputFilePath))
-            outputFileName = $"{Path.GetFileNameWithoutExtension(outputFileName)}-{uuid}{Path.GetExtension(compressedVideoPath)}";
+            outputFileName = $"{uuid}{originalFileExtension}";
 
         return Path.Combine(settings.OutputDirectory, outputFileName);
     }
@@ -123,9 +127,11 @@ public sealed class Converter
         double width = stream.Width;
         double height = stream.Height;
         var resInt = int.Parse(res[..^1]);
+
         var aspectRatio = width / height;
         var outputWidth = (int)Math.Round(resInt * aspectRatio);
         var outputHeight = resInt;
+
         outputWidth -= outputWidth % 2;
         outputHeight -= outputHeight % 2;
         stream.SetSize(outputWidth, outputHeight);
@@ -139,7 +145,7 @@ public sealed class Converter
 
         var conversion = FFmpeg.Conversions.New()
             .SetPreset(ConversionPreset.VerySlow)
-            .SetPixelFormat(videoCodecEnum is VideoCodec.libx264 ? PixelFormat.yuv420p : PixelFormat.yuv420p10le)
+            .SetPixelFormat(PixelFormat.yuv420p)
             .AddParameter($"-crf {settings.Crf}");
 
         if (videoStream != null)
@@ -148,14 +154,14 @@ public sealed class Converter
             conversion.AddStream(videoStream);
         }
 
-        if (audioStream != null)
-        {
-            audioStream.SetBitrate(settings.AudioBitRate);
-            audioStream.SetCodec(videoCodecEnum is VideoCodec.vp8 or VideoCodec.vp9 or VideoCodec.av1
-                ? AudioCodec.libopus
-                : AudioCodec.aac);
-            conversion.AddStream(audioStream);
-        }
+        if (audioStream is null)
+            return conversion;
+
+        audioStream.SetBitrate(settings.AudioBitRate);
+        audioStream.SetCodec(videoCodecEnum is VideoCodec.vp8 or VideoCodec.vp9 or VideoCodec.av1
+            ? AudioCodec.libopus
+            : AudioCodec.aac);
+        conversion.AddStream(audioStream);
 
         return conversion;
     }
@@ -177,12 +183,17 @@ public sealed class Converter
 
     private static void SetCpuUsedForAv1(IConversion conversion, double framerate)
     {
+        const string twoCores = "-cpu-used 2";
+        const string fourCore = "-cpu-used 4";
+        const string sixCore = "-cpu-used 6";
+
         var cpuUsedParameter = framerate switch
         {
-            < 24 => "-cpu-used 2",
-            > 60 => "-cpu-used 6",
-            _ => "-cpu-used 4"
+            < 24 => twoCores,
+            > 60 => sixCore,
+            _ => fourCore
         };
+
         conversion.AddParameter(cpuUsedParameter);
     }
 }
