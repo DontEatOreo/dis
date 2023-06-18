@@ -43,6 +43,7 @@ public sealed class CommandLineApp
         var parsed = ParseOptions(context, o);
         var links = parsed.Inputs.Where(video =>
                 Uri.IsWellFormedUriString(video, UriKind.RelativeOrAbsolute) && !File.Exists(video))
+            .Select(video => new Uri(video))
             .ToList();
         var files = parsed.Inputs.Where(File.Exists).ToList();
 
@@ -59,7 +60,7 @@ public sealed class CommandLineApp
             Resolution = parsed.Resolution,
             GenerateRandomFileName = parsed.RandomFileName,
             OutputDirectory = parsed.Output,
-            Crf = (int)parsed.Crf!,
+            Crf = (int)parsed.Crf,
             AudioBitRate = (int)parsed.AudioBitrate!,
             VideoCodec = parsed.VideoCodec
         };
@@ -67,7 +68,7 @@ public sealed class CommandLineApp
         await ConvertVideosAsync(paths, settings);
     }
 
-    private Task DownloadVideosAsync(IReadOnlyCollection<string> links, List<string> videoPaths, ParallelOptions parallelOptions, ParsedOptions o)
+    private Task DownloadVideosAsync(IReadOnlyCollection<Uri> links, List<string> videoPaths, ParallelOptions parallelOptions, ParsedOptions o)
     {
         if (!links.Any())
             return Task.CompletedTask;
@@ -80,9 +81,9 @@ public sealed class CommandLineApp
                 KeepWatermark = o.KeepWatermark,
                 SponsorBlock = o.SponsorBlock
             };
-            var (path, success) = _downloader.DownloadTask(downloadOptions).GetAwaiter().GetResult();
+            var path = _downloader.DownloadTask(downloadOptions).GetAwaiter().GetResult();
 
-            if (!success)
+            if (path is null)
                 _logger.Error("Failed to download video: {Link}", link);
             else
                 videoPaths.Add(path);
@@ -104,14 +105,21 @@ public sealed class CommandLineApp
 
     private static ParsedOptions ParseOptions(InvocationContext context, RunOptions o)
     {
+        var inputs = context.ParseResult.GetValueForOption(o.Inputs);
+        var resolution = context.ParseResult.GetValueForOption(o.Resolution);
+        var videoCodec = context.ParseResult.GetValueForOption(o.VideoCodec);
+        var output = context.ParseResult.GetValueForOption(o.Output);
+        var crf = context.ParseResult.GetValueForOption(o.Crf);
+        var audioBitrate = context.ParseResult.GetValueForOption(o.AudioBitrate);
+
         ParsedOptions options = new()
         {
-            Inputs = context.ParseResult.GetValueForOption(o.Inputs)!,
-            Resolution = context.ParseResult.GetValueForOption(o.Resolution),
-            VideoCodec = context.ParseResult.GetValueForOption(o.VideoCodec),
-            Output = context.ParseResult.GetValueForOption(o.Output)!,
-            Crf = context.ParseResult.GetValueForOption(o.Crf) as int?,
-            AudioBitrate = context.ParseResult.GetValueForOption(o.AudioBitrate) as int?
+            Inputs = inputs,
+            Resolution = resolution,
+            VideoCodec = videoCodec,
+            Output = output,
+            Crf = crf,
+            AudioBitrate = audioBitrate,
         };
 
         if (o.RandomFilename is not null)

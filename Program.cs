@@ -8,7 +8,9 @@ using Serilog;
 using Serilog.Expressions;
 using Serilog.Settings.Configuration;
 
-ConfigurationReaderOptions options = new(typeof(ConsoleLoggerConfigurationExtensions).Assembly, typeof(SerilogExpression).Assembly);
+var consoleLoggerConfigExtension = typeof(ConsoleLoggerConfigurationExtensions).Assembly;
+var serilogExpression = typeof(SerilogExpression).Assembly;
+ConfigurationReaderOptions options = new (consoleLoggerConfigExtension, serilogExpression);
 
 var host = Host.CreateDefaultBuilder()
     .ConfigureServices((_, services) =>
@@ -42,5 +44,6 @@ try
 catch (Exception ex)
 {
     var logger = services.GetRequiredService<ILogger>();
-    logger.Error(ex, "An error occurred while running the app");
+    const string error = "An error occurred while running the app";
+    logger.Error(ex, error);
 }
