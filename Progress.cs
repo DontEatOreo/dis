@@ -11,9 +11,10 @@ public class Progress
             return;
 
         // Write the new progress message
-        Console.Write(p.DownloadSpeed is not null
-            ? $"\rDownload Progress: {p.Progress:P2} | Download speed: {p.DownloadSpeed}"
-            : $"\rDownload Progress: {p.Progress:P2}");
+        var downloadString = p.DownloadSpeed is not null
+            ? $"Download Progress: {p.Progress:P2} | Download speed: {p.DownloadSpeed}"
+            : $"Download Progress: {p.Progress:P2}";
+        Console.Write(downloadString);
     });
 
     public void ProgressBar(IConversion conversion)
@@ -25,7 +26,8 @@ public class Progress
                 return;
 
             // Write the new progress message
-            Console.Write($"\rProgress: {args.Duration.TotalSeconds / args.TotalLength.TotalSeconds:P2}");
+            var progressMessage = $"Progress: {args.Duration.TotalSeconds / args.TotalLength.TotalSeconds:P2}";
+            Console.Write($"\r{progressMessage}");
         };
     }
 }
