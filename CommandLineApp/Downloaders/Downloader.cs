@@ -35,20 +35,15 @@ public sealed class Downloader
     /// </summary>
     /// <param name="o">The download options.</param>
     /// <returns>A tuple containing the path of the downloaded video and a boolean indicating if the download was successful.</returns>
-    public async Task<(string path, bool)> DownloadTask(DownloadOptions o)
+    public async Task<string?> DownloadTask(DownloadOptions o)
     {
         _globals.YoutubeDl.OutputFolder = _globals.TempOutputDir; // Set the output folder to the temp directory
         Directory.CreateDirectory(_globals.TempOutputDir);
 
         var videoDownloader = CreateDownloader(o);
-        if (videoDownloader == null)
-        {
-            _logger.Error("Invalid URL");
-            return default;
-        }
 
         var videoDownload = await videoDownloader.Download(_progress.YtDlProgress);
-        if (videoDownload.Item2)
+        if (videoDownload is not null)
             return videoDownload;
 
         _logger.Error("There was an error downloading the video");
@@ -60,14 +55,14 @@ public sealed class Downloader
     /// </summary>
     /// <param name="o">The download options.</param>
     /// <returns>An instance of a video downloader for the supported platform, or null if the URL is invalid.</returns>
-    private IVideoDownloader? CreateDownloader(DownloadOptions o)
+    private IVideoDownloader CreateDownloader(DownloadOptions o)
     {
         return o.Url switch
         {
-            { } when o.Url.Contains("tiktok") => new TikTokDownloader(_globals.YoutubeDl, o.Url, o.KeepWatermark),
-            { } when o.Url.Contains("youtu") => new YouTubeDownloader(_globals.YoutubeDl, o.Url, o.SponsorBlock),
-            { } when o.Url.Contains("reddit") => new RedditDownloader(_globals.YoutubeDl, o.Url),
-            _ => null
+            not null when o.Url.Host.Contains("tiktok") => new TikTokDownloader(_globals.YoutubeDl, o.Url, o.KeepWatermark),
+            not null when o.Url.Host.Contains("youtu") => new YouTubeDownloader(_globals.YoutubeDl, o.Url, o.SponsorBlock),
+            not null when o.Url.Host.Contains("reddit") => new RedditDownloader(_globals.YoutubeDl, o.Url),
+            _ => new GenericDownloader(_globals.YoutubeDl, o.Url!)
         };
     }
 
