@@ -68,13 +68,10 @@ public sealed class Globals
         { "libaom-av1", VideoCodec.av1}
     };
 
-    public readonly List<(string, VideoCodec)> ValidVideoExtensionsMap = new()
+    public readonly Dictionary<string, List<VideoCodec>> VideoExtMap = new()
     {
-        ("mp4", VideoCodec.libx264),
-        ("mp4", VideoCodec.hevc),
-        ("webm", VideoCodec.vp8),
-        ("webm", VideoCodec.vp9),
-        ("webm", VideoCodec.av1)
+        { "mp4", new List<VideoCodec> { VideoCodec.libx264, VideoCodec.hevc } },
+        { "webm", new List<VideoCodec> { VideoCodec.vp8, VideoCodec.vp9, VideoCodec.av1 } }
     };
 
     #endregion Dictionaries
@@ -82,26 +79,26 @@ public sealed class Globals
 
 #region Structs
 
-public struct RunOptions
+public class RunOptions
 {
     public Option<string[]> Inputs { get; init; }
     public Option<string> Output { get; init; }
     public Option<string>? Resolution { get; init; }
     public Option<string>? VideoCodec { get; init; }
-    public Option Crf { get; init; }
-    public Option AudioBitrate { get; init; }
+    public Option<int> Crf { get; init; }
+    public Option<int> AudioBitrate { get; init; }
     public Option<bool>? RandomFilename { get; set; }
-    public Option<bool>? KeepWatermark { get; set; }
-    public Option<bool>? SponsorBlock { get; set; }
+    public Option<bool>? KeepWatermark { get; init; }
+    public Option<bool>? SponsorBlock { get; init; }
 }
 
 
-public struct ParsedOptions
+public class ParsedOptions
 {
-    public string[] Inputs { get; init; }
+    public string[] Inputs { get; init; } = null!;
     public string? Resolution { get; init; }
     public string? VideoCodec { get; init; }
-    public string Output { get; init; }
+    public string Output { get; init; } = null!;
     public int? Crf { get; init; }
     public int? AudioBitrate { get; init; }
     public bool RandomFileName { get; set; }
@@ -109,19 +106,19 @@ public struct ParsedOptions
     public bool SponsorBlock { get; set; }
 }
 
-public struct VideoSettings
+public class VideoSettings
 {
     public string? Resolution { get; set; }
     public bool GenerateRandomFileName { get; init; }
     public string OutputDirectory { get; init; }
     public int Crf { get; init; }
     public int AudioBitRate { get; init; }
-    public string? VideoCodec { get; set; }
+    public string? VideoCodec { get; init; }
 }
 
 public readonly struct DownloadOptions
 {
-    public string Url { get; init; }
+    public Uri Url { get; init; }
     public bool KeepWatermark { get; init; }
     public bool SponsorBlock { get; init; }
 }
