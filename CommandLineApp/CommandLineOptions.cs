@@ -24,48 +24,56 @@ public sealed class CommandLineOptions
         RootCommand rootCommand = new();
 
         #region Options
-        Option<bool> randomFileName =
-            new(new[] { "-rn", "-rd", "-rnd", "--random" }, "Randomize the filename");
+
+        const string randomDescription = "Randomize the filename";
+        string[] randomArr = { "-rn", "-rd", "-rnd", "--random" };
+        Option<bool> randomFileName = new(randomArr, randomDescription);
         randomFileName.SetDefaultValue(false);
 
-        Option<bool> keepWatermark =
-            new(new[] { "-k", "-kw", "-kwm", "--keep" }, "Keep the watermark");
+        string[] watermarkArr = { "-k", "-kw", "-kwm", "--keep" };
+        const string watermarkDescription = "Keep the watermark";
+        Option<bool> keepWatermark = new(watermarkArr, watermarkDescription);
         keepWatermark.SetDefaultValue(false);
 
-        Option<bool> sponsorBlock =
-            new(new[] { "-sb", "-sponsorblock", "--sponsorblock" }, "Remove the sponsorblock from the video");
+        string[] sponsorArr = { "-sb", "-sponsorblock", "--sponsorblock" };
+        const string sponsorDescription = "Remove the sponsorblock from the video";
+        Option<bool> sponsorBlock = new(sponsorArr, sponsorDescription);
         keepWatermark.SetDefaultValue(false);
 
-        Option<string[]> input =
-            new(new[] { "-i", "--input", "-f", "--file" },
-                    "A path to a video file or a link to a video")
-                { AllowMultipleArgumentsPerToken = true, IsRequired = true };
+        string[] inputArr = { "-i", "--input", "-f", "--file" };
+        const string inputDescription = "A path to a video file or a link to a video";
+        Option<string[]> input = new(inputArr, inputDescription)
+        {
+            AllowMultipleArgumentsPerToken = true,
+            IsRequired = true
+        };
         input.AddValidator(ValidateInputs);
 
-        Option<string> output =
-            new(new[] { "-o", "--output" },
-                "Directory to save the compressed video to\n");
+        string[] outputArr = { "-o", "--output" };
+        var outputDescription = $"Directory to save the compressed video to{Environment.NewLine}";
+        Option<string> output = new(outputArr, outputDescription);
         output.SetDefaultValue(Environment.CurrentDirectory);
         output.AddValidator(ValidateOutput);
 
-        Option<string> videoCodec =
-            new(new[] { "-vc", "--codec", "--video-codec" }, "Video codec");
+        string[] videoArr = { "-vc", "--codec", "--video-codec" };
+        Option<string> videoCodec = new(videoArr, "Video codec");
         foreach (var key in _globals.ValidVideoCodesMap.Keys)
             videoCodec.AddCompletions(key);
         videoCodec.AddValidator(ValidateVideoCodec);
 
-        Option<int> crf =
-            new(new[] { "-c", "--crf" }, "CRF value");
+        string[] crfArr = { "-c", "--crf" };
+        Option<int> crf = new(crfArr, "CRF value");
         crf.SetDefaultValue(29);
         crf.AddValidator(ValidateCrf);
 
-        Option<string> resolution =
-            new(new[] { "-r", "--resolution" }, "Resolution");
+        string[] resolutionArr = { "-r", "--resolution" };
+        Option<string> resolution = new(resolutionArr, "Resolution");
         resolution.AddCompletions(_globals.ResolutionList);
         resolution.AddValidator(ValidateResolution);
 
-        Option<int> audioBitrate =
-            new(new[] { "-a", "-ab", "--audio-bitrate" }, "Audio bitrate\nPossible values: 32, 64, 96, 128, 192, 256, 320");
+        string[] audioArr = { "-a", "-ab", "--audio-bitrate" };
+        var audioDescription = $"Audio bitrate{Environment.NewLine}Possible values: 32, 64, 96, 128, 192, 256, 320";
+        Option<int> audioBitrate = new(audioArr, audioDescription);
         audioBitrate.SetDefaultValue(128);
         audioBitrate.AddValidator(ValidateAudioBitrate);
 
@@ -110,6 +118,7 @@ public sealed class CommandLineOptions
         var inputs = result.GetValueOrDefault<string[]>();
         foreach (var item in inputs)
         {
+
             if (File.Exists(item) || Uri.IsWellFormedUriString(item, UriKind.RelativeOrAbsolute))
                 continue;
 
@@ -124,7 +133,8 @@ public sealed class CommandLineOptions
         if (Directory.Exists(input))
             return;
 
-        _logger.Error("Output directory does not exist");
+        const string errorMsg = "Output directory does not exist";
+        _logger.Error(errorMsg);
         Environment.Exit(1);
     }
 
@@ -134,27 +144,31 @@ public sealed class CommandLineOptions
         if (input is >= 0 and <= 63)
             return;
 
-        _logger.Error("CRF value must be between 0 and 63 (Avoid values below 20)");
+        const string errorMsg = "CRF value must be between 0 and 63 (Avoid values below 20)";
+        _logger.Error(errorMsg);
         Environment.Exit(1);
     }
 
     private void ValidateAudioBitrate(OptionResult result)
     {
         var input = result.GetValueOrDefault<int>();
-        if (input % 2 == 0 && input > 0)
+        if (input % 2 is 0 && input > 0)
             return;
 
-        _logger.Error("Invalid audio bitrate");
+        const string errorMsg = "Audio bitrate must be a multiple of 2";
+        _logger.Error(errorMsg);
         Environment.Exit(1);
     }
 
     private void ValidateVideoCodec(OptionResult result)
     {
         var input = result.GetValueOrDefault<string>();
-        if (_globals.ValidVideoCodesMap.ContainsKey(input))
-            return;
+        if (input is not null)
+            if (_globals.ValidVideoCodesMap.ContainsKey(input))
+                return;
 
-        _logger.Error("Invalid video codec");
+        const string errorMsg = "Invalid video codec";
+        _logger.Error(errorMsg);
         Environment.Exit(1);
     }
 
@@ -164,7 +178,8 @@ public sealed class CommandLineOptions
         if (_globals.ResolutionList.Contains(input))
             return;
 
-        _logger.Error("Invalid resolution");
+        const string errorMsg = "Invalid resolution";
+        _logger.Error(errorMsg);
         Environment.Exit(1);
     }
 
