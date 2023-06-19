@@ -18,7 +18,7 @@ public partial class TikTokDownloader : VideoDownloaderBase
     /// <param name="url">The URL of the TikTok video to download.</param>
     /// <param name="keepWaterMarkValue">A boolean indicating whether to keep the TikTok watermark or not.</param>
     public TikTokDownloader(YoutubeDL youtubeDl, Uri url, bool keepWaterMarkValue)
-        : base(youtubeDl, url)
+        : base(youtubeDl, url, Serilog.Log.ForContext<TikTokDownloader>())
     {
         _keepWaterMarkValue = keepWaterMarkValue;
     }
@@ -33,6 +33,11 @@ public partial class TikTokDownloader : VideoDownloaderBase
         var videoInfo = await YoutubeDl.RunVideoDataFetch(Url.ToString());
         if (!videoInfo.Success)
             return default;
+        if (videoInfo.Data.IsLive is true)
+        {
+            Logger.Error(LiveStreamError);
+            return default;
+        }
 
         var tikTokRegex = TikTokRegex();
         var formatMatch = videoInfo.Data.Formats
@@ -46,9 +51,10 @@ public partial class TikTokDownloader : VideoDownloaderBase
         var tikTokValue = formatMatch.Groups[2].Value; // e.g. "4000000"
         var format = $"h264_{resolution}_{tikTokValue}-0";
 
+        RunResult<string> download;
         if (_keepWaterMarkValue)
         {
-            await YoutubeDl.RunVideoDownload(Url.ToString(),
+            download = await YoutubeDl.RunVideoDownload(Url.ToString(),
                 progress: progressCallback,
                 overrideOptions: new OptionSet
                 {
@@ -57,17 +63,21 @@ public partial class TikTokDownloader : VideoDownloaderBase
         }
         else
         {
-            await YoutubeDl.RunVideoDownload(Url.ToString(),
+            download = await YoutubeDl.RunVideoDownload(Url.ToString(),
                 progress: progressCallback,
                 overrideOptions: new OptionSet
                 {
                     Format = "download_addr-0"
                 });
         }
+        if (!download.Success)
+        {
+            Logger.Error(DownloadError);
+            return default;
+        }
 
         // get path of downloaded video
         var path = Directory.GetFiles(YoutubeDl.OutputFolder).FirstOrDefault();
-
         return path;
     }
 

@@ -79,10 +79,10 @@ public sealed class Converter
 
     private string GetCompressedVideoPath(string videoPath, VideoCodec videoCodec)
     {
-        var extension = string.Empty;
+        var extension = Path.GetExtension(videoPath).ToLower();
         foreach (var item in _globals.VideoExtMap)
         {
-            if (!videoPath.EndsWith(item.Key))
+            if (!extension.EndsWith(item.Key))
                 continue;
 
             extension = item.Key;

@@ -10,7 +10,7 @@ using Serilog.Settings.Configuration;
 
 var consoleLoggerConfigExtension = typeof(ConsoleLoggerConfigurationExtensions).Assembly;
 var serilogExpression = typeof(SerilogExpression).Assembly;
-ConfigurationReaderOptions options = new (consoleLoggerConfigExtension, serilogExpression);
+ConfigurationReaderOptions options = new(consoleLoggerConfigExtension, serilogExpression);
 
 var host = Host.CreateDefaultBuilder()
     .ConfigureServices((_, services) =>

@@ -13,7 +13,7 @@ public class RedditDownloader : VideoDownloaderBase
     /// <param name="youtubeDl">The YoutubeDL instance to use for downloading.</param>
     /// <param name="url">The URL of the Reddit video to download.</param>
     public RedditDownloader(YoutubeDL youtubeDl, Uri url)
-        : base(youtubeDl, url) { }
+        : base(youtubeDl, url, Serilog.Log.ForContext<RedditDownloader>()) { }
 
     /// <summary>
     /// Downloads the Reddit video specified by the URL and returns the path of the downloaded video.
@@ -25,6 +25,11 @@ public class RedditDownloader : VideoDownloaderBase
         var fetch = await YoutubeDl.RunVideoDataFetch(Url.ToString());
         if (!fetch.Success)
             return default;
+        if (fetch.Data.IsLive is true)
+        {
+            Logger.Error(LiveStreamError);
+            return default;
+        }
 
         await YoutubeDl.RunVideoDownload(Url.ToString(), progress: progressCallback);
         Uri uri = new(fetch.Data.WebpageUrl); // Convert to Uri to get segments
