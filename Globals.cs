@@ -106,9 +106,4 @@ public class VideoSettings
     public string? VideoCodec { get; init; }
 }
 
-public readonly struct DownloadOptions
-{
-    public Uri Url { get; init; }
-    public bool KeepWatermark { get; init; }
-    public bool SponsorBlock { get; init; }
-}
+public record DownloadOptions(Uri Uri, bool KeepWatermark, bool SponsorBlock);

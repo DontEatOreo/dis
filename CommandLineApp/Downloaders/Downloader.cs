@@ -51,12 +51,12 @@ public sealed class Downloader
     /// <returns>An instance of a video downloader for the supported platform, or null if the URL is invalid.</returns>
     private IVideoDownloader CreateDownloader(DownloadOptions o)
     {
-        return o.Url switch
+        return o.Uri switch
         {
-            not null when o.Url.Host.Contains("tiktok") => new TikTokDownloader(_globals.YoutubeDl, o.Url, o.KeepWatermark),
-            not null when o.Url.Host.Contains("youtu") => new YouTubeDownloader(_globals.YoutubeDl, o.Url, o.SponsorBlock),
-            not null when o.Url.Host.Contains("reddit") => new RedditDownloader(_globals.YoutubeDl, o.Url),
-            _ => new GenericDownloader(_globals.YoutubeDl, o.Url!)
+            not null when o.Uri.Host.Contains("tiktok") => new TikTokDownloader(_globals.YoutubeDl, o.Uri, o.KeepWatermark),
+            not null when o.Uri.Host.Contains("youtu") => new YouTubeDownloader(_globals.YoutubeDl, o.Uri, o.SponsorBlock),
+            not null when o.Uri.Host.Contains("reddit") => new RedditDownloader(_globals.YoutubeDl, o.Uri),
+            _ => new GenericDownloader(_globals.YoutubeDl, o.Uri!)
         };
     }
 }

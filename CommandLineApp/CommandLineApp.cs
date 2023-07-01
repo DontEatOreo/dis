@@ -75,14 +75,8 @@ public sealed class CommandLineApp
 
         Parallel.ForEach(links, parallelOptions, link =>
         {
-            DownloadOptions downloadOptions = new()
-            {
-                Url = link,
-                KeepWatermark = o.KeepWatermark,
-                SponsorBlock = o.SponsorBlock
-            };
-            var path = _downloader.DownloadTask(downloadOptions).GetAwaiter().GetResult();
-
+            DownloadOptions options = new(link, o.KeepWatermark, o.SponsorBlock);
+            var path = _downloader.DownloadTask(options).GetAwaiter().GetResult();
             if (path is null)
                 _logger.Error("Failed to download video: {Link}", link);
             else
