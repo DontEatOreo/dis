@@ -80,20 +80,21 @@ public sealed class Converter
 
     private string GetCompressedVideoPath(string videoPath, VideoCodec videoCodec)
     {
-        var extension = Path.GetExtension(videoPath).ToLower();
-        foreach (var item in _globals.VideoExtMap)
+        var videoExtMap = _globals.VideoExtMap;
+        string? extension = null;
+        foreach (var kvp in videoExtMap)
         {
-            if (!extension.EndsWith(item.Key))
+            if (!kvp.Value.Contains(videoCodec)) 
                 continue;
-
-            extension = item.Key;
-            break;
+            
+            extension = kvp.Key;
+            return Path.ChangeExtension(videoPath, extension);
         }
 
         return Path.ChangeExtension(videoPath, extension);
     }
 
-    private static string ConstructFilePath(VideoSettings settings, string compressedVideoPath)
+    private static string ConstructFilePath(VideoSettings settings, string? compressedVideoPath)
     {
         var uuid = Guid.NewGuid().ToString()[..4];
         var originalFileName = Path.GetFileName(compressedVideoPath);
@@ -118,7 +119,7 @@ public sealed class Converter
                 return;
             if (File.Exists(outputFilePath))
                 File.Delete(outputFilePath);
-            Directory.Delete(_globals.TempOutputDir, true);
+            _globals.DeleteLeftOvers();
             _logger.Information("{NewLine}Canceled", Environment.NewLine);
         };
     }
