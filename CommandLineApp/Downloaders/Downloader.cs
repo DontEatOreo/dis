@@ -7,8 +7,6 @@ namespace dis.CommandLineApp.Downloaders;
 /// </summary>
 public sealed class Downloader
 {
-    #region Ctor
-
     private readonly Globals _globals;
     private readonly Progress _progress;
     private readonly ILogger _logger;
@@ -25,10 +23,6 @@ public sealed class Downloader
         _progress = progress;
         _logger = logger;
     }
-
-    #endregion Ctor
-
-    #region Methods
 
     /// <summary>
     /// Downloads a video based on the provided options.
@@ -65,6 +59,4 @@ public sealed class Downloader
             _ => new GenericDownloader(_globals.YoutubeDl, o.Url!)
         };
     }
-
-    #endregion Methods
 }

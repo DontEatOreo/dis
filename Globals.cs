@@ -16,8 +16,6 @@ public sealed class Globals
 
     public readonly string TempOutputDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()[..4]);
 
-    #region Arrays
-
     public readonly string[] ResolutionList =
     {
         "144p",
@@ -49,10 +47,6 @@ public sealed class Globals
         "-row-mt 1",
     };
 
-    #endregion Arrays
-
-    #region Dictionaries
-
     public readonly Dictionary<string, VideoCodec> ValidVideoCodesMap = new()
     {
         { "h264", VideoCodec.libx264},
@@ -73,11 +67,7 @@ public sealed class Globals
         { "mp4", new List<VideoCodec> { VideoCodec.libx264, VideoCodec.hevc } },
         { "webm", new List<VideoCodec> { VideoCodec.vp8, VideoCodec.vp9, VideoCodec.av1 } }
     };
-
-    #endregion Dictionaries
 }
-
-#region Structs
 
 public class RunOptions
 {
@@ -122,5 +112,3 @@ public readonly struct DownloadOptions
     public bool KeepWatermark { get; init; }
     public bool SponsorBlock { get; init; }
 }
-
-#endregion Structs

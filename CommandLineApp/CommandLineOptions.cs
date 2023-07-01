@@ -23,8 +23,6 @@ public sealed class CommandLineOptions
     {
         RootCommand rootCommand = new();
 
-        #region Options
-
         const string randomDescription = "Randomize the filename";
         string[] randomArr = { "-rn", "-rd", "-rnd", "--random" };
         Option<bool> randomFileName = new(randomArr, randomDescription);
@@ -77,8 +75,6 @@ public sealed class CommandLineOptions
         audioBitrate.SetDefaultValue(128);
         audioBitrate.AddValidator(ValidateAudioBitrate);
 
-        #endregion Options
-
         rootCommand.TreatUnmatchedTokensAsErrors = true;
 
         Option[] options =
@@ -111,8 +107,7 @@ public sealed class CommandLineOptions
 
         return Task.FromResult<(RootCommand, RunOptions)>((rootCommand, o));
     }
-
-    #region Validations
+    
     private void ValidateInputs(OptionResult result)
     {
         var inputs = result.GetValueOrDefault<string[]>();
@@ -182,6 +177,4 @@ public sealed class CommandLineOptions
         _logger.Error(errorMsg);
         Environment.Exit(1);
     }
-
-    #endregion Validations
 }
