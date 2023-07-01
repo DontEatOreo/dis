@@ -1,4 +1,3 @@
-using System.CommandLine;
 using Xabe.FFmpeg;
 using YoutubeDLSharp;
 
@@ -68,42 +67,3 @@ public sealed class Globals
         { "webm", new List<VideoCodec> { VideoCodec.vp8, VideoCodec.vp9, VideoCodec.av1 } }
     };
 }
-
-public class RunOptions
-{
-    public Option<string[]> Inputs { get; init; }
-    public Option<string> Output { get; init; }
-    public Option<string>? Resolution { get; init; }
-    public Option<string>? VideoCodec { get; init; }
-    public Option<int> Crf { get; init; }
-    public Option<int> AudioBitrate { get; init; }
-    public Option<bool>? RandomFilename { get; set; }
-    public Option<bool>? KeepWatermark { get; init; }
-    public Option<bool>? SponsorBlock { get; init; }
-}
-
-
-public class ParsedOptions
-{
-    public string[] Inputs { get; init; } = null!;
-    public string? Resolution { get; init; }
-    public string? VideoCodec { get; init; }
-    public string Output { get; init; } = null!;
-    public int? Crf { get; init; }
-    public int? AudioBitrate { get; init; }
-    public bool RandomFileName { get; set; }
-    public bool KeepWatermark { get; set; }
-    public bool SponsorBlock { get; set; }
-}
-
-public class VideoSettings
-{
-    public string? Resolution { get; set; }
-    public bool GenerateRandomFileName { get; init; }
-    public string OutputDirectory { get; init; }
-    public int Crf { get; init; }
-    public int AudioBitRate { get; init; }
-    public string? VideoCodec { get; init; }
-}
-
-public record DownloadOptions(Uri Uri, bool KeepWatermark, bool SponsorBlock);

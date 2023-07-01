@@ -1,3 +1,4 @@
+using dis.CommandLineApp.Models;
 using Serilog;
 
 namespace dis.CommandLineApp.Downloaders;

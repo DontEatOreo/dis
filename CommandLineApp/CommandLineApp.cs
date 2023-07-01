@@ -1,6 +1,7 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
 using dis.CommandLineApp.Downloaders;
+using dis.CommandLineApp.Models;
 using Serilog;
 
 namespace dis.CommandLineApp;
