@@ -12,8 +12,8 @@ public class Progress
 
         // Write the new progress message
         var downloadString = p.DownloadSpeed is not null
-            ? $"Download Progress: {p.Progress:P2} | Download speed: {p.DownloadSpeed}"
-            : $"Download Progress: {p.Progress:P2}";
+            ? $"\rDownload Progress: {p.Progress:P2} | Download speed: {p.DownloadSpeed}"
+            : $"\rDownload Progress: {p.Progress:P2}";
         Console.Write(downloadString);
     });
 
@@ -26,8 +26,8 @@ public class Progress
                 return;
 
             // Write the new progress message
-            var progressMessage = $"Progress: {args.Duration.TotalSeconds / args.TotalLength.TotalSeconds:P2}";
-            Console.Write($"\r{progressMessage}");
+            var progressMessage = $"\rProgress: {args.Duration.TotalSeconds / args.TotalLength.TotalSeconds:P2}";
+            Console.Write(progressMessage);
         };
     }
 }
