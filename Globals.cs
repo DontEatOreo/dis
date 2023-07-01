@@ -12,8 +12,8 @@ public sealed class Globals
         OutputFileTemplate = "%(id)s.%(ext)s",
         OverwriteFiles = false
     };
-
-    public readonly string TempOutputDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()[..4]);
+    
+    public readonly List<string> TempDir = new();
 
     public readonly string[] ResolutionList =
     {
@@ -46,24 +46,27 @@ public sealed class Globals
         "-row-mt 1",
     };
 
-    public readonly Dictionary<string, VideoCodec> ValidVideoCodesMap = new()
+    public readonly Dictionary<string[], VideoCodec> ValidVideoCodecsMap = new()
     {
-        { "h264", VideoCodec.libx264},
-        { "libx264", VideoCodec.libx264},
-        { "h265", VideoCodec.hevc},
-        { "libx265", VideoCodec.hevc},
-        { "hevc", VideoCodec.hevc},
-        { "vp8", VideoCodec.vp8},
-        { "libvpx", VideoCodec.vp8},
-        { "vp9", VideoCodec.vp9},
-        { "libvpx-vp9", VideoCodec.vp9},
-        { "av1", VideoCodec.av1},
-        { "libaom-av1", VideoCodec.av1}
+        { new[] { "h264", "libx264" }, VideoCodec.libx264 },
+        { new[] { "h265", "libx265", "hevc" }, VideoCodec.hevc },
+        { new[] { "vp8", "libvpx" }, VideoCodec.vp8 },
+        { new[] { "vp9", "libvpx-vp9" }, VideoCodec.vp9 },
+        { new[] { "av1", "libaom-av1" }, VideoCodec.av1 },
     };
 
-    public readonly Dictionary<string, List<VideoCodec>> VideoExtMap = new()
+    public readonly Dictionary<string, VideoCodec[]> VideoExtMap = new()
     {
-        { "mp4", new List<VideoCodec> { VideoCodec.libx264, VideoCodec.hevc } },
-        { "webm", new List<VideoCodec> { VideoCodec.vp8, VideoCodec.vp9, VideoCodec.av1 } }
+        { "mp4", new[] { VideoCodec.libx264, VideoCodec.hevc } },
+        { "webm", new[] { VideoCodec.vp8, VideoCodec.vp9, VideoCodec.av1 } }
     };
+    
+    public void DeleteLeftOvers()
+    {
+        var hasAny = TempDir.Any();
+        if (!hasAny) 
+            return;
+        
+        TempDir.ForEach(d => Directory.Delete(d, true));
+    }
 }

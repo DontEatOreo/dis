@@ -12,19 +12,22 @@ namespace dis.CommandLineApp;
 public sealed class CommandLineApp
 {
     private readonly ILogger _logger;
+    private readonly Globals _globals;
     private readonly Downloader _downloader;
     private readonly Converter _converter;
     private readonly CommandLineOptions _commandLineOptions;
 
-    public CommandLineApp(Downloader downloader,
+    public CommandLineApp(ILogger logger,
+        Globals globals,
+        Downloader downloader,
         Converter converter,
-        CommandLineOptions commandLineOptions,
-        ILogger logger)
+        CommandLineOptions commandLineOptions)
     {
+        _logger = logger;
+        _globals = globals;
         _downloader = downloader;
         _converter = converter;
         _commandLineOptions = commandLineOptions;
-        _logger = logger;
     }
 
     /// <summary>
@@ -150,6 +153,6 @@ public sealed class CommandLineApp
                 _logger.Error(ex, "Failed to convert video: {Path}", path);
             }
         }
+        _globals.DeleteLeftOvers();
     }
-
 }

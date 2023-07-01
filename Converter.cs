@@ -34,9 +34,19 @@ public sealed class Converter
     /// <returns>A task that represents the asynchronous conversion operation.</returns>
     public async Task ConvertVideo(string videoFilePath, VideoSettings settings)
     {
+        var selectedCodec = VideoCodec._012v; // dummy value
+        foreach(var (key, value) in _globals.ValidVideoCodecsMap)
+        {
+            if (!key.Contains(settings.VideoCodec)) 
+                continue;
+            
+            selectedCodec = value;
+            break;
+        }
+
         var videoCodecEnum = settings.VideoCodec is null
             ? VideoCodec.libx264
-            : _globals.ValidVideoCodesMap[settings.VideoCodec];
+            : selectedCodec;
 
         if (!_globals.ResolutionList.Contains(settings.Resolution))
             settings.Resolution = null;
@@ -97,7 +107,11 @@ public sealed class Converter
     private static string ConstructFilePath(VideoSettings settings, string? compressedVideoPath)
     {
         var uuid = Guid.NewGuid().ToString()[..4];
+        
         var originalFileName = Path.GetFileName(compressedVideoPath);
+        if (originalFileName is null)
+            throw new Exception("Could not get the original file name");
+        
         var outputFilePath = Path.Combine(settings.OutputDirectory, originalFileName);
         var originalFileExtension = Path.GetExtension(compressedVideoPath);
 
@@ -120,7 +134,8 @@ public sealed class Converter
             if (File.Exists(outputFilePath))
                 File.Delete(outputFilePath);
             _globals.DeleteLeftOvers();
-            _logger.Information("{NewLine}Canceled", Environment.NewLine);
+            Console.WriteLine();
+            _logger.Information("Canceled");
         };
     }
 
@@ -141,9 +156,19 @@ public sealed class Converter
 
     private IConversion ConfigureConversion(VideoSettings settings, IVideoStream? videoStream, IAudioStream? audioStream)
     {
+        var selectedCodec = VideoCodec._012v; // dummy value
+        foreach(var (key, value) in _globals.ValidVideoCodecsMap)
+        {
+            if (!key.Contains(settings.VideoCodec)) 
+                continue;
+            
+            selectedCodec = value;
+            break;
+        }
+
         var videoCodecEnum = settings.VideoCodec is null
             ? VideoCodec.libx264
-            : _globals.ValidVideoCodesMap[settings.VideoCodec];
+            : selectedCodec;
 
         var conversion = FFmpeg.Conversions.New()
             .SetPreset(ConversionPreset.VerySlow)

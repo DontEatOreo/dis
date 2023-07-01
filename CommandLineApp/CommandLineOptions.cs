@@ -56,7 +56,7 @@ public sealed class CommandLineOptions
 
         string[] videoArr = { "-vc", "--codec", "--video-codec" };
         Option<string> videoCodec = new(videoArr, "Video codec");
-        foreach (var key in _globals.ValidVideoCodesMap.Keys)
+        foreach (var key in _globals.ValidVideoCodecsMap.Keys)
             videoCodec.AddCompletions(key);
         videoCodec.AddValidator(ValidateVideoCodec);
 
@@ -159,8 +159,9 @@ public sealed class CommandLineOptions
     private void ValidateVideoCodec(OptionResult result)
     {
         var input = result.GetValueOrDefault<string>();
+        var hasKeys = _globals.ValidVideoCodecsMap.Any(kv => kv.Key.Contains(input));
         if (input is not null)
-            if (_globals.ValidVideoCodesMap.ContainsKey(input))
+            if (hasKeys)
                 return;
 
         const string errorMsg = "Invalid video codec";

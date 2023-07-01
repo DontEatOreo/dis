@@ -32,8 +32,13 @@ public sealed class Downloader
     /// <returns>A tuple containing the path of the downloaded video and a boolean indicating if the download was successful.</returns>
     public async Task<string?> DownloadTask(DownloadOptions o)
     {
-        _globals.YoutubeDl.OutputFolder = _globals.TempOutputDir; // Set the output folder to the temp directory
-        Directory.CreateDirectory(_globals.TempOutputDir);
+        var temp = Path.GetTempPath();
+        var folderName = Guid.NewGuid().ToString()[..4];
+        var tempPath = Path.Combine(temp, folderName);
+        _globals.TempDir.Add(tempPath); // We're adding temp path to a global list so after conversion we can delete remaining files.
+        
+        _globals.YoutubeDl.OutputFolder = tempPath; // Set temp as output folder
+        Directory.CreateDirectory(tempPath);
 
         var videoDownloader = CreateDownloader(o);
 
