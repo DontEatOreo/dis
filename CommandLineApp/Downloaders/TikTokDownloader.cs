@@ -58,7 +58,7 @@ public partial class TikTokDownloader : VideoDownloaderBase
                 progress: progressCallback,
                 overrideOptions: new OptionSet
                 {
-                    Format = format
+                    Format = "download_addr-0"
                 });
         }
         else
@@ -67,7 +67,7 @@ public partial class TikTokDownloader : VideoDownloaderBase
                 progress: progressCallback,
                 overrideOptions: new OptionSet
                 {
-                    Format = "download_addr-0"
+                    Format = format
                 });
         }
         if (!download.Success)
@@ -85,8 +85,8 @@ public partial class TikTokDownloader : VideoDownloaderBase
     /// Generates the regular expression pattern for matching the TikTok format ID.
     /// </summary>
     /// <returns>A <see cref="Regex"/> object for matching the TikTok format ID.</returns>
-    // string: "h264_540p_3090821-0"
-    // we want to parse the resolution and the tiktok value
+    // string: "h264_720p_1000000-0"
+    // We want to parse the resolution and the tiktok value
     [GeneratedRegex(@"^h264_(\d+p)_(\d+)-0$")]
     private static partial Regex TikTokRegex();
 }
