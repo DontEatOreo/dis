@@ -2,7 +2,7 @@ using System.CommandLine;
 
 namespace dis.CommandLineApp.Models;
 
-public class RunOptions
+public sealed class RunOptions
 {
     public Option<string[]> Inputs { get; init; }
     public Option<string> Output { get; init; }

@@ -1,6 +1,6 @@
 namespace dis.CommandLineApp.Models;
 
-public class ParsedOptions
+public sealed class ParsedOptions
 {
     public string[] Inputs { get; init; } = null!;
     public string? Resolution { get; init; }

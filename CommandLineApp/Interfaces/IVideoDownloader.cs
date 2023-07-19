@@ -1,6 +1,6 @@
 using YoutubeDLSharp;
 
-namespace dis.CommandLineApp.Downloaders;
+namespace dis.CommandLineApp.Interfaces;
 
 public interface IVideoDownloader
 {

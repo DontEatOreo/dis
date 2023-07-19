@@ -4,31 +4,17 @@ using YoutubeDLSharp.Options;
 
 namespace dis.CommandLineApp.Downloaders;
 
-/// <summary>
-/// Downloader for TikTok videos.
-/// </summary>
 public partial class TikTokDownloader : VideoDownloaderBase
 {
     private readonly bool _keepWaterMarkValue;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="TikTokDownloader"/> class.
-    /// </summary>
-    /// <param name="youtubeDl">The YoutubeDL instance to use for downloading.</param>
-    /// <param name="url">The URL of the TikTok video to download.</param>
-    /// <param name="keepWaterMarkValue">A boolean indicating whether to keep the TikTok watermark or not.</param>
     public TikTokDownloader(YoutubeDL youtubeDl, Uri url, bool keepWaterMarkValue)
         : base(youtubeDl, url, Serilog.Log.ForContext<TikTokDownloader>())
     {
         _keepWaterMarkValue = keepWaterMarkValue;
     }
 
-    /// <summary>
-    /// Downloads the TikTok video specified by the URL and returns the path of the downloaded video.
-    /// </summary>
-    /// <param name="progressCallback">The progress callback for reporting the download progress.</param>
-    /// <returns>A tuple containing the path of the downloaded video and a boolean indicating if the download was successful.</returns>
-    public override async Task<string?> Download(IProgress<DownloadProgress> progressCallback)
+    public override async Task<string?> Download(IProgress<DownloadProgress> progress)
     {
         var videoInfo = await YoutubeDl.RunVideoDataFetch(Url.ToString());
         if (!videoInfo.Success)
@@ -55,7 +41,7 @@ public partial class TikTokDownloader : VideoDownloaderBase
         if (_keepWaterMarkValue)
         {
             download = await YoutubeDl.RunVideoDownload(Url.ToString(),
-                progress: progressCallback,
+                progress: progress,
                 overrideOptions: new OptionSet
                 {
                     Format = "download_addr-0"
@@ -64,7 +50,7 @@ public partial class TikTokDownloader : VideoDownloaderBase
         else
         {
             download = await YoutubeDl.RunVideoDownload(Url.ToString(),
-                progress: progressCallback,
+                progress: progress,
                 overrideOptions: new OptionSet
                 {
                     Format = format
@@ -78,6 +64,8 @@ public partial class TikTokDownloader : VideoDownloaderBase
 
         // get path of downloaded video
         var path = Directory.GetFiles(YoutubeDl.OutputFolder).FirstOrDefault();
+        if (path is null)
+            throw new InvalidOperationException("No file found in output folder");
         return path;
     }
 

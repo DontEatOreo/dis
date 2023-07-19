@@ -1,17 +1,17 @@
+using dis.CommandLineApp.Interfaces;
 using dis.CommandLineApp.Models;
 using Serilog;
 
 namespace dis.CommandLineApp.Downloaders;
 
-
-public sealed class Downloader : IDownloader
+public sealed class DownloadCreator : IDownloader
 {
     private readonly Globals _globals;
     private readonly Progress _progress;
     private readonly ILogger _logger;
     private readonly IDownloaderFactory _factory;
     
-    public Downloader(Globals globals, Progress progress, ILogger logger, IDownloaderFactory factory)
+    public DownloadCreator(Globals globals, Progress progress, ILogger logger, IDownloaderFactory factory)
     {
         _globals = globals;
         _progress = progress;
@@ -21,7 +21,7 @@ public sealed class Downloader : IDownloader
     
     public async Task<string?> DownloadTask(DownloadOptions options)
     {
-        var tempPath = PrepareTempDirectory(options);
+        PrepareTempDirectory(options);
 
         var videoDownloader = _factory.Create(options);
         
@@ -33,7 +33,7 @@ public sealed class Downloader : IDownloader
         return default;
     }
     
-    private string PrepareTempDirectory(DownloadOptions o)
+    private void PrepareTempDirectory(DownloadOptions o)
     {
         var temp = Path.GetTempPath();
         var folderName = Guid.NewGuid().ToString()[..4];
@@ -41,6 +41,5 @@ public sealed class Downloader : IDownloader
         _globals.TempDir.Add(tempPath); // We're adding temp path to a global list so after conversion we can delete remaining files.
         _globals.YoutubeDl.OutputFolder = tempPath; // Set temp as output folder
         Directory.CreateDirectory(tempPath);
-        return tempPath;
     }
 }

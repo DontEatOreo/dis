@@ -6,35 +6,27 @@ using Serilog;
 
 namespace dis.CommandLineApp;
 
-/// <summary>
-/// Represents the main entry point for the command line application.
-/// </summary>
 public sealed class CommandLineApp
 {
     private readonly ILogger _logger;
     private readonly Globals _globals;
-    private readonly Downloader _downloader;
+    private readonly DownloadCreator _downloadCreator;
     private readonly Converter _converter;
     private readonly CommandLineOptions _commandLineOptions;
 
     public CommandLineApp(ILogger logger,
         Globals globals,
-        Downloader downloader,
+        DownloadCreator downloadCreator,
         Converter converter,
         CommandLineOptions commandLineOptions)
     {
         _logger = logger;
         _globals = globals;
-        _downloader = downloader;
+        _downloadCreator = downloadCreator;
         _converter = converter;
         _commandLineOptions = commandLineOptions;
     }
-
-    /// <summary>
-    /// Executes the command line application using the provided arguments.
-    /// </summary>
-    /// <param name="args">The command line arguments to process.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    
     public async Task Run(string[] args)
     {
         var (rootCommand, parsedOptions) = await _commandLineOptions.GetCommandLineOptions();
@@ -42,6 +34,12 @@ public sealed class CommandLineApp
         await rootCommand.InvokeAsync(args);
     }
 
+    /// <summary>
+    /// Handles the invocation of the command line application with the given options.
+    /// </summary>
+    /// <param name="context">The invocation context.</param>
+    /// <param name="o">The run options.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     private async Task RunHandler(InvocationContext context, RunOptions o)
     {
         var parsed = ParseOptions(context, o);
@@ -72,20 +70,22 @@ public sealed class CommandLineApp
         await ConvertVideosAsync(paths, settings);
     }
 
-    private Task DownloadVideosAsync(IReadOnlyCollection<Uri> links, List<string> videoPaths, ParallelOptions parallelOptions, ParsedOptions o)
+    private async Task DownloadVideosAsync(IReadOnlyCollection<Uri> links, List<string> videoPaths, ParallelOptions parallelOptions, ParsedOptions o)
     {
         if (!links.Any())
-            return Task.CompletedTask;
-
-        Parallel.ForEach(links, parallelOptions, link =>
-        {
+            return;
+        
+        var downloadTasks = links.Select(link => {
             DownloadOptions options = new(link, o.KeepWatermark, o.SponsorBlock);
-            var path = _downloader.DownloadTask(options).GetAwaiter().GetResult();
+            var path = _downloadCreator.DownloadTask(options).GetAwaiter().GetResult();
             if (path is null)
                 _logger.Error("Failed to download video: {Link}", link);
             else
                 videoPaths.Add(path);
+            return _downloadCreator.DownloadTask(options);
         });
+        
+        await Task.WhenAll(downloadTasks);
 
         Console.WriteLine(); // New Line after download success
         foreach (var path in videoPaths)
@@ -98,7 +98,7 @@ public sealed class CommandLineApp
             _logger.Information("Downloaded video to: {Path} | Size: {Size}", path, fileSizeStr);
         }
 
-        return Task.CompletedTask;
+        return;
     }
 
     private static ParsedOptions ParseOptions(InvocationContext context, RunOptions o)

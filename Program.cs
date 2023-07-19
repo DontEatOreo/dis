@@ -1,6 +1,7 @@
 ﻿using dis;
 using dis.CommandLineApp;
 using dis.CommandLineApp.Downloaders;
+using dis.CommandLineApp.Interfaces;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -19,10 +20,17 @@ var host = Host.CreateDefaultBuilder()
         services.AddSingleton<FileExtensionContentTypeProvider>();
         services.AddSingleton<CommandLineApp>();
         services.AddSingleton<CommandLineOptions>();
+        services.AddSingleton<ICommandLineValidator, CommandLineValidator>();
+        services.AddSingleton<IDownloaderFactory, VideoDownloaderFactory>();
 
         services.AddTransient<Progress>();
         services.AddTransient<Converter>();
-        services.AddTransient<Downloader>();
+        services.AddTransient<DownloadCreator>();
+        services.AddSingleton<IDownloaderFactory>(sp =>
+        {
+            var globals = sp.GetRequiredService<Globals>();
+            return new VideoDownloaderFactory(globals.YoutubeDl);
+        });
     })
     .UseSerilog((context, configuration) =>
     {

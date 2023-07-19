@@ -4,21 +4,12 @@ using Xabe.FFmpeg;
 
 namespace dis;
 
-/// <summary>
-/// Converts videos with specified settings.
-/// </summary>
 public sealed class Converter
 {
     private readonly Globals _globals;
     private readonly Progress _progress;
     private readonly ILogger _logger;
 
-    /// <summary>
-    /// Initializes a new instance of the Converter class.
-    /// </summary>
-    /// <param name="logger">The logger used for logging.</param>
-    /// <param name="globals">The globals used for configuration.</param>
-    /// <param name="progress">The progress tracker.</param>
     public Converter(ILogger logger, Globals globals, Progress progress)
     {
         _logger = logger;
@@ -26,12 +17,6 @@ public sealed class Converter
         _progress = progress;
     }
 
-    /// <summary>
-    /// Converts a video to a specified video settings.
-    /// </summary>
-    /// <param name="videoFilePath">The path to the video to convert.</param>
-    /// <param name="settings">The settings to use for the conversion.</param>
-    /// <returns>A task that represents the asynchronous conversion operation.</returns>
     public async Task ConvertVideo(string videoFilePath, VideoSettings settings)
     {
         var selectedCodec = VideoCodec._012v; // dummy value

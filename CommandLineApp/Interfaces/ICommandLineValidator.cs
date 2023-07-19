@@ -1,6 +1,6 @@
 using System.CommandLine.Parsing;
 
-namespace dis.CommandLineApp;
+namespace dis.CommandLineApp.Interfaces;
 
 public interface ICommandLineValidator
 {

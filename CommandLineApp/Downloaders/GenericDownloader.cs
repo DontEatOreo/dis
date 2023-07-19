@@ -7,7 +7,7 @@ public class GenericDownloader : VideoDownloaderBase
     public GenericDownloader(YoutubeDL youtubeDl, Uri url)
         : base(youtubeDl, url, Serilog.Log.ForContext<GenericDownloader>()) { }
 
-    public override async Task<string?> Download(IProgress<DownloadProgress> progressCallback)
+    public override async Task<string?> Download(IProgress<DownloadProgress> progress)
     {
         var fetch = await YoutubeDl.RunVideoDataFetch(Url.ToString());
         if (!fetch.Success)

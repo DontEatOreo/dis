@@ -1,6 +1,6 @@
 namespace dis.CommandLineApp.Models;
 
-public class VideoSettings
+public sealed class VideoSettings
 {
     public string? Resolution { get; set; }
     public bool GenerateRandomFileName { get; init; }

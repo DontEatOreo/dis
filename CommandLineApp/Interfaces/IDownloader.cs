@@ -1,6 +1,6 @@
 using dis.CommandLineApp.Models;
 
-namespace dis.CommandLineApp.Downloaders;
+namespace dis.CommandLineApp.Interfaces;
 
 public interface IDownloader
 {
