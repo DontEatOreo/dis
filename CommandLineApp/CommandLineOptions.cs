@@ -1,8 +1,6 @@
 using System.CommandLine;
-using System.CommandLine.Parsing;
 using dis.CommandLineApp.Interfaces;
 using dis.CommandLineApp.Models;
-using Serilog;
 
 namespace dis.CommandLineApp;
 

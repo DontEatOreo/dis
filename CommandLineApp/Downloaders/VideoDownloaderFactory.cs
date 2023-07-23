@@ -1,6 +1,5 @@
 using dis.CommandLineApp.Interfaces;
 using dis.CommandLineApp.Models;
-using Serilog;
 using YoutubeDLSharp;
 
 namespace dis.CommandLineApp.Downloaders;
