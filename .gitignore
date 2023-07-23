@@ -1,59 +1,51 @@
-# Jetbrain
-.idea/
-*.iml
-*.ipr
+**/bin/
+**/obj/
 *.user
+*.userosscache
+*.suo
+*.lock.json
+*.nupkg
+*.log
+*.bak
+.DS_Store
+*.swp
+**/.idea/
+**/.vs/
+**/.vscode/
+**/packages/
+flake.lock
 
-# VSCode
-.vscode/
+!important!.vscode/settings.json
+!important!.vscode/tasks.json
+!important!.vscode/launch.json
+!important!.vscode/extensions.json
+!important!.vscode/*.code-snippets
 
-# Local History for Visual Studio Code
+# auto generated files
+*.dll
+*.exe
+*.pdb
+*.json
+*.rsp
+*.cache
+*.config
+*.csproj.user
+
 .history/
-
-# Built Visual Studio Code Extensions
 *.vsix
 
-# macOS
+# Test Results and Logs from build processes
+**/TestResults/
+**/[Bb]in/
+**/[Oo]bj/
+**/[Ll]og/
+**/[Ll]ogs/
+**/[Tt]emp/
+**/[Tt]mp/
 
-# General
-.DS_Store
-.AppleDouble
-.LSOverride
+# User-Specific files and other generated files
+*.userprefs
+*.sln.docstates
 
-# Icon must end with two \r
-Icon
-
-# Thumbnails
-._*
-
-# Files that might appear in the root of a volume
-.DocumentRevisions-V100
-.fseventsd
-.Spotlight-V100
-.TemporaryItems
-.Trashes
-.VolumeIcon.icns
-.com.apple.timemachine.donotpresent
-
-# Directories potentially created on remote AFP share
-.AppleDB
-.AppleDesktop
-Network Trash Folder
-Temporary Items
-.apdisk
-
-# Windows
-
-# Dump file
-*.stackdump
-
-# Folder config file
-[Dd]esktop.ini
-
-# Recycle Bin used on file shares
-$RECYCLE.BIN/
-
-# Generic
-bin/
-out/
-obj/
+# Package Files #
+*.snk
