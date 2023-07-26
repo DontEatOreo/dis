@@ -23,7 +23,6 @@ var host = Host.CreateDefaultBuilder()
         services.AddSingleton<ICommandLineValidator, CommandLineValidator>();
         services.AddSingleton<IDownloaderFactory, VideoDownloaderFactory>();
 
-        services.AddTransient<Progress>();
         services.AddTransient<Converter>();
         services.AddTransient<DownloadCreator>();
         services.AddSingleton<IDownloaderFactory>(sp =>
