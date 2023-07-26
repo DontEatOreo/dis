@@ -15,7 +15,7 @@ public sealed class CommandLineOptions
         _validator = validator;
     }
     
-    public Task<(RootCommand, RunOptions)> GetCommandLineOptions()
+    public Task<(RootCommand, UnParseOptions)> GetCommandLineOptions()
     {
         RootCommand rootCommand = new();
 
@@ -89,7 +89,7 @@ public sealed class CommandLineOptions
         foreach (var option in options)
             rootCommand.AddOption(option);
 
-        RunOptions o = new()
+        UnParseOptions o = new()
         {
             Inputs = input,
             Output = output,
@@ -101,6 +101,6 @@ public sealed class CommandLineOptions
             VideoCodec = videoCodec
         };
 
-        return Task.FromResult<(RootCommand, RunOptions)>((rootCommand, o));
+        return Task.FromResult<(RootCommand, UnParseOptions)>((rootCommand, o));
     }
 }
