@@ -96,7 +96,7 @@ public sealed class CommandLineApp
         var videoCodec = context.ParseResult.GetValueForOption(o.VideoCodec);
         var audioBitrate = context.ParseResult.GetValueForOption(o.AudioBitrate);
         
-        var randomFileName = context.ParseResult.GetValueForOption(o.RandomFilename);
+        var randomFileName = context.ParseResult.GetValueForOption(o.RandomFileName);
         var keepWaterMark = context.ParseResult.GetValueForOption(o.KeepWatermark);
         var sponsorBlock = context.ParseResult.GetValueForOption(o.SponsorBlock);
 
