@@ -74,8 +74,7 @@ public sealed class CommandLineApp
         });
         
         await Task.WhenAll(downloadTasks);
-
-        Console.WriteLine(); // New Line after download success
+        
         foreach (var path in videoPaths)
         {
             // Converts the file size to a string with the appropriate unit
