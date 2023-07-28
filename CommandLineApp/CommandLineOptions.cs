@@ -98,6 +98,7 @@ public sealed class CommandLineOptions
             AudioBitrate = audioBitrate,
             KeepWatermark = keepWatermark,
             SponsorBlock = sponsorBlock,
+            RandomFilename = randomFileName,
             VideoCodec = videoCodec
         };
 
