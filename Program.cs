@@ -24,7 +24,7 @@ var host = Host.CreateDefaultBuilder()
         services.AddSingleton<IDownloaderFactory, VideoDownloaderFactory>();
 
         services.AddTransient<Converter>();
-        services.AddTransient<DownloadCreator>();
+        services.AddTransient<IDownloader, DownloadCreator>();
         services.AddSingleton<IDownloaderFactory>(sp =>
         {
             var globals = sp.GetRequiredService<Globals>();

@@ -14,7 +14,7 @@ public class YouTubeDownloader : VideoDownloaderBase
         _sponsorBlockValue = sponsorBlockValue;
     }
 
-    public override async Task<string?> Download(IProgress<DownloadProgress> progress)
+    public override async Task<string?> Download()
     {
         OptionSet sponsorOptions = new() { SponsorblockRemove = "all" };
         var overrideOptions = _sponsorBlockValue ? sponsorOptions : null;
@@ -29,7 +29,7 @@ public class YouTubeDownloader : VideoDownloaderBase
             return default;
         }
 
-        var download = await YoutubeDl.RunVideoDownload(Url.ToString(), progress: progress, overrideOptions: overrideOptions);
+        var download = await YoutubeDl.RunVideoDownload(Url.ToString(), progress: _progress, overrideOptions: overrideOptions);
         if (!download.Success)
         {
             Logger.Error(DownloadError);
@@ -39,4 +39,12 @@ public class YouTubeDownloader : VideoDownloaderBase
         var path = Directory.GetFiles(YoutubeDl.OutputFolder).FirstOrDefault()!;
         return path;
     }
+    
+    private readonly Progress<DownloadProgress> _progress = new(p =>
+    {
+        var downloadString = p.DownloadSpeed is not null
+            ? $"\rDownload Progress: {p.Progress:P2} | Download speed: {p.DownloadSpeed}"
+            : $"\rDownload Progress: {p.Progress:P2}";
+        Console.Write(downloadString);
+    });
 }

@@ -1,7 +1,6 @@
 using dis.CommandLineApp.Interfaces;
 using dis.CommandLineApp.Models;
 using Serilog;
-using YoutubeDLSharp;
 
 namespace dis.CommandLineApp.Downloaders;
 
@@ -24,7 +23,7 @@ public sealed class DownloadCreator : IDownloader
 
         var videoDownloader = _factory.Create(options);
         
-        var videoDownload = await videoDownloader.Download(_ytDlProgress);
+        var videoDownload = await videoDownloader.Download();
         if (videoDownload is not null)
             return videoDownload;
 
@@ -41,16 +40,4 @@ public sealed class DownloadCreator : IDownloader
         _globals.YoutubeDl.OutputFolder = tempPath; // Set temp as output folder
         Directory.CreateDirectory(tempPath);
     }
-
-    private readonly Progress<DownloadProgress> _ytDlProgress = new(p =>
-    {
-        if (p.Progress is 0)
-            return;
-
-        // Write the new progress message
-        var downloadString = p.DownloadSpeed is not null
-            ? $"\rDownload Progress: {p.Progress:P2} | Download speed: {p.DownloadSpeed}"
-            : $"\rDownload Progress: {p.Progress:P2}";
-        Console.Write(downloadString);
-    });
 }

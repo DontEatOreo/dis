@@ -1,6 +1,6 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
-using dis.CommandLineApp.Downloaders;
+using dis.CommandLineApp.Interfaces;
 using dis.CommandLineApp.Models;
 using Serilog;
 
@@ -10,23 +10,23 @@ public sealed class CommandLineApp
 {
     private readonly ILogger _logger;
     private readonly Globals _globals;
-    private readonly DownloadCreator _downloadCreator;
+    private readonly IDownloader _downloader;
     private readonly Converter _converter;
     private readonly CommandLineOptions _commandLineOptions;
-
+    
     public CommandLineApp(ILogger logger,
         Globals globals,
-        DownloadCreator downloadCreator,
+        IDownloader downloader,
         Converter converter,
         CommandLineOptions commandLineOptions)
     {
         _logger = logger;
         _globals = globals;
-        _downloadCreator = downloadCreator;
+        _downloader = downloader;
         _converter = converter;
         _commandLineOptions = commandLineOptions;
     }
-    
+
     public async Task Run(string[] args)
     {
         var (rootCommand, unParseOptions) = await _commandLineOptions.GetCommandLineOptions();
@@ -65,16 +65,17 @@ public sealed class CommandLineApp
         
         var downloadTasks = links.Select(link => {
             DownloadOptions downloadOptions = new(link, options.KeepWatermark, options.SponsorBlock);
-            var path = _downloadCreator.DownloadTask(downloadOptions).GetAwaiter().GetResult();
+            var path = _downloader.DownloadTask(downloadOptions).GetAwaiter().GetResult();
             if (path is null)
                 _logger.Error("Failed to download video: {Link}", link);
             else
                 videoPaths.Add(path);
-            return _downloadCreator.DownloadTask(downloadOptions);
+            return _downloader.DownloadTask(downloadOptions);
         });
         
         await Task.WhenAll(downloadTasks);
         
+        Console.WriteLine(); // New line after the download progress bar
         foreach (var path in videoPaths)
         {
             // Converts the file size to a string with the appropriate unit
@@ -91,8 +92,8 @@ public sealed class CommandLineApp
         var inputs = context.ParseResult.GetValueForOption(o.Inputs)!;
         var output = context.ParseResult.GetValueForOption(o.Output)!;
         var crf = context.ParseResult.GetValueForOption(o.Crf);
-        var resolution = context.ParseResult.GetValueForOption(o.Resolution);
-        var videoCodec = context.ParseResult.GetValueForOption(o.VideoCodec);
+        var resolution = context.ParseResult.GetValueForOption(o.Resolution!);
+        var videoCodec = context.ParseResult.GetValueForOption(o.VideoCodec!);
         var audioBitrate = context.ParseResult.GetValueForOption(o.AudioBitrate);
         
         var randomFileName = context.ParseResult.GetValueForOption(o.RandomFileName);

@@ -20,5 +20,5 @@ public abstract class VideoDownloaderBase : IVideoDownloader
         Logger = logger;
     }
 
-    public abstract Task<string?> Download(IProgress<DownloadProgress> progress);
+    public abstract Task<string?> Download();
 }
