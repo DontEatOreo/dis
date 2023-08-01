@@ -19,6 +19,14 @@ public abstract class VideoDownloaderBase : IVideoDownloader
         Url = url;
         Logger = logger;
     }
+    
+    protected readonly Progress<DownloadProgress> DownloadProgress = new(p =>
+    {
+        var downloadString = p.DownloadSpeed is not null
+            ? $"\rDownload Progress: {p.Progress:P2} | Download speed: {p.DownloadSpeed}"
+            : $"\rDownload Progress: {p.Progress:P2}";
+        Console.Write(downloadString);
+    });
 
     public abstract Task<string?> Download();
 }

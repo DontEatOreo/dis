@@ -18,7 +18,7 @@ public class GenericDownloader : VideoDownloaderBase
             return default;
         }
 
-        var download = await YoutubeDl.RunVideoDownload(Url.ToString(), progress: _progress);
+        var download = await YoutubeDl.RunVideoDownload(Url.ToString(), progress: DownloadProgress);
         if (!download.Success)
         {
             Logger.Error(DownloadError);
@@ -28,12 +28,4 @@ public class GenericDownloader : VideoDownloaderBase
         var path = Directory.GetFiles(YoutubeDl.OutputFolder).FirstOrDefault();
         return path ?? default;
     }
-    
-    private readonly Progress<DownloadProgress> _progress = new(p =>
-    {
-        var downloadString = p.DownloadSpeed is not null
-            ? $"\rDownload Progress: {p.Progress:P2} | Download speed: {p.DownloadSpeed}"
-            : $"\rDownload Progress: {p.Progress:P2}";
-        Console.Write(downloadString);
-    });
 }

@@ -41,7 +41,7 @@ public partial class TikTokDownloader : VideoDownloaderBase
         if (_keepWaterMarkValue)
         {
             download = await YoutubeDl.RunVideoDownload(Url.ToString(),
-                progress: _progress,
+                progress: DownloadProgress,
                 overrideOptions: new OptionSet
                 {
                     Format = "download_addr-0"
@@ -50,7 +50,7 @@ public partial class TikTokDownloader : VideoDownloaderBase
         else
         {
             download = await YoutubeDl.RunVideoDownload(Url.ToString(),
-                progress: _progress,
+                progress: DownloadProgress,
                 overrideOptions: new OptionSet
                 {
                     Format = format
@@ -68,14 +68,6 @@ public partial class TikTokDownloader : VideoDownloaderBase
             throw new InvalidOperationException("No file found in output folder");
         return path;
     }
-    
-    private readonly Progress<DownloadProgress> _progress = new(p =>
-    {
-        var downloadString = p.DownloadSpeed is not null
-            ? $"\rDownload Progress: {p.Progress:P2} | Download speed: {p.DownloadSpeed}"
-            : $"\rDownload Progress: {p.Progress:P2}";
-        Console.Write(downloadString);
-    });
 
     /// <summary>
     /// Generates the regular expression pattern for matching the TikTok format ID.

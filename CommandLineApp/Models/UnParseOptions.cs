@@ -4,9 +4,9 @@ namespace dis.CommandLineApp.Models;
 
 public sealed class UnParseOptions
 {
-    public Option<string[]> Inputs { get; init; } = null!;
-    public Option<string> Output { get; init; } = null!;
-    public Option<int> Crf { get; init; } = null!;
+    public required Option<string[]> Inputs { get; init; }
+    public required Option<string> Output { get; init; }
+    public required Option<int> Crf { get; init; } = null!;
     public Option<string>? Resolution { get; init; }
     public Option<string>? VideoCodec { get; init; }
     public Option<int> AudioBitrate { get; init; } = null!;

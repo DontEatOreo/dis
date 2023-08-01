@@ -18,7 +18,7 @@ public class RedditDownloader : VideoDownloaderBase
             return default;
         }
 
-        await YoutubeDl.RunVideoDownload(Url.ToString(), progress: _progress);
+        await YoutubeDl.RunVideoDownload(Url.ToString(), progress: DownloadProgress);
         Uri uri = new(fetch.Data.WebpageUrl); // Convert to Uri to get segments
 
         // https://www.reddit.com/r/subreddit/comments/xxxxxxx/title/
@@ -34,12 +34,4 @@ public class RedditDownloader : VideoDownloaderBase
 
         return path;
     }
-    
-    private readonly Progress<DownloadProgress> _progress = new(p =>
-    {
-        var downloadString = p.DownloadSpeed is not null
-            ? $"\rDownload Progress: {p.Progress:P2} | Download speed: {p.DownloadSpeed}"
-            : $"\rDownload Progress: {p.Progress:P2}";
-        Console.Write(downloadString);
-    });
 }
