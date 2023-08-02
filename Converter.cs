@@ -15,14 +15,14 @@ public sealed class Converter
         _logger = logger;
     }
 
-    public async Task ConvertVideo(string videoFilePath, ParsedOptions options)
+    public async Task ConvertVideo(string path, DateTime? time, ParsedOptions options)
     {
         var selectedCodec = VideoCodec._012v; // dummy value
-        foreach(var (key, value) in _globals.ValidVideoCodecsMap)
+        foreach (var (key, value) in _globals.ValidVideoCodecsMap)
         {
-            if (!key.Contains(options.VideoCodec)) 
+            if (!key.Contains(options.VideoCodec))
                 continue;
-            
+
             selectedCodec = value;
             break;
         }
@@ -37,12 +37,12 @@ public sealed class Converter
             return;
         }
 
-        var compressedVideoPath = GetCompressedVideoPath(videoFilePath, videoCodecEnum);
+        var compressedVideoPath = GetCompressedVideoPath(path, videoCodecEnum);
         var outputFilePath = ConstructFilePath(options, compressedVideoPath);
 
         HandleCancellation(outputFilePath);
 
-        var mediaInfo = await FFmpeg.GetMediaInfo(videoFilePath);
+        var mediaInfo = await FFmpeg.GetMediaInfo(path);
 
         var videoStream = mediaInfo.VideoStreams.FirstOrDefault();
         var audioStream = mediaInfo.AudioStreams.FirstOrDefault();
@@ -57,7 +57,7 @@ public sealed class Converter
             SetRes(videoStream, options.Resolution);
 
         var conversion = ConfigureConversion(options, videoStream, audioStream);
-        
+
         conversion.OnProgress += (_, args) =>
         {
             var percent = (int)Math.Round(args.Duration.TotalSeconds / args.TotalLength.TotalSeconds * 100);
@@ -68,9 +68,16 @@ public sealed class Converter
             var progressMessage = $"\rProgress: {args.Duration.TotalSeconds / args.TotalLength.TotalSeconds:P2}";
             Console.Write(progressMessage);
         };
-        
+
         conversion.SetOutput(outputFilePath);
         await conversion.Start();
+
+        if (time.HasValue)
+        {
+            File.SetCreationTime(outputFilePath, time.Value);
+            File.SetLastWriteTime(outputFilePath, time.Value);
+            File.SetLastAccessTime(outputFilePath, time.Value);
+        }
 
         // Converts the file size to a string with the appropriate unit
         var fileSize = new FileInfo(outputFilePath).Length;
@@ -90,9 +97,9 @@ public sealed class Converter
         string? extension = null;
         foreach (var kvp in videoExtMap)
         {
-            if (!kvp.Value.Contains(videoCodec)) 
+            if (!kvp.Value.Contains(videoCodec))
                 continue;
-            
+
             extension = kvp.Key;
             return Path.ChangeExtension(videoPath, extension);
         }
@@ -103,11 +110,11 @@ public sealed class Converter
     private static string ConstructFilePath(ParsedOptions options, string compressedVideoPath)
     {
         var uuid = Guid.NewGuid().ToString()[..4];
-        
+
         var ogFileName = Path.GetFileName(compressedVideoPath);
         if (ogFileName is null)
             throw new Exception("Could not get the original file name");
-        
+
         var outputFilePath = Path.Combine(options.Output, ogFileName);
         var ogExtension = Path.GetExtension(compressedVideoPath);
 
@@ -152,11 +159,11 @@ public sealed class Converter
     private IConversion ConfigureConversion(ParsedOptions options, IVideoStream? videoStream, IAudioStream? audioStream)
     {
         var selectedCodec = VideoCodec._012v; // dummy value
-        foreach(var (key, value) in _globals.ValidVideoCodecsMap)
+        foreach (var (key, value) in _globals.ValidVideoCodecsMap)
         {
-            if (!key.Contains(options.VideoCodec)) 
+            if (!key.Contains(options.VideoCodec))
                 continue;
-            
+
             selectedCodec = value;
             break;
         }
@@ -180,7 +187,7 @@ public sealed class Converter
             return conversion;
 
         audioStream.SetBitrate(options.AudioBitrate);
-        audioStream.SetCodec(videoCodecEnum 
+        audioStream.SetCodec(videoCodecEnum
             is VideoCodec.vp8 or VideoCodec.vp9 or VideoCodec.av1
             ? AudioCodec.libopus
             : AudioCodec.aac);

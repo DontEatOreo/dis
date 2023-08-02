@@ -13,7 +13,7 @@ public sealed class CommandLineApp
     private readonly IDownloader _downloader;
     private readonly Converter _converter;
     private readonly CommandLineOptions _commandLineOptions;
-    
+
     public CommandLineApp(ILogger logger,
         Globals globals,
         IDownloader downloader,
@@ -33,57 +33,59 @@ public sealed class CommandLineApp
         rootCommand.SetHandler(context => RunHandler(context, unParseOptions));
         await rootCommand.InvokeAsync(args);
     }
-
-    /// <summary>
-    /// Handles the invocation of the command line application with the given options.
-    /// </summary>
-    /// <param name="context">The invocation context.</param>
-    /// <param name="options">The run options.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    
     private async Task RunHandler(InvocationContext context, UnParseOptions options)
     {
         var parsed = ParseOptions(context, options);
+        
+        // On links list we ignore all files by check if they exist
         var links = parsed.Inputs.Where(video =>
-                Uri.IsWellFormedUriString(video, UriKind.RelativeOrAbsolute) && !File.Exists(video))
+                Uri.IsWellFormedUriString(video, UriKind.RelativeOrAbsolute) && File.Exists(video) is false)
             .Select(video => new Uri(video))
             .ToList();
+        // And now we add them to Separate list
         var files = parsed.Inputs.Where(File.Exists).ToList();
-        
-        List<string> paths = new();
+
+        // We store all the downloaded videos here
+        Dictionary<string, DateTime?> paths = new();
         await DownloadVideosAsync(links, paths, parsed);
 
         // Add existing files to the videoPaths list
-        paths.AddRange(files);
+        foreach (var file in files)
+            paths.TryAdd(file, null);
 
         await ConvertVideosAsync(paths, parsed);
     }
 
-    private async Task DownloadVideosAsync(IReadOnlyCollection<Uri> links, List<string> videoPaths, ParsedOptions options)
+    private async Task DownloadVideosAsync(IReadOnlyCollection<Uri> links, Dictionary<string, DateTime?> videos, ParsedOptions options)
     {
         if (!links.Any())
             return;
-        
-        var downloadTasks = links.Select(link => {
+
+        var downloadTasks = links.Select(link =>
+        {
             DownloadOptions downloadOptions = new(link, options.KeepWatermark, options.SponsorBlock);
-            var path = _downloader.DownloadTask(downloadOptions).GetAwaiter().GetResult();
-            if (path is null)
+            var (download, time) = _downloader.DownloadTask(downloadOptions).GetAwaiter().GetResult();
+            if (download is null)
                 _logger.Error("Failed to download video: {Link}", link);
             else
-                videoPaths.Add(path);
+                videos.Add(download, time);
             return _downloader.DownloadTask(downloadOptions);
         });
-        
-        await Task.WhenAll(downloadTasks);
-        
+
+        foreach (var task in downloadTasks)
+            await task;
+
         Console.WriteLine(); // New line after the download progress bar
-        foreach (var path in videoPaths)
+        foreach (var path in videos.Keys)
         {
             // Converts the file size to a string with the appropriate unit
             var fileSize = new FileInfo(path).Length;
             var fileSizeStr = fileSize < 1024 * 1024
-                ? $"{fileSize / 1024.0:0.00} KiB"
-                : $"{fileSize / 1024.0 / 1024.0:0.00} MiB";
-            _logger.Information("Downloaded video to: {Path} | Size: {Size}", path, fileSizeStr);
+                ? $"{fileSize / 1024.0:P2} KiB"
+                : $"{fileSize / 1024.0 / 1024.0:P2} MiB";
+            _logger.Information(
+                "Downloaded video to: {Path} | Size: {Size}", path, fileSizeStr);
         }
     }
 
@@ -95,7 +97,7 @@ public sealed class CommandLineApp
         var resolution = context.ParseResult.GetValueForOption(o.Resolution!);
         var videoCodec = context.ParseResult.GetValueForOption(o.VideoCodec!);
         var audioBitrate = context.ParseResult.GetValueForOption(o.AudioBitrate);
-        
+
         var randomFileName = context.ParseResult.GetValueForOption(o.RandomFileName);
         var keepWaterMark = context.ParseResult.GetValueForOption(o.KeepWatermark);
         var sponsorBlock = context.ParseResult.GetValueForOption(o.SponsorBlock);
@@ -116,17 +118,19 @@ public sealed class CommandLineApp
         return options;
     }
 
-    private async Task ConvertVideosAsync(IEnumerable<string> paths, ParsedOptions options)
+    // Key: Path to the video
+    // Value: The time the video was downloaded
+    private async Task ConvertVideosAsync(IEnumerable<KeyValuePair<string, DateTime?>> videos, ParsedOptions options)
     {
-        foreach (var path in paths)
+        foreach (var video in videos)
         {
             try
             {
-                await _converter.ConvertVideo(path, options);
+                await _converter.ConvertVideo(video.Key, video.Value, options);
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Failed to convert video: {Path}", path);
+                _logger.Error(ex, "Failed to convert video: {Path}", video);
             }
         }
         _globals.DeleteLeftOvers();

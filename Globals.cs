@@ -12,7 +12,7 @@ public sealed class Globals
         OutputFileTemplate = "%(id)s.%(ext)s",
         OverwriteFiles = false
     };
-    
+
     public readonly List<string> TempDir = new();
 
     public readonly string[] ResolutionList =
@@ -60,13 +60,13 @@ public sealed class Globals
         { "mp4", new[] { VideoCodec.libx264, VideoCodec.hevc } },
         { "webm", new[] { VideoCodec.vp8, VideoCodec.vp9, VideoCodec.av1 } }
     };
-    
+
     public void DeleteLeftOvers()
     {
         var hasAny = TempDir.Any();
-        if (!hasAny) 
+        if (!hasAny)
             return;
-        
+
         TempDir.ForEach(d => Directory.Delete(d, true));
     }
 }

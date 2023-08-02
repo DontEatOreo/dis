@@ -14,7 +14,7 @@ public sealed class CommandLineOptions
         _globals = globals;
         _validator = validator;
     }
-    
+
     public Task<(RootCommand, UnParseOptions)> GetCommandLineOptions()
     {
         RootCommand rootCommand = new();

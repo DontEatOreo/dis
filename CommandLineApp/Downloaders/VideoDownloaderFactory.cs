@@ -10,7 +10,7 @@ public class VideoDownloaderFactory : IDownloaderFactory
     private const string TikTokUrlPart = "tiktok";
     private const string YouTubeUrlPart = "youtu";
     private const string RedditUrlPart = "reddit";
-    
+
     private readonly YoutubeDL _youtubeDl;
 
     public VideoDownloaderFactory(YoutubeDL youtubeDl)

@@ -14,19 +14,20 @@ public partial class TikTokDownloader : VideoDownloaderBase
         _keepWaterMarkValue = keepWaterMarkValue;
     }
 
-    public override async Task<string?> Download()
+    public override async Task<(string?, DateTime?)> Download()
     {
-        var videoInfo = await YoutubeDl.RunVideoDataFetch(Url.ToString());
-        if (!videoInfo.Success)
+        var fetch = await YoutubeDl.RunVideoDataFetch(Url.ToString());
+        if (fetch.Success is false)
             return default;
-        if (videoInfo.Data.IsLive is true)
+        if (fetch.Data.IsLive is true)
         {
             Logger.Error(LiveStreamError);
             return default;
         }
+        var date = fetch.Data.UploadDate ?? fetch.Data.ReleaseDate;
 
         var tikTokRegex = TikTokRegex();
-        var formatMatch = videoInfo.Data.Formats
+        var formatMatch = fetch.Data.Formats
             .Select(format => tikTokRegex.Match(format.FormatId))
             .FirstOrDefault(match => match.Success);
 
@@ -66,7 +67,7 @@ public partial class TikTokDownloader : VideoDownloaderBase
         var path = Directory.GetFiles(YoutubeDl.OutputFolder).FirstOrDefault();
         if (path is null)
             throw new InvalidOperationException("No file found in output folder");
-        return path;
+        return (path, date);
     }
 
     /// <summary>

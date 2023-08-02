@@ -4,5 +4,5 @@ namespace dis.CommandLineApp.Interfaces;
 
 public interface IDownloader
 {
-    Task<string?> DownloadTask(DownloadOptions options);
+    Task<(string?, DateTime?)> DownloadTask(DownloadOptions options);
 }

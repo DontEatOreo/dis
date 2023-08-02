@@ -14,29 +14,35 @@ public class YouTubeDownloader : VideoDownloaderBase
         _sponsorBlockValue = sponsorBlockValue;
     }
 
-    public override async Task<string?> Download()
+    public override async Task<(string?, DateTime?)> Download()
     {
         OptionSet sponsorOptions = new() { SponsorblockRemove = "all" };
         var overrideOptions = _sponsorBlockValue ? sponsorOptions : null;
+        
         if (overrideOptions is not null)
             Logger.Information(SponsorBlockMessage);
+        
         var fetch = await YoutubeDl.RunVideoDataFetch(Url.ToString());
-        if (!fetch.Success)
+        if (fetch.Success is false)
             return default;
         if (fetch.Data.IsLive is true)
         {
             Logger.Error(LiveStreamError);
             return default;
         }
+        var date = fetch.Data.UploadDate ?? fetch.Data.ReleaseDate;
 
-        var download = await YoutubeDl.RunVideoDownload(Url.ToString(), progress: DownloadProgress, overrideOptions: overrideOptions);
-        if (!download.Success)
+        var download = await YoutubeDl.RunVideoDownload(Url.ToString(), 
+            progress: DownloadProgress, 
+            overrideOptions: overrideOptions);
+        
+        if (download.Success is false)
         {
             Logger.Error(DownloadError);
             return default;
         }
 
         var path = Directory.GetFiles(YoutubeDl.OutputFolder).FirstOrDefault()!;
-        return path;
+        return (path, date);
     }
 }

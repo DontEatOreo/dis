@@ -2,5 +2,5 @@ namespace dis.CommandLineApp.Interfaces;
 
 public interface IVideoDownloader
 {
-    Task<string?> Download();
+    Task<(string?, DateTime?)> Download();
 }

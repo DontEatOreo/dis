@@ -25,7 +25,6 @@ public sealed class CommandLineValidator : ICommandLineValidator
         }
         foreach (var item in inputs)
         {
-
             if (File.Exists(item) || Uri.IsWellFormedUriString(item, UriKind.RelativeOrAbsolute))
                 continue;
 
