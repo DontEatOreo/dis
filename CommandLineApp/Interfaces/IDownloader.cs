@@ -1,8 +1,9 @@
+using dis.CommandLineApp.Downloaders;
 using dis.CommandLineApp.Models;
 
 namespace dis.CommandLineApp.Interfaces;
 
 public interface IDownloader
 {
-    Task<(string?, DateTime?)> DownloadTask(DownloadOptions options);
+    Task<DownloadResult> DownloadTask(DownloadOptions options);
 }

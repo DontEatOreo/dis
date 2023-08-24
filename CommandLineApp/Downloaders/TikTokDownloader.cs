@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using dis.CommandLineApp.Models;
 using YoutubeDLSharp;
 using YoutubeDLSharp.Options;
 
@@ -8,15 +9,15 @@ public partial class TikTokDownloader : VideoDownloaderBase
 {
     private readonly bool _keepWaterMarkValue;
 
-    public TikTokDownloader(YoutubeDL youtubeDl, Uri url, bool keepWaterMarkValue)
-        : base(youtubeDl, url, Serilog.Log.ForContext<TikTokDownloader>())
+    public TikTokDownloader(YoutubeDL youtubeDl, DownloadQuery downloadQuery, bool keepWaterMarkValue)
+        : base(youtubeDl, downloadQuery, Serilog.Log.ForContext<TikTokDownloader>())
     {
         _keepWaterMarkValue = keepWaterMarkValue;
     }
 
-    public override async Task<(string?, DateTime?)> Download()
+    public override async Task<DownloadResult> Download()
     {
-        var fetch = await YoutubeDl.RunVideoDataFetch(Url.ToString());
+        var fetch = await YoutubeDl.RunVideoDataFetch(Query.Uri.ToString());
         if (fetch.Success is false)
             return default;
         if (fetch.Data.IsLive is true)
@@ -41,7 +42,7 @@ public partial class TikTokDownloader : VideoDownloaderBase
         RunResult<string> download;
         if (_keepWaterMarkValue)
         {
-            download = await YoutubeDl.RunVideoDownload(Url.ToString(),
+            download = await YoutubeDl.RunVideoDownload(Query.Uri.ToString(),
                 progress: DownloadProgress,
                 overrideOptions: new OptionSet
                 {
@@ -50,7 +51,7 @@ public partial class TikTokDownloader : VideoDownloaderBase
         }
         else
         {
-            download = await YoutubeDl.RunVideoDownload(Url.ToString(),
+            download = await YoutubeDl.RunVideoDownload(Query.Uri.ToString(),
                 progress: DownloadProgress,
                 overrideOptions: new OptionSet
                 {
@@ -60,14 +61,14 @@ public partial class TikTokDownloader : VideoDownloaderBase
         if (!download.Success)
         {
             Logger.Error(DownloadError);
-            return default;
+            return new DownloadResult(null, null);
         }
 
         // get path of downloaded video
         var path = Directory.GetFiles(YoutubeDl.OutputFolder).FirstOrDefault();
         if (path is null)
             throw new InvalidOperationException("No file found in output folder");
-        return (path, date);
+        return new DownloadResult(path, date);
     }
 
     /// <summary>

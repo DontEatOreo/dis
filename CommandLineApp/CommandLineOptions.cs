@@ -64,6 +64,13 @@ public sealed class CommandLineOptions
         Option<string> resolution = new(resolutionArr, "Resolution");
         resolution.AddCompletions(_globals.ResolutionList);
         resolution.AddValidator(_validator.ValidateResolution);
+        
+        string[] trimArr = { "-t", "--trim" };
+        Option<string> trim = new(trimArr, $"Trim a video/audio from a website{Environment.NewLine}" +
+                                           $"You need to use the following format:{Environment.NewLine}" +
+                                           $"start-end");
+        trim.AddValidator(_validator.ValidateTrim);
+        
 
         string[] audioArr = { "-a", "-ab", "--audio-bitrate" };
         var audioDescription = $"Audio bitrate{Environment.NewLine}Possible values: 32, 64, 96, 128, 192, 256, 320";
@@ -83,7 +90,8 @@ public sealed class CommandLineOptions
             audioBitrate,
             keepWatermark,
             sponsorBlock,
-            videoCodec
+            videoCodec,
+            trim
         };
 
         foreach (var option in options)
@@ -95,11 +103,12 @@ public sealed class CommandLineOptions
             Output = output,
             Crf = crf,
             Resolution = resolution,
+            VideoCodec = videoCodec,
+            Trim = trim,
             AudioBitrate = audioBitrate,
+            RandomFileName = randomFileName,
             KeepWatermark = keepWatermark,
             SponsorBlock = sponsorBlock,
-            RandomFileName = randomFileName,
-            VideoCodec = videoCodec
         };
 
         return Task.FromResult<(RootCommand, UnParseOptions)>((rootCommand, o));

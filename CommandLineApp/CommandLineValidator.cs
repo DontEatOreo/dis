@@ -89,4 +89,49 @@ public sealed class CommandLineValidator : ICommandLineValidator
         _logger.Error(errorMsg);
         Environment.Exit(1);
     }
+    
+    
+    public void ValidateTrim(OptionResult result)
+    {
+        /*
+         * We're using the following format as a literal string:
+         * *start-end
+         * where start and end are floats
+         */
+        var input = result.GetValueOrDefault<string?>();
+        if (input is null)
+            return;
+        
+        var split = input.Split('-');
+        if (split.Length is not 2)
+        {
+            const string errorMsg = "Invalid trim format";
+            _logger.Error(errorMsg);
+            Environment.Exit(1);
+        }
+        
+        var start = float.Parse(split[0]);
+        var end = float.Parse(split[1]);
+        
+        if (start < 0 || end < 0)
+        {
+            const string errorMsg = "Trim values must be positive";
+            _logger.Error(errorMsg);
+            Environment.Exit(1);
+        }
+        
+        if (start > end)
+        {
+            const string errorMsg = "Start value must be lower than end value";
+            _logger.Error(errorMsg);
+            Environment.Exit(1);
+        }
+        
+        if (end - start < 1)
+        {
+            const string errorMsg = "Trim values must be at least 1 second apart";
+            _logger.Error(errorMsg);
+            Environment.Exit(1);
+        }
+    }
 }

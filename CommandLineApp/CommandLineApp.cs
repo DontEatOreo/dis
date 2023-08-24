@@ -64,13 +64,13 @@ public sealed class CommandLineApp
 
         var downloadTasks = links.Select(link =>
         {
-            DownloadOptions downloadOptions = new(link, options.KeepWatermark, options.SponsorBlock);
+            DownloadOptions downloadOptions = new(link, options.Trim, options.KeepWatermark, options.SponsorBlock);
             var (download, time) = _downloader.DownloadTask(downloadOptions).GetAwaiter().GetResult();
             if (download is null)
                 _logger.Error("Failed to download video: {Link}", link);
             else
                 videos.Add(download, time);
-            return _downloader.DownloadTask(downloadOptions);
+            return Task.CompletedTask;
         });
 
         foreach (var task in downloadTasks)
@@ -96,6 +96,8 @@ public sealed class CommandLineApp
         var crf = context.ParseResult.GetValueForOption(o.Crf);
         var resolution = context.ParseResult.GetValueForOption(o.Resolution!);
         var videoCodec = context.ParseResult.GetValueForOption(o.VideoCodec!);
+        var trim = context.ParseResult.GetValueForOption(o.Trim!);
+        
         var audioBitrate = context.ParseResult.GetValueForOption(o.AudioBitrate);
 
         var randomFileName = context.ParseResult.GetValueForOption(o.RandomFileName);
@@ -109,6 +111,7 @@ public sealed class CommandLineApp
             Crf = crf,
             Resolution = resolution,
             VideoCodec = videoCodec,
+            Trim = trim,
             AudioBitrate = audioBitrate,
             RandomFileName = randomFileName,
             KeepWatermark = keepWaterMark,

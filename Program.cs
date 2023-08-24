@@ -1,4 +1,5 @@
-﻿using dis;
+﻿using System.Globalization;
+using dis;
 using dis.CommandLineApp;
 using dis.CommandLineApp.Downloaders;
 using dis.CommandLineApp.Interfaces;
@@ -12,6 +13,8 @@ using Serilog.Settings.Configuration;
 var consoleLoggerConfigExtension = typeof(ConsoleLoggerConfigurationExtensions).Assembly;
 var serilogExpression = typeof(SerilogExpression).Assembly;
 ConfigurationReaderOptions options = new(consoleLoggerConfigExtension, serilogExpression);
+
+CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
 var host = Host.CreateDefaultBuilder()
     .ConfigureServices((_, services) =>

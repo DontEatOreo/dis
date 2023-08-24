@@ -17,18 +17,18 @@ public sealed class DownloadCreator : IDownloader
         _factory = factory;
     }
 
-    public async Task<(string?, DateTime?)> DownloadTask(DownloadOptions options)
+    public async Task<DownloadResult> DownloadTask(DownloadOptions options)
     {
         PrepareTempDirectory();
 
         var videoDownloader = _factory.Create(options);
 
-        var (download, date) = await videoDownloader.Download();
-        if (download is not null)
-            return (download, date);
+        var result = await videoDownloader.Download();
+        if (result.Date is not null && result.OutPath is not null)
+            return result;
 
         _logger.Error("There was an error downloading the video");
-        return default;
+        return new DownloadResult(null, null);
     }
 
     // This methods creates a temporary folder in the user's temp directory. To download the video/s

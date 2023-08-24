@@ -1,5 +1,5 @@
 using dis.CommandLineApp.Interfaces;
-using Microsoft.Extensions.Configuration.EnvironmentVariables;
+using dis.CommandLineApp.Models;
 using Serilog;
 using YoutubeDLSharp;
 
@@ -8,16 +8,17 @@ namespace dis.CommandLineApp.Downloaders;
 public abstract class VideoDownloaderBase : IVideoDownloader
 {
     protected readonly YoutubeDL YoutubeDl;
-    protected readonly Uri Url;
+    protected readonly DownloadQuery Query;
     protected readonly ILogger Logger;
 
     protected const string LiveStreamError = "Live streams are not supported";
     protected const string DownloadError = "Download failed";
-
-    protected VideoDownloaderBase(YoutubeDL youtubeDl, Uri url, ILogger logger)
+    protected const string TrimTimeError = "Trim time exceeds video length";
+    
+    protected VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery query, ILogger logger)
     {
         YoutubeDl = youtubeDl;
-        Url = url;
+        Query = query;
         Logger = logger;
     }
 
@@ -33,5 +34,5 @@ public abstract class VideoDownloaderBase : IVideoDownloader
         Console.Write(downloadString);
     });
 
-    public abstract Task<(string?, DateTime?)> Download();
+    public abstract Task<DownloadResult> Download();
 }

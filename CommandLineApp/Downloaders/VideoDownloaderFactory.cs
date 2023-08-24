@@ -1,6 +1,7 @@
 using dis.CommandLineApp.Interfaces;
 using dis.CommandLineApp.Models;
 using YoutubeDLSharp;
+using YoutubeDLSharp.Options;
 
 namespace dis.CommandLineApp.Downloaders;
 
@@ -9,7 +10,7 @@ public class VideoDownloaderFactory : IDownloaderFactory
     // Constants for URL checking
     private const string TikTokUrlPart = "tiktok";
     private const string YouTubeUrlPart = "youtu";
-    private const string RedditUrlPart = "reddit";
+    private const string RedditUrlPart = "redd";
 
     private readonly YoutubeDL _youtubeDl;
 
@@ -20,12 +21,37 @@ public class VideoDownloaderFactory : IDownloaderFactory
 
     public IVideoDownloader Create(DownloadOptions o)
     {
-        return o.Uri switch
+        Dictionary<string,Func<DownloadQuery,IVideoDownloader>> downloaderDictionary = new()
         {
-            { } uri when uri.Host.Contains(TikTokUrlPart) => new TikTokDownloader(_youtubeDl, uri, o.KeepWatermark),
-            { } uri when uri.Host.Contains(YouTubeUrlPart) => new YouTubeDownloader(_youtubeDl, uri, o.SponsorBlock),
-            { } uri when uri.Host.Contains(RedditUrlPart) => new RedditDownloader(_youtubeDl, uri),
-            _ => new GenericDownloader(_youtubeDl, o.Uri)
+            { TikTokUrlPart, downloadQuery => new TikTokDownloader(_youtubeDl, downloadQuery, o.KeepWatermark) },
+            { YouTubeUrlPart, downloadQuery => new YouTubeDownloader(_youtubeDl, downloadQuery) },
+            { RedditUrlPart, downloadQuery => new RedditDownloader(_youtubeDl, downloadQuery) }
         };
+        
+        OptionSet? optionSet = GenerateOptionSet(o.Trim);
+
+        foreach (var downloader in downloaderDictionary)
+        {
+            if (o.Uri?.Host.Contains(downloader.Key) is not true) 
+                continue;
+            
+            DownloadQuery downloadQuery = new(o.Uri, optionSet);
+            return downloader.Value(downloadQuery);
+        }
+
+        // Fallback to Generic downloader
+        DownloadQuery genralDownloadQuery = new(o.Uri, optionSet);
+        return new GenericDownloader(_youtubeDl, genralDownloadQuery);
+    }
+
+    private OptionSet? GenerateOptionSet(string? timeOption)
+    {
+        OptionSet? optionSet = null;
+        if (timeOption is null) 
+            return optionSet;
+        
+        var time = timeOption.Split('-');
+        optionSet = new OptionSet { ForceKeyframesAtCuts  = true, DownloadSections = $"*{time[0]}-{time[1]}" };
+        return optionSet;
     }
 }

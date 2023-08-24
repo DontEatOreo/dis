@@ -10,4 +10,5 @@ public interface ICommandLineValidator
     void ValidateAudioBitrate(OptionResult result);
     void ValidateVideoCodec(OptionResult result);
     void ValidateResolution(OptionResult result);
+    void ValidateTrim(OptionResult result);
 }
