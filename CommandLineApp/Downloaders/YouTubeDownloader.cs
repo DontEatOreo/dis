@@ -23,6 +23,16 @@ public class YouTubeDownloader : VideoDownloaderBase
             Logger.Error(LiveStreamError);
             return new DownloadResult(null, null);
         }
+        
+        var split = Query.OptionSet?.DownloadSections.Values.FirstOrDefault();
+        if (split is not null)
+        {
+            var times = ParseStartAndEndTime(split);
+            var duration = fetch.Data.Duration;
+            if (!AreStartAndEndTimesValid(times, duration))
+                return new DownloadResult(null, null);
+        }
+        
         var date = fetch.Data.UploadDate ?? fetch.Data.ReleaseDate;
 
         var download = await YoutubeDl.RunVideoDownload(Query.Uri.ToString(), 

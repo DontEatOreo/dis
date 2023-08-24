@@ -19,12 +19,22 @@ public partial class TikTokDownloader : VideoDownloaderBase
     {
         var fetch = await YoutubeDl.RunVideoDataFetch(Query.Uri.ToString());
         if (fetch.Success is false)
-            return default;
+            return new DownloadResult(null, null);
         if (fetch.Data.IsLive is true)
         {
             Logger.Error(LiveStreamError);
-            return default;
+            return new DownloadResult(null, null);
         }
+        
+        var split = Query.OptionSet?.DownloadSections.Values.FirstOrDefault();
+        if (split is not null)
+        {
+            var times = ParseStartAndEndTime(split);
+            var duration = fetch.Data.Duration;
+            if (!AreStartAndEndTimesValid(times, duration))
+                return new DownloadResult(null, null);
+        }
+        
         var date = fetch.Data.UploadDate ?? fetch.Data.ReleaseDate;
 
         var tikTokRegex = TikTokRegex();
@@ -33,7 +43,7 @@ public partial class TikTokDownloader : VideoDownloaderBase
             .FirstOrDefault(match => match.Success);
 
         if (formatMatch is null)
-            return default;
+            return new DownloadResult(null, null);
 
         var resolution = formatMatch.Groups[1].Value; // e.g. "360p"
         var tikTokValue = formatMatch.Groups[2].Value; // e.g. "4000000"

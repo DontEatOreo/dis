@@ -20,36 +20,18 @@ public partial class RedditDownloader : VideoDownloaderBase
             return new DownloadResult(null, null);
         }
         
-        /*
-         * We want to parse the string as a float but ignore the * at the beginning
-         * The * symbol indicates that the start time is relative to the end time
-         * For example, *20-30 means 20 seconds before the end to 30 seconds before the end
-         */
-        var split = Query.OptionSet?.DownloadSections.Values
-            .FirstOrDefault()?
-            .Split('-');
-        var start = float.TryParse(split?[0].Replace("*", ""), out var result) 
-            ? result 
-            : (float?)null;
-        var end = float.TryParse(split?[1], out result) 
-            ? result 
-            : (float?)null;
-
-        // Checks if values for start and end are within the duration of the video
-        // If either is greater than the duration, we return an error
-        var duration = fetch.Data.Duration;
-        if (start is not null && end is not null)
-            if (start > duration || end > duration)
-            {
-                Logger.Error(TrimTimeError);
+        var split = Query.OptionSet?.DownloadSections.Values.FirstOrDefault();
+        if (split is not null)
+        {
+            var times = ParseStartAndEndTime(split);
+            var duration = fetch.Data.Duration;
+            if (!AreStartAndEndTimesValid(times, duration))
                 return new DownloadResult(null, null);
-            }
+        }
 
         var date = fetch.Data.UploadDate ?? fetch.Data.ReleaseDate;
         RunResult<string>? download = 
             await YoutubeDl.RunVideoDownload(Query.Uri.ToString(), overrideOptions: Query.OptionSet, progress: DownloadProgress);
-        
-        // get yt-dlp command line args
         
         if (download.Success is false)
             return new DownloadResult(null, null);

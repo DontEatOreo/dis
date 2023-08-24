@@ -51,7 +51,7 @@ public class VideoDownloaderFactory : IDownloaderFactory
             return optionSet;
         
         var time = timeOption.Split('-');
-        optionSet = new OptionSet { ForceKeyframesAtCuts  = true, DownloadSections = $"*{time[0]}-{time[1]}" };
+        optionSet = new OptionSet { ForceKeyframesAtCuts  = true, DownloadSections = $"*{time[0]}-{time[1]}", FormatSort = "vcodec:h264,ext:mp4:m4a" };
         return optionSet;
     }
 }

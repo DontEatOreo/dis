@@ -82,8 +82,8 @@ public sealed class CommandLineApp
             // Converts the file size to a string with the appropriate unit
             var fileSize = new FileInfo(path).Length;
             var fileSizeStr = fileSize < 1024 * 1024
-                ? $"{fileSize / 1024.0:P2} KiB"
-                : $"{fileSize / 1024.0 / 1024.0:P2} MiB";
+                ? $"{fileSize / 1024.0:F2} KiB"
+                : $"{fileSize / 1024.0 / 1024.0:F2} MiB";
             _logger.Information(
                 "Downloaded video to: {Path} | Size: {Size}", path, fileSizeStr);
         }
