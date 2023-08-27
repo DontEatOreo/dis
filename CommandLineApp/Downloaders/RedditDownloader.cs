@@ -1,11 +1,12 @@
-using System.Text.RegularExpressions;
 using dis.CommandLineApp.Models;
 using YoutubeDLSharp;
 
 namespace dis.CommandLineApp.Downloaders;
 
-public partial class RedditDownloader : VideoDownloaderBase
+public class RedditDownloader : VideoDownloaderBase
 {
+    private const int IdSegmentLength = 4;
+    
     public RedditDownloader(YoutubeDL youtubeDl, DownloadQuery downloadQuery)
         : base(youtubeDl, downloadQuery, Serilog.Log.ForContext<RedditDownloader>()) { }
 
@@ -36,10 +37,9 @@ public partial class RedditDownloader : VideoDownloaderBase
         if (download.Success is false)
             return new DownloadResult(null, null);
         
-        var videoIdRegex = RedditIdRegex();
-        var videoId = videoIdRegex.Match(Query.Uri.ToString()).Value;
-        
         var oldId = fetch.Data.ID;
+        var tempUri = new Uri(fetch.Data.WebpageUrl);
+        var videoId = tempUri.Segments[IdSegmentLength].TrimEnd('/');
 
         var videoPath = Directory.GetFiles(YoutubeDl.OutputFolder)
             .FirstOrDefault(f => f.Contains(oldId));
@@ -61,20 +61,4 @@ public partial class RedditDownloader : VideoDownloaderBase
 
         return new DownloadResult(path, date);
     }
-
-    /*
-     * To get the video ID from the URL, we use a regular expression that matches a specific pattern.
-     * The pattern is: (?<=/)[a-zA-Z0-9]{7}
-     *
-     * This means that we want to find a sequence of 7 alphanumeric characters ([a-zA-Z0-9]{7})
-     * that comes right after a slash (/) in the URL. The slash is not part of the match, but it is
-     * required to be there. This is achieved by using a positive lookbehind assertion (?<=/), which
-     * checks if the preceding characters match a subpattern, but does not include them in the match.
-     *
-     * For example, in the URL https://www.reddit.com/r/videos/comments/56azx1w/test_title_here/,
-     * the video ID is 56azx1w, which matches the pattern because it is 7 alphanumeric characters that
-     * come after a slash. The slash is not part of the match, but it is required to be there.
-     */
-    [GeneratedRegex("(?<=/)[a-zA-Z0-9]{7}", RegexOptions.Compiled)]
-    private static partial Regex RedditIdRegex();
 }
