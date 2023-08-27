@@ -18,7 +18,7 @@ public class GenericDownloader : VideoDownloaderBase
             Logger.Error(LiveStreamError);
             return new DownloadResult(null, null);
         }
-        
+
         var split = Query.OptionSet?.DownloadSections.Values.FirstOrDefault();
         if (split is not null)
         {
@@ -27,7 +27,7 @@ public class GenericDownloader : VideoDownloaderBase
             if (!AreStartAndEndTimesValid(times, duration))
                 return new DownloadResult(null, null);
         }
-        
+
         var date = fetch.Data.UploadDate ?? fetch.Data.ReleaseDate;
 
         var download = await YoutubeDl.RunVideoDownload(Query.Uri.ToString(),

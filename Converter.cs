@@ -1,6 +1,7 @@
 using dis.CommandLineApp.Models;
 using Serilog;
 using Xabe.FFmpeg;
+using Xabe.FFmpeg.Events;
 
 namespace dis;
 
@@ -17,19 +18,11 @@ public sealed class Converter
 
     public async Task ConvertVideo(string path, DateTime? time, ParsedOptions options)
     {
-        var selectedCodec = VideoCodec._012v; // dummy value
-        foreach (var (key, value) in _globals.ValidVideoCodecsMap)
-        {
-            if (!key.Contains(options.VideoCodec))
-                continue;
+        Console.CancelKeyPress += HandleCancellation;
 
-            selectedCodec = value;
-            break;
-        }
-
-        var videoCodecEnum = options.VideoCodec is null
-            ? VideoCodec.libx264
-            : selectedCodec;
+        var codecParsed = TryParseCodec(options.VideoCodec, out var videoCodecEnum);
+        if (codecParsed is false) 
+            _logger.Warning("No codec was provided, defaulting to libx264");
 
         if (_globals.ResolutionList.Contains(options.Resolution) is false)
         {
@@ -37,10 +30,8 @@ public sealed class Converter
             return;
         }
 
-        var compressedVideoPath = GetCompressedVideoPath(path, videoCodecEnum);
-        var outputFilePath = ConstructFilePath(options, compressedVideoPath);
-
-        HandleCancellation(outputFilePath);
+        var compressPath = GetCompressedVideoPath(path, videoCodecEnum);
+        var outputPath = ConstructFilePath(options, compressPath);
 
         var mediaInfo = await FFmpeg.GetMediaInfo(path);
 
@@ -57,49 +48,83 @@ public sealed class Converter
             SetRes(videoStream, options.Resolution);
 
         var conversion = ConfigureConversion(options, videoStream, audioStream);
+        conversion.SetOutput(outputPath);
 
-        conversion.OnProgress += (_, args) =>
-        {
-            var percent = (int)Math.Round(args.Duration.TotalSeconds / args.TotalLength.TotalSeconds * 100);
-            if (percent is 0)
-                return;
+        conversion.OnProgress += ConversionProgress;
 
-            // Write the new progress message
-            var progressMessage = $"\rProgress: {args.Duration.TotalSeconds / args.TotalLength.TotalSeconds:P2}";
-            Console.Write(progressMessage);
-        };
-
-        conversion.SetOutput(outputFilePath);
+        // Start the conversion
         await conversion.Start();
 
-        if (time.HasValue)
-        {
-            File.SetCreationTime(outputFilePath, time.Value);
-            File.SetLastWriteTime(outputFilePath, time.Value);
-            File.SetLastAccessTime(outputFilePath, time.Value);
-        }
+        var setTime = TrySetTimeStamp(outputPath, time);
+        if (setTime is false)
+            _logger.Warning(
+                "Could not set the time stamp for the file: {OutputFilePath}",
+                outputPath);
 
         // Converts the file size to a string with the appropriate unit
-        var fileSize = new FileInfo(outputFilePath).Length;
+        var fileSize = new FileInfo(outputPath).Length;
         var fileSizeStr = fileSize < 1024 * 1024
-            ? $"{fileSize / 1024.0:0.00} KiB"
-            : $"{fileSize / 1024.0 / 1024.0:0.00} MiB";
+            ? $"{fileSize / 1024.0:F2} KiB"
+            : $"{fileSize / 1024.0 / 1024.0:F2} MiB";
 
         Console.WriteLine(); // New line after progress bar
         _logger.Information("Converted video saved at: {OutputFilePath} | Size: {FileSize}",
-            outputFilePath,
+            outputPath,
             fileSizeStr);
+    }
+
+    private bool TryParseCodec(string? inputCodec, out VideoCodec outputCodec)
+    {
+        if (string.IsNullOrEmpty(inputCodec))
+        {
+            outputCodec = VideoCodec.libx264;
+            return false;
+        }
+        
+        var validCodecs = _globals.ValidVideoCodecsMap;
+        foreach (var (key, value) in validCodecs)
+        {
+            if (key.Contains(inputCodec) is false)
+                continue;
+
+            outputCodec = value;
+            return true;
+        }
+
+        outputCodec = VideoCodec.libx264;
+        return false;
+    }
+
+    private static void ConversionProgress(object? sender, ConversionProgressEventArgs e)
+    {
+        var percent = (int)Math.Round(e.Duration.TotalSeconds / e.TotalLength.TotalSeconds * 100);
+        if (percent is 0)
+            return;
+
+        // Write the new progress message
+        var progressMessage = $"\rProgress: {e.Duration.TotalSeconds / e.TotalLength.TotalSeconds:P2}";
+        Console.Write(progressMessage);
+    }
+
+    private static bool TrySetTimeStamp(string path, DateTime? time)
+    {
+        if (time is null)
+            return false;
+
+        File.SetCreationTime(path, time.Value);
+        File.SetLastWriteTime(path, time.Value);
+        File.SetLastAccessTime(path, time.Value);
+
+        return true;
     }
 
     private string GetCompressedVideoPath(string videoPath, VideoCodec videoCodec)
     {
         var videoExtMap = _globals.VideoExtMap;
         string? extension = null;
-        foreach (var kvp in videoExtMap)
+        foreach (var kvp in
+                 videoExtMap.Where(kvp => kvp.Value.Contains(videoCodec)))
         {
-            if (!kvp.Value.Contains(videoCodec))
-                continue;
-
             extension = kvp.Key;
             return Path.ChangeExtension(videoPath, extension);
         }
@@ -128,17 +153,13 @@ public sealed class Converter
         return Path.Combine(options.Output, outputFileName);
     }
 
-    private void HandleCancellation(string outputFilePath)
+    private void HandleCancellation(object? sender, ConsoleCancelEventArgs e)
     {
-        Console.CancelKeyPress += (_, args) =>
-        {
-            if (args.SpecialKey is not ConsoleSpecialKey.ControlC)
-                return;
-            File.Delete(outputFilePath);
-            _globals.DeleteLeftOvers();
-            Console.WriteLine();
-            _logger.Information("Canceled");
-        };
+        if (e.SpecialKey is not ConsoleSpecialKey.ControlC)
+            return;
+        _logger.Information("Canceled");
+
+        AppDomain.CurrentDomain.ProcessExit += (_, _) => _globals.DeleteLeftOvers();
     }
 
     private static void SetRes(IVideoStream stream, string res)
@@ -187,10 +208,12 @@ public sealed class Converter
             return conversion;
 
         audioStream.SetBitrate(options.AudioBitrate);
+
         audioStream.SetCodec(videoCodecEnum
             is VideoCodec.vp8 or VideoCodec.vp9 or VideoCodec.av1
             ? AudioCodec.libopus
             : AudioCodec.aac);
+
         conversion.AddStream(audioStream);
 
         return conversion;
@@ -201,17 +224,22 @@ public sealed class Converter
         switch (videoCodec)
         {
             case VideoCodec.av1:
-                conversion.AddParameter(string.Join(" ", _globals.Av1Args));
-                SetCpuUsedForAv1(conversion, videoStream.Framerate);
-                break;
+                {
+                    conversion.AddParameter(string.Join(" ", _globals.Av1Args));
+                    SetCpuForAv1(conversion, videoStream.Framerate);
+                    break;
+                }
             case VideoCodec.vp9:
-                conversion.AddParameter(string.Join(" ", _globals.Vp9Args));
-                break;
+                {
+                    conversion.AddParameter(string.Join(" ", _globals.Vp9Args));
+                    break;
+                }
         }
+
         videoStream.SetCodec(videoCodec);
     }
 
-    private static void SetCpuUsedForAv1(IConversion conversion, double framerate)
+    private static void SetCpuForAv1(IConversion conversion, double framerate)
     {
         const string twoCores = "-cpu-used 2";
         const string fourCore = "-cpu-used 4";

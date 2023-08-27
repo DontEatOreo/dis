@@ -33,11 +33,11 @@ public sealed class CommandLineApp
         rootCommand.SetHandler(context => RunHandler(context, unParseOptions));
         await rootCommand.InvokeAsync(args);
     }
-    
+
     private async Task RunHandler(InvocationContext context, UnParseOptions options)
     {
         var parsed = ParseOptions(context, options);
-        
+
         // On links list we ignore all files by check if they exist
         var links = parsed.Inputs.Where(video =>
                 Uri.IsWellFormedUriString(video, UriKind.RelativeOrAbsolute) && File.Exists(video) is false)
@@ -97,7 +97,7 @@ public sealed class CommandLineApp
         var resolution = context.ParseResult.GetValueForOption(o.Resolution!);
         var videoCodec = context.ParseResult.GetValueForOption(o.VideoCodec!);
         var trim = context.ParseResult.GetValueForOption(o.Trim!);
-        
+
         var audioBitrate = context.ParseResult.GetValueForOption(o.AudioBitrate);
 
         var randomFileName = context.ParseResult.GetValueForOption(o.RandomFileName);
@@ -120,22 +120,21 @@ public sealed class CommandLineApp
 
         return options;
     }
-
-    // Key: Path to the video
-    // Value: The time the video was downloaded
+    
     private async Task ConvertVideosAsync(IEnumerable<KeyValuePair<string, DateTime?>> videos, ParsedOptions options)
     {
-        foreach (var video in videos)
+        foreach (var (path, date) in videos)
         {
             try
             {
-                await _converter.ConvertVideo(video.Key, video.Value, options);
+                await _converter.ConvertVideo(path, date, options);
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Failed to convert video: {Path}", video);
+                _logger.Error(ex, "Failed to convert video: {Path}", path);
             }
         }
+        
         _globals.DeleteLeftOvers();
     }
 }

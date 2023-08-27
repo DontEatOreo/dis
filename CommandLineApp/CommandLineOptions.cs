@@ -64,13 +64,13 @@ public sealed class CommandLineOptions
         Option<string> resolution = new(resolutionArr, "Resolution");
         resolution.AddCompletions(_globals.ResolutionList);
         resolution.AddValidator(_validator.ValidateResolution);
-        
+
         string[] trimArr = { "-t", "--trim" };
         Option<string> trim = new(trimArr, $"Trim a video/audio from a website{Environment.NewLine}" +
                                            $"You need to use the following format:{Environment.NewLine}" +
                                            $"start-end");
         trim.AddValidator(_validator.ValidateTrim);
-        
+
 
         string[] audioArr = { "-a", "-ab", "--audio-bitrate" };
         var audioDescription = $"Audio bitrate{Environment.NewLine}Possible values: 32, 64, 96, 128, 192, 256, 320";

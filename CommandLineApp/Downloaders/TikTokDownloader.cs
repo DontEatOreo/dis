@@ -25,7 +25,7 @@ public partial class TikTokDownloader : VideoDownloaderBase
             Logger.Error(LiveStreamError);
             return new DownloadResult(null, null);
         }
-        
+
         var split = Query.OptionSet?.DownloadSections.Values.FirstOrDefault();
         if (split is not null)
         {
@@ -34,7 +34,7 @@ public partial class TikTokDownloader : VideoDownloaderBase
             if (!AreStartAndEndTimesValid(times, duration))
                 return new DownloadResult(null, null);
         }
-        
+
         var date = fetch.Data.UploadDate ?? fetch.Data.ReleaseDate;
 
         var tikTokRegex = TikTokRegex();

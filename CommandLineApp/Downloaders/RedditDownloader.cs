@@ -6,7 +6,7 @@ namespace dis.CommandLineApp.Downloaders;
 public class RedditDownloader : VideoDownloaderBase
 {
     private const int IdSegmentLength = 4;
-    
+
     public RedditDownloader(YoutubeDL youtubeDl, DownloadQuery downloadQuery)
         : base(youtubeDl, downloadQuery, Serilog.Log.ForContext<RedditDownloader>()) { }
 
@@ -20,7 +20,7 @@ public class RedditDownloader : VideoDownloaderBase
             Logger.Error(LiveStreamError);
             return new DownloadResult(null, null);
         }
-        
+
         var split = Query.OptionSet?.DownloadSections.Values.FirstOrDefault();
         if (split is not null)
         {
@@ -31,12 +31,12 @@ public class RedditDownloader : VideoDownloaderBase
         }
 
         var date = fetch.Data.UploadDate ?? fetch.Data.ReleaseDate;
-        RunResult<string>? download = 
+        RunResult<string>? download =
             await YoutubeDl.RunVideoDownload(Query.Uri.ToString(), overrideOptions: Query.OptionSet, progress: DownloadProgress);
-        
+
         if (download.Success is false)
             return new DownloadResult(null, null);
-        
+
         var oldId = fetch.Data.ID;
         var tempUri = new Uri(fetch.Data.WebpageUrl);
         var videoId = tempUri.Segments[IdSegmentLength].TrimEnd('/');

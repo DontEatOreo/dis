@@ -14,7 +14,7 @@ public abstract class VideoDownloaderBase : IVideoDownloader
     protected const string LiveStreamError = "Live streams are not supported";
     protected const string DownloadError = "Download failed";
     protected const string TrimTimeError = "Trim time exceeds video length";
-    
+
     protected VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery query, ILogger logger)
     {
         YoutubeDl = youtubeDl;
@@ -33,7 +33,7 @@ public abstract class VideoDownloaderBase : IVideoDownloader
             : $"\rDownload Progress: {progress:P2}";
         Console.Write(downloadString);
     });
-    
+
     /*
      * We want to parse the string as a float but ignore the * at the beginning
      * The * symbol indicates that the start time is relative to the end time
@@ -43,11 +43,11 @@ public abstract class VideoDownloaderBase : IVideoDownloader
     {
         var split = downloadSection?.Split('-');
 
-        var start = float.TryParse(split?[0].Replace("*", ""), out var result) 
-            ? result 
+        var start = float.TryParse(split?[0].Replace("*", ""), out var result)
+            ? result
             : (float?)null;
-        var end = float.TryParse(split?[1], out result) 
-            ? result 
+        var end = float.TryParse(split?[1], out result)
+            ? result
             : (float?)null;
 
         return Tuple.Create(start, end);
@@ -59,11 +59,11 @@ public abstract class VideoDownloaderBase : IVideoDownloader
     {
         var (start, end) = times;
 
-        if (start is null || end is null) 
+        if (start is null || end is null)
             return true;
-        if (!(start > videoDuration) && !(end > videoDuration)) 
+        if (!(start > videoDuration) && !(end > videoDuration))
             return true;
-        
+
         Logger.Error(TrimTimeError);
         return false;
 
