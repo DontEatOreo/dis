@@ -109,9 +109,17 @@ public sealed class CommandLineValidator : ICommandLineValidator
             _logger.Error(errorMsg);
             Environment.Exit(1);
         }
+
+        _ = split[0].Replace("*", ""); // Remove the * if it exists
+        var startSuccess = float.TryParse(split[0], out var start);
+        var endSuccess = float.TryParse(split[1], out var end);
         
-        var start = float.Parse(split[0]);
-        var end = float.Parse(split[1]);
+        if (startSuccess is false || endSuccess is false)
+        {
+            const string errorMsg = "Invalid trim format";
+            _logger.Error(errorMsg);
+            Environment.Exit(1);
+        }
         
         if (start < 0 || end < 0)
         {
