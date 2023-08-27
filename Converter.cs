@@ -31,7 +31,7 @@ public sealed class Converter
             ? VideoCodec.libx264
             : selectedCodec;
 
-        if (_globals.ResolutionList.Contains(options.Resolution))
+        if (_globals.ResolutionList.Contains(options.Resolution) is false)
         {
             _logger.Error("Invalid resolution");
             return;
