@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using dis;
 using dis.CommandLineApp;
+using dis.CommandLineApp.Conversion;
 using dis.CommandLineApp.Downloaders;
 using dis.CommandLineApp.Interfaces;
 using Microsoft.AspNetCore.StaticFiles;
@@ -26,7 +27,12 @@ var host = Host.CreateDefaultBuilder()
         services.AddSingleton<ICommandLineValidator, CommandLineValidator>();
         services.AddSingleton<IDownloaderFactory, VideoDownloaderFactory>();
 
+        services.AddTransient<CodecParser>();
+        services.AddTransient<StreamConfigurator>();
+        services.AddTransient<ProcessHandler>();
+        services.AddTransient<PathHandler>();
         services.AddTransient<Converter>();
+
         services.AddTransient<IDownloader, DownloadCreator>();
         services.AddSingleton<IDownloaderFactory>(sp =>
         {

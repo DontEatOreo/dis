@@ -1,5 +1,6 @@
 using System.CommandLine;
 using System.CommandLine.Invocation;
+using dis.CommandLineApp.Conversion;
 using dis.CommandLineApp.Interfaces;
 using dis.CommandLineApp.Models;
 using Serilog;
@@ -120,7 +121,7 @@ public sealed class CommandLineApp
 
         return options;
     }
-    
+
     private async Task ConvertVideosAsync(IEnumerable<KeyValuePair<string, DateTime?>> videos, ParsedOptions options)
     {
         foreach (var (path, date) in videos)
@@ -134,7 +135,7 @@ public sealed class CommandLineApp
                 _logger.Error(ex, "Failed to convert video: {Path}", path);
             }
         }
-        
+
         _globals.DeleteLeftOvers();
     }
 }
