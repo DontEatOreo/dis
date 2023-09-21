@@ -22,16 +22,16 @@ To use **dis** 🎥, you need to provide an input video source using the `-i` (`
 
 You can also specify various options to customize the output video, such as:
 
-| Option | Description | Default Value |
-| ------ | ----------- | ------------- |
-| `-rd`, `-rn`, `-rnd`, `--random` | Randomize the output filename | `False` |
-| `-c`, `--crf` <crf> | Constant Rate Factor (CRF) value for video compression | `29` |
-| `-r`, `--resolution` <resolution> | Output video resolution | None |
-| `-a`, `-ab`, `--audio-bitrate` <audio-bitrate> | Output audio bitrate | `128k` |
-| `-k`, `-kw`, `-kwm`, `--keep` | Keep the watermark on the output video | `False` |
-| `-sb`, `-sponsorblock` | Remove the sponsor segments from the output video using [SponsorBlock](https://sponsor.ajay.app/) API | `False` |
-| `-vc`, `--codec`, `--video-codec` <video-codec> | Output video codec | None |
-| `-t`, `--trim` <trim> | Trim the input video/audio from a specific start and end time (in seconds) using the format: start-end | None |
+| Option                                          | Description                                                                                            | Default Value |
+|-------------------------------------------------|--------------------------------------------------------------------------------------------------------|---------------|
+| `-rd`, `-rn`, `-rnd`, `--random`                | Randomize the output filename                                                                          | `False`       |
+| `-c`, `--crf` <crf>                             | Constant Rate Factor (CRF) value for video compression                                                 | `29`          |
+| `-r`, `--resolution` <resolution>               | Output video resolution                                                                                | None          |
+| `-a`, `-ab`, `--audio-bitrate` <audio-bitrate>  | Output audio bitrate                                                                                   | `128k`        |
+| `-k`, `-kw`, `-kwm`, `--keep`                   | Keep the watermark on the output video                                                                 | `False`       |
+| `-sb`, `-sponsorblock`                          | Remove the sponsor segments from the output video using [SponsorBlock](https://sponsor.ajay.app/) API  | `False`       |
+| `-vc`, `--codec`, `--video-codec` <video-codec> | Output video codec                                                                                     | None          |
+| `-t`, `--trim` <trim>                           | Trim the input video/audio from a specific start and end time (in seconds) using the format: start-end | None          |
 
 The CRF is a video compression method that grants users control over the output video's quality, with higher values resulting in lower quality and vice versa. It is recommended to avoid values below 22 or above 38.
 
@@ -49,10 +49,10 @@ Compressing a local file while adjusting its resolution to `480p` and saving it 
 dis -i video.webm -r 480p -o /home/user/Downloads
 ```
 
-Compressing a video from YouTube and change the video codec to `h265`, audio codec to `opus`, resolution to `720p`, and audio bitrate to `128k`, with a custom CRF value:
+Compressing a video from YouTube and change the video codec to `h265`, resolution to `720p`, and audio bitrate to `128`, with a custom CRF value:
 
 ```bash
-dis -i https://youtu.be/xxxxxxx -vc h265 -ac opus -r 720p -ab 128k -c 20
+dis -i https://youtu.be/xxxxxxx -vc h265 -r 720p -ab 128 -c 20
 ```
 
 Compressing a video from YouTube and trimming only a 60 seconds period of time.
