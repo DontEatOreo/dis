@@ -12,6 +12,8 @@ public class VideoDownloaderFactory : IDownloaderFactory
     private const string YouTubeUrlPart = "youtu";
     private const string RedditUrlPart = "redd";
 
+    private const string FormatSort = "vcodec:h264,ext:mp4:m4a";
+
     private readonly YoutubeDL _youtubeDl;
 
     public VideoDownloaderFactory(YoutubeDL youtubeDl)
@@ -25,33 +27,55 @@ public class VideoDownloaderFactory : IDownloaderFactory
         {
             { TikTokUrlPart, downloadQuery => new TikTokDownloader(_youtubeDl, downloadQuery, o.KeepWatermark) },
             { YouTubeUrlPart, downloadQuery => new YouTubeDownloader(_youtubeDl, downloadQuery) },
-            { RedditUrlPart, downloadQuery => new RedditDownloader(_youtubeDl, downloadQuery) }
+            { RedditUrlPart, downloadQuery => new RedditDownloader(_youtubeDl, downloadQuery) },
         };
 
-        OptionSet? optionSet = GenerateOptionSet(o.Trim);
+        var optionSet = GenerateOptionSet(o);
 
-        foreach (var downloader in downloaderDictionary)
+        DownloadQuery query;
+        foreach (var (key, value) in downloaderDictionary)
         {
-            if (o.Uri?.Host.Contains(downloader.Key) is not true)
+            if (o.Uri.Host.Contains(key) is false)
                 continue;
 
-            DownloadQuery downloadQuery = new(o.Uri, optionSet);
-            return downloader.Value(downloadQuery);
+            query = new DownloadQuery(o.Uri, optionSet);
+            return value(query);
         }
 
-        // Fallback to Generic downloader
-        DownloadQuery genralDownloadQuery = new(o.Uri, optionSet);
-        return new GenericDownloader(_youtubeDl, genralDownloadQuery);
+        query = new DownloadQuery(o.Uri, optionSet);
+        return new GenericDownloader(_youtubeDl, query);
     }
 
-    private OptionSet? GenerateOptionSet(string? timeOption)
+    private static OptionSet GenerateOptionSet(DownloadOptions o)
     {
-        OptionSet? optionSet = null;
-        if (timeOption is null)
-            return optionSet;
+        var trim = o.Trim;
+        var sponsorBlock = o.SponsorBlock;
 
-        var time = timeOption.Split('-');
-        optionSet = new OptionSet { ForceKeyframesAtCuts = true, DownloadSections = $"*{time[0]}-{time[1]}", FormatSort = "vcodec:h264,ext:mp4:m4a" };
+        OptionSet optionSet = new()
+        {
+            ForceKeyframesAtCuts = true,
+            FormatSort = FormatSort
+        };
+
+        if (trim is not null)
+        {
+            if (trim.Any(char.IsDigit) is false)
+                return optionSet;
+
+            var time = trim.Split('-');
+
+            optionSet = new OptionSet
+            {
+                DownloadSections = $"*{time[0]}-{time[1]}",
+            };
+        }
+
+        if (sponsorBlock)
+            optionSet = new OptionSet
+            {
+                SponsorblockRemove = "all"
+            };
+
         return optionSet;
     }
 }

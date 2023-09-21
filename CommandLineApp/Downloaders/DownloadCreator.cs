@@ -24,7 +24,7 @@ public sealed class DownloadCreator : IDownloader
         var videoDownloader = _factory.Create(options);
 
         var result = await videoDownloader.Download();
-        if (result.Date is not null && result.OutPath is not null)
+        if (result.OutPath is null)
             return result;
 
         _logger.Error("There was an error downloading the video");

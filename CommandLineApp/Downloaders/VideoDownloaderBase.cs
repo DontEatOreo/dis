@@ -2,6 +2,7 @@ using dis.CommandLineApp.Interfaces;
 using dis.CommandLineApp.Models;
 using Serilog;
 using YoutubeDLSharp;
+using YoutubeDLSharp.Metadata;
 
 namespace dis.CommandLineApp.Downloaders;
 
@@ -13,7 +14,7 @@ public abstract class VideoDownloaderBase : IVideoDownloader
 
     protected const string LiveStreamError = "Live streams are not supported";
     protected const string DownloadError = "Download failed";
-    protected const string TrimTimeError = "Trim time exceeds video length";
+    private const string TrimTimeError = "Trim time exceeds video length";
 
     protected VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery query, ILogger logger)
     {
@@ -39,34 +40,51 @@ public abstract class VideoDownloaderBase : IVideoDownloader
      * The * symbol indicates that the start time is relative to the end time
      * For example, *20-30 means 20 seconds before the end to 30 seconds before the end
      */
-    protected Tuple<float?, float?> ParseStartAndEndTime(string downloadSection)
+    private static (float, float) ParseStartAndEndTime(string downloadSection)
     {
-        var split = downloadSection?.Split('-');
+        var split = downloadSection.Split('-');
 
-        var start = float.TryParse(split?[0].Replace("*", ""), out var result)
-            ? result
-            : (float?)null;
-        var end = float.TryParse(split?[1], out result)
-            ? result
-            : (float?)null;
+        var start = float.Parse(split[0]
+            .Replace("*", string.Empty));
+        var end = float.Parse(split[1]);
 
-        return Tuple.Create(start, end);
+        return (start, end);
     }
 
-    // Checks if values for start and end are within the duration of the video
-    // If either is greater than the duration, we return an error
-    protected bool AreStartAndEndTimesValid(Tuple<float?, float?> times, float? videoDuration)
+    /// <summary>
+    /// Checks if the start and end times are valid given the duration of the video.
+    /// </summary>
+    /// <param name="start">The start time of the video.</param>
+    /// <param name="end">The end time of the video.</param>
+    /// <param name="duration">The duration of the video.</param>
+    /// <returns>True if the start and end times are valid, false otherwise.</returns>
+    private bool IsValidTimeRange(float start, float end, float? duration)
     {
-        var (start, end) = times;
+        var startHigherThanEnd = start > end;
+        var endHigherThanDuration = end > duration;
 
-        if (start is null || end is null)
+        if (startHigherThanEnd || endHigherThanDuration)
+        {
+            Logger.Error(TrimTimeError);
+            return false;
+        }
+
+        return true;
+    }
+
+    protected bool AreEmptySections(RunResult<VideoData> fetch)
+    {
+        var emptySections = Query.OptionSet.DownloadSections is null;
+        if (emptySections)
             return true;
-        if (!(start > videoDuration) && !(end > videoDuration))
+
+        var split = Query.OptionSet.DownloadSections!.Values.FirstOrDefault();
+        if (split is null)
             return true;
 
-        Logger.Error(TrimTimeError);
-        return false;
-
+        var (start, end) = ParseStartAndEndTime(split);
+        var duration = fetch.Data.Duration;
+        return IsValidTimeRange(start, end, duration);
     }
 
     public abstract Task<DownloadResult> Download();

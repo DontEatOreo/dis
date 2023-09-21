@@ -12,26 +12,19 @@ public class YouTubeDownloader : VideoDownloaderBase
 
     public override async Task<DownloadResult> Download()
     {
-        if (Query.OptionSet?.SponsorblockRemove is not null)
-            Logger.Information(SponsorBlockMessage);
-
         var fetch = await YoutubeDl.RunVideoDataFetch(Query.Uri.ToString());
         if (fetch.Success is false)
             return new DownloadResult(null, null);
         if (fetch.Data.IsLive is true)
         {
+            Console.WriteLine();
             Logger.Error(LiveStreamError);
             return new DownloadResult(null, null);
         }
 
-        var split = Query.OptionSet?.DownloadSections.Values.FirstOrDefault();
-        if (split is not null)
-        {
-            var times = ParseStartAndEndTime(split);
-            var duration = fetch.Data.Duration;
-            if (!AreStartAndEndTimesValid(times, duration))
-                return new DownloadResult(null, null);
-        }
+        var emptySections = AreEmptySections(fetch);
+        if (emptySections is false)
+            return new DownloadResult(null, null);
 
         var date = fetch.Data.UploadDate ?? fetch.Data.ReleaseDate;
 

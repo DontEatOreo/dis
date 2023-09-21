@@ -58,26 +58,33 @@ public sealed class CommandLineApp
         await ConvertVideosAsync(paths, parsed);
     }
 
-    private async Task DownloadVideosAsync(IReadOnlyCollection<Uri> links, Dictionary<string, DateTime?> videos, ParsedOptions options)
+    private async Task DownloadVideosAsync(IReadOnlyCollection<Uri> links,
+        Dictionary<string, DateTime?> videos,
+        ParsedOptions options)
     {
-        if (!links.Any())
+        if (links.Any() is false)
             return;
 
-        var downloadTasks = links.Select(link =>
+        foreach (var link in links)
         {
-            DownloadOptions downloadOptions = new(link, options.Trim, options.KeepWatermark, options.SponsorBlock);
-            var (download, time) = _downloader.DownloadTask(downloadOptions).GetAwaiter().GetResult();
-            if (download is null)
-                _logger.Error("Failed to download video: {Link}", link);
+            var trim = options.Trim;
+            var keepWatermark = options.KeepWatermark;
+            var sponsorBlock = options.SponsorBlock;
+
+            DownloadOptions downloadOptions = new(link, trim, keepWatermark, sponsorBlock);
+            var (path, date) = await _downloader.DownloadTask(downloadOptions);
+
+            if (path is null)
+                _logger.Error("There was an error downloading the video");
             else
-                videos.Add(download, time);
-            return Task.CompletedTask;
-        });
+            {
+                var added = videos.TryAdd(path, date);
+                if (added is false)
+                    _logger.Error("Failed to add video to list: {Path}", path);
+            }
+        }
 
-        foreach (var task in downloadTasks)
-            await task;
-
-        Console.WriteLine(); // New line after the download progress bar
+        Console.WriteLine(); // New line after download progress
         foreach (var path in videos.Keys)
         {
             // Converts the file size to a string with the appropriate unit

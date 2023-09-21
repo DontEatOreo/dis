@@ -22,18 +22,14 @@ public partial class TikTokDownloader : VideoDownloaderBase
             return new DownloadResult(null, null);
         if (fetch.Data.IsLive is true)
         {
+            Console.WriteLine();
             Logger.Error(LiveStreamError);
             return new DownloadResult(null, null);
         }
 
-        var split = Query.OptionSet?.DownloadSections.Values.FirstOrDefault();
-        if (split is not null)
-        {
-            var times = ParseStartAndEndTime(split);
-            var duration = fetch.Data.Duration;
-            if (!AreStartAndEndTimesValid(times, duration))
-                return new DownloadResult(null, null);
-        }
+        var emptySections = AreEmptySections(fetch);
+        if (emptySections is false)
+            return new DownloadResult(null, null);
 
         var date = fetch.Data.UploadDate ?? fetch.Data.ReleaseDate;
 
@@ -49,26 +45,14 @@ public partial class TikTokDownloader : VideoDownloaderBase
         var tikTokValue = formatMatch.Groups[2].Value; // e.g. "4000000"
         var format = $"h264_{resolution}_{tikTokValue}-0";
 
-        RunResult<string> download;
-        if (_keepWaterMarkValue)
-        {
-            download = await YoutubeDl.RunVideoDownload(Query.Uri.ToString(),
-                progress: DownloadProgress,
-                overrideOptions: new OptionSet
-                {
-                    Format = "download_addr-0"
-                });
-        }
-        else
-        {
-            download = await YoutubeDl.RunVideoDownload(Query.Uri.ToString(),
-                progress: DownloadProgress,
-                overrideOptions: new OptionSet
-                {
-                    Format = format
-                });
-        }
-        if (!download.Success)
+        var download = await YoutubeDl.RunVideoDownload(Query.Uri.ToString(),
+            progress: DownloadProgress,
+            overrideOptions: new OptionSet
+            {
+                Format = _keepWaterMarkValue ? "download_addr-0" : format
+            });
+
+        if (download.Success is false)
         {
             Logger.Error(DownloadError);
             return new DownloadResult(null, null);
@@ -78,6 +62,7 @@ public partial class TikTokDownloader : VideoDownloaderBase
         var path = Directory.GetFiles(YoutubeDl.OutputFolder).FirstOrDefault();
         if (path is null)
             throw new InvalidOperationException("No file found in output folder");
+
         return new DownloadResult(path, date);
     }
 

@@ -37,6 +37,8 @@ public sealed class Converter
         try
         {
             await conversion.Start();
+            if (dateTime.HasValue)
+                _processHandler.SetTimeStamps(outputPath, dateTime.Value);
         }
         catch (Exception e)
         {
@@ -53,15 +55,13 @@ public sealed class Converter
         _logger.Information("Converted video saved at: {OutputFilePath} | Size: {FileSize}",
             outputPath,
             fileSizeStr);
-
-        if (dateTime.HasValue)
-            _processHandler.SetTimeStamps(outputPath, dateTime.Value);
     }
 
     private void HandleCancellation(object? sender, ConsoleCancelEventArgs e)
     {
         if (e.SpecialKey is not ConsoleSpecialKey.ControlC)
             return;
+        Console.WriteLine();
         _logger.Information("Canceled");
     }
 }
