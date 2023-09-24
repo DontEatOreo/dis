@@ -27,7 +27,7 @@ public partial class TikTokDownloader : VideoDownloaderBase
             return new DownloadResult(null, null);
         }
 
-        var emptySections = AreEmptySections(fetch);
+        var emptySections = EmptySections(fetch);
         if (emptySections is false)
             return new DownloadResult(null, null);
 

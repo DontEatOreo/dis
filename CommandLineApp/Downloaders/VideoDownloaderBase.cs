@@ -35,56 +35,56 @@ public abstract class VideoDownloaderBase : IVideoDownloader
         Console.Write(downloadString);
     });
 
-    /*
-     * We want to parse the string as a float but ignore the * at the beginning
-     * The * symbol indicates that the start time is relative to the end time
-     * For example, *20-30 means 20 seconds before the end to 30 seconds before the end
-     */
-    private static (float, float) ParseStartAndEndTime(string downloadSection)
-    {
-        var split = downloadSection.Split('-');
-
-        var start = float.Parse(split[0]
-            .Replace("*", string.Empty));
-        var end = float.Parse(split[1]);
-
-        return (start, end);
-    }
-
     /// <summary>
-    /// Checks if the start and end times are valid given the duration of the video.
+    /// Determines if the sections specified in the OptionSet for downloading are empty.
     /// </summary>
-    /// <param name="start">The start time of the video.</param>
-    /// <param name="end">The end time of the video.</param>
-    /// <param name="duration">The duration of the video.</param>
-    /// <returns>True if the start and end times are valid, false otherwise.</returns>
-    private bool IsValidTimeRange(float start, float end, float? duration)
+    /// <param name="fetch">The result of the video fetch operation, which also includes the duration.</param>
+    /// <returns>True if the sections are empty or invalid; otherwise, false.</returns>
+    protected bool EmptySections(RunResult<VideoData> fetch)
     {
-        var startHigherThanEnd = start > end;
-        var endHigherThanDuration = end > duration;
-
-        if (startHigherThanEnd || endHigherThanDuration)
-        {
-            Logger.Error(TrimTimeError);
-            return false;
-        }
-
-        return true;
-    }
-
-    protected bool AreEmptySections(RunResult<VideoData> fetch)
-    {
+        /*
+         * For some reason check if DownloadSection (which is MultiValue<string>) is null and we run FirstOrDefault() on it we will get an exception
+         * A work around is to use "is null" against it and return early if it's null
+         */
         var emptySections = Query.OptionSet.DownloadSections is null;
         if (emptySections)
             return true;
 
-        var split = Query.OptionSet.DownloadSections!.Values.FirstOrDefault();
-        if (split is null)
-            return true;
-
+        var split = Query.OptionSet.DownloadSections!.Values[0];
         var (start, end) = ParseStartAndEndTime(split);
+
         var duration = fetch.Data.Duration;
-        return IsValidTimeRange(start, end, duration);
+        var validTimeRange = (start > end || end > duration) is false;
+        if (validTimeRange)
+            return validTimeRange;
+
+        Logger.Error(TrimTimeError);
+        return false;
+    }
+
+    /// <summary>
+    /// Extracts the start and end times from a given download section string.
+    /// </summary>
+    /// <param name="downloadSection">The string containing the download section details.</param>
+    /// <returns>A tuple containing the start and end times as floats.</returns>
+    private static (float, float) ParseStartAndEndTime(string downloadSection)
+    {
+        /*
+         * The download section string is split into two parts using '-' as a separator.
+         * The '*' character, which is used as a regex symbol for "yt-dlp", is not relevant for our parsing and is therefore removed.
+         * The start time is always on the left side of the split, and the end time is always on the right side.
+         */
+
+        var span = downloadSection.AsSpan();
+        var separatorIndex = span.IndexOf('-');
+
+        var startSpan = span[..separatorIndex].Trim('*');
+        var endSpan = span[(separatorIndex + 1)..];
+
+        var start = float.Parse(startSpan);
+        var end = float.Parse(endSpan);
+
+        return (start, end);
     }
 
     public abstract Task<DownloadResult> Download();

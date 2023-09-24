@@ -86,7 +86,7 @@ public sealed class ProcessHandler
         return conversion;
     }
 
-    private void ConversionProgress(object sender, ConversionProgressEventArgs args)
+    private static void ConversionProgress(object sender, ConversionProgressEventArgs args)
     {
         var percent = (int)Math.Round(args.Duration.TotalSeconds / args.TotalLength.TotalSeconds * 100);
         if (percent is 0)
