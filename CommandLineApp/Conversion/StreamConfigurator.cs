@@ -4,12 +4,26 @@ namespace dis.CommandLineApp.Conversion;
 
 public sealed class StreamConfigurator
 {
-    private readonly Globals _globals;
-
-    public StreamConfigurator(Globals globals)
+    private readonly string[] _av1Args =
     {
-        _globals = globals;
-    }
+        "-lag-in-frames 48",
+        "-row-mt 1",
+        "-tile-rows 0",
+        "-tile-columns 1"
+    };
+
+    private readonly string[] _vp9Args =
+    {
+        "-row-mt 1",
+        "-lag-in-frames 25",
+        "-cpu-used 4",
+        "-auto-alt-ref 1",
+        "-arnr-maxframes 7",
+        "-arnr-strength 4",
+        "-aq-mode 0",
+        "-enable-tpl 1",
+        "-row-mt 1",
+    };
 
     public void SetResolution(IVideoStream stream, string res)
     {
@@ -41,10 +55,10 @@ public sealed class StreamConfigurator
             _ => fourCore
         };
 
-        conversion.AddParameter(string.Join(" ", _globals.Av1Args));
+        conversion.AddParameter(string.Join(" ", _av1Args));
         conversion.AddParameter(cpuUsedParameter);
     }
 
     public void SetVp9Args(IConversion conversion)
-        => conversion.AddParameter(string.Join(" ", _globals.Vp9Args));
+        => conversion.AddParameter(string.Join(" ", _vp9Args));
 }
