@@ -9,20 +9,27 @@ public sealed class CommandLineValidator : ICommandLineValidator
     private readonly Globals _globals;
     private readonly ILogger _logger;
 
+    private readonly string[] _resolutionList =
+    {
+        "144p",
+        "240p",
+        "360p",
+        "480p",
+        "720p",
+        "1080p",
+        "1440p",
+        "2160p"
+    };
+
     public CommandLineValidator(ILogger logger, Globals globals)
     {
         _logger = logger;
         _globals = globals;
     }
 
-    public void ValidateInputs(OptionResult result)
+    public void Inputs(OptionResult result)
     {
         var inputs = result.GetValueOrDefault<string[]>();
-        if (inputs is null)
-        {
-            _logger.Error("No input files or links were provided");
-            return;
-        }
         foreach (var item in inputs)
         {
             if (File.Exists(item) || Uri.IsWellFormedUriString(item, UriKind.RelativeOrAbsolute))
@@ -33,7 +40,7 @@ public sealed class CommandLineValidator : ICommandLineValidator
         }
     }
 
-    public void ValidateOutput(OptionResult result)
+    public void Output(OptionResult result)
     {
         var input = result.GetValueOrDefault<string>();
         if (Directory.Exists(input))
@@ -44,101 +51,128 @@ public sealed class CommandLineValidator : ICommandLineValidator
         Environment.Exit(1);
     }
 
-    public void ValidateCrf(OptionResult result)
+    public void MultiThread(OptionResult result)
     {
         var input = result.GetValueOrDefault<int>();
-        if (input is >= 0 and <= 63)
+        var threads = Environment.ProcessorCount * 2;
+
+        if (input > 16)
+        {
+            _logger.Information("Due to the way FFmpeg works, anything more than 16 threads will be ignored");
+            input = 16;
+        }
+
+        if (input <= threads)
             return;
 
-        const string errorMsg = "CRF value must be between 0 and 63 (Avoid values below 20)";
-        _logger.Error(errorMsg);
+        _logger.Error("Number of threads cannot be greater than {Threads}", threads);
         Environment.Exit(1);
     }
 
-    public void ValidateAudioBitrate(OptionResult result)
+    public void Crf(OptionResult result)
     {
         var input = result.GetValueOrDefault<int>();
-        if (input % 2 is 0 && input > 0)
+
+        const int min = 6;
+        const int max = 63;
+
+        var validCrf = input switch
+        {
+            < 0 => false,
+            >= min and <= max => true,
+            _ => false
+        };
+        if (validCrf)
             return;
 
-        const string errorMsg = "Audio bitrate must be a multiple of 2";
-        _logger.Error(errorMsg);
+        _logger.Error("CRF value must be between {Min} and {Max} (Avoid values below 22)",
+            min, max);
         Environment.Exit(1);
     }
 
-    public void ValidateVideoCodec(OptionResult result)
+    public void AudioBitRate(OptionResult result)
     {
-        var input = result.GetValueOrDefault<string>();
-        var hasKeys = _globals.ValidVideoCodecsMap.Any(kv => kv.Key.Contains(input));
+        var input = result.GetValueOrDefault<int>();
+
+        if (input < 0)
+        {
+            _logger.Error("Audio bitrate cannot be negative");
+            Environment.Exit(1);
+        }
+
+        var validBitrate = input % 2 is 0 && input > 0;
+        if (validBitrate)
+            return;
+
+        _logger.Error("Audio bitrate must be a multiple of 2");
+        Environment.Exit(1);
+    }
+
+    public void VideoCodec(OptionResult result)
+    {
+        var input = result.GetValueOrDefault<string?>();
+        var hasKeys = _globals.VideoCodecs.Any(kv => kv.Key.Contains(input));
         if (input is not null)
             if (hasKeys)
                 return;
 
-        const string errorMsg = "Invalid video codec";
-        _logger.Error(errorMsg);
+        _logger.Error("Invalid video codec");
         Environment.Exit(1);
     }
 
-    public void ValidateResolution(OptionResult result)
+    public void Resolution(OptionResult result)
     {
         var input = result.GetValueOrDefault<string>();
-        if (_globals.ResolutionList.Contains(input))
+        if (_resolutionList.Contains(input))
             return;
 
-        const string errorMsg = "Invalid resolution";
-        _logger.Error(errorMsg);
+        _logger.Error("Invalid resolution");
         Environment.Exit(1);
     }
 
-
-    public void ValidateTrim(OptionResult result)
+    public void Trim(OptionResult result)
     {
-        /*
-         * We're using the following format as a literal string:
-         * *start-end
-         * where start and end are floats
-         */
         var input = result.GetValueOrDefault<string?>();
         if (input is null)
             return;
 
-        var split = input.Split('-');
-        if (split.Length is not 2)
+        var span = input.AsSpan();
+        // Find the position of the dash in the span.
+        var dashIndex = span.IndexOf('-');
+
+        // If there's no dash, show an error and stop.
+        if (dashIndex is -1)
         {
-            const string errorMsg = "Invalid trim format";
-            _logger.Error(errorMsg);
+            _logger.Error("Invalid trim format");
             Environment.Exit(1);
         }
 
-        _ = split[0].Replace("*", ""); // Remove the * if it exists
-        var startSuccess = float.TryParse(split[0], out var start);
-        var endSuccess = float.TryParse(split[1], out var end);
+        // Split the span into two parts at the dash.
+        var startSpan = span[..dashIndex];
+        var endSpan = span[(dashIndex + 1)..];
 
-        if (startSuccess is false || endSuccess is false)
-        {
-            const string errorMsg = "Invalid trim format";
-            _logger.Error(errorMsg);
-            Environment.Exit(1);
-        }
+        // Try to convert both parts to floats. If either fails, show an error and stop.
+        var start = float.Parse(startSpan);
+        var end = float.Parse(endSpan);
 
+        // If either value is negative, show an error and stop.
         if (start < 0 || end < 0)
         {
-            const string errorMsg = "Trim values must be positive";
-            _logger.Error(errorMsg);
+            _logger.Error("Trim values must be positive");
             Environment.Exit(1);
         }
 
+        // If the start value is greater than the end value, show an error and stop.
         if (start > end)
         {
-            const string errorMsg = "Start value must be lower than end value";
-            _logger.Error(errorMsg);
+            _logger.Error("Start value must be lower than end value");
             Environment.Exit(1);
         }
 
+        // If the difference between the start and end values is less than 1, show an error and stop.
         if (end - start < 1)
         {
-            const string errorMsg = "Trim values must be at least 1 second apart";
-            _logger.Error(errorMsg);
+            _logger.Error("Trim values must be at least 1 second apart");
             Environment.Exit(1);
         }
     }

@@ -1,19 +1,16 @@
 using dis.CommandLineApp.Interfaces;
 using dis.CommandLineApp.Models;
-using Serilog;
 
 namespace dis.CommandLineApp.Downloaders;
 
 public sealed class DownloadCreator : IDownloader
 {
     private readonly Globals _globals;
-    private readonly ILogger _logger;
     private readonly IDownloaderFactory _factory;
 
-    public DownloadCreator(Globals globals, ILogger logger, IDownloaderFactory factory)
+    public DownloadCreator(Globals globals, IDownloaderFactory factory)
     {
         _globals = globals;
-        _logger = logger;
         _factory = factory;
     }
 
@@ -23,15 +20,15 @@ public sealed class DownloadCreator : IDownloader
 
         var videoDownloader = _factory.Create(options);
 
-        var result = await videoDownloader.Download();
-        if (result.OutPath is null)
-            return result;
-
-        _logger.Error("There was an error downloading the video");
-        return new DownloadResult(null, null);
+        var dlResult = await videoDownloader.Download();
+        return dlResult.OutPath is null
+            ? new DownloadResult(null, null)
+            : dlResult;
     }
 
-    // This methods creates a temporary folder in the user's temp directory. To download the video/s
+    /// <summary>
+    /// Prepare a TEMP folder for downloading a video
+    /// </summary>
     private void PrepareTempDirectory()
     {
         var temp = Path.GetTempPath();
@@ -40,7 +37,7 @@ public sealed class DownloadCreator : IDownloader
 
         Directory.CreateDirectory(tempPath);
 
-        _globals.YoutubeDl.OutputFolder = tempPath; // Set temp as output folder
-        _globals.TempDir.Add(tempPath); // We're adding temp path to a global list so after conversion we can delete remaining files.
+        _globals.YoutubeDl.OutputFolder = tempPath;
+        _globals.TempDir.Add(tempPath);
     }
 }

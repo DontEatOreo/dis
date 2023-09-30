@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
+using Serilog.Core;
+using Serilog.Events;
 using Serilog.Expressions;
 using Serilog.Settings.Configuration;
 
@@ -15,6 +17,7 @@ var consoleLoggerConfigExtension = typeof(ConsoleLoggerConfigurationExtensions).
 var serilogExpression = typeof(SerilogExpression).Assembly;
 ConfigurationReaderOptions options = new(consoleLoggerConfigExtension, serilogExpression);
 
+LoggingLevelSwitch levelSwitch = new();
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
 var host = Host.CreateDefaultBuilder()
@@ -22,8 +25,8 @@ var host = Host.CreateDefaultBuilder()
     {
         services.AddSingleton<Globals>();
         services.AddSingleton<FileExtensionContentTypeProvider>();
-        services.AddSingleton<CommandLineApp>();
-        services.AddSingleton<CommandLineOptions>();
+        services.AddSingleton<ICommandLineApp, CommandLineApp>();
+        services.AddSingleton<ICommandLineOptions, CommandLineOptions>();
         services.AddSingleton<ICommandLineValidator, CommandLineValidator>();
         services.AddSingleton<IDownloaderFactory, VideoDownloaderFactory>();
 
@@ -32,6 +35,7 @@ var host = Host.CreateDefaultBuilder()
         services.AddTransient<ProcessHandler>();
         services.AddTransient<PathHandler>();
         services.AddTransient<Converter>();
+        services.AddTransient<LoggingLevelSwitch>();
 
         services.AddTransient<IDownloader, DownloadCreator>();
         services.AddSingleton<IDownloaderFactory>(sp =>
@@ -43,6 +47,7 @@ var host = Host.CreateDefaultBuilder()
     .UseSerilog((context, configuration) =>
     {
         configuration
+            .MinimumLevel.ControlledBy(levelSwitch)
             .ReadFrom.Configuration(context.Configuration, options)
             .Enrich.FromLogContext()
             .WriteTo.Console();
@@ -52,14 +57,23 @@ var host = Host.CreateDefaultBuilder()
 using var serviceScope = host.Services.CreateScope();
 var services = serviceScope.ServiceProvider;
 
+var commandLineApp = services.GetRequiredService<ICommandLineApp>();
+var commandLineOptions = services.GetRequiredService<ICommandLineOptions>();
+
+var (config, unParsedOptions) = commandLineOptions.GetCommandLineOptions();
+var parseResult = config.Parse(args);
+var parsedOptions = commandLineApp.ParseOptions(parseResult, unParsedOptions);
+
+// Set the MinimumLevel property of the switch based on the argument value
+levelSwitch.MinimumLevel = parsedOptions.Verbose ? LogEventLevel.Verbose : // Set the minimum level to Verbose
+    LogEventLevel.Information;
+
 try
 {
-    var commandLineApp = services.GetRequiredService<CommandLineApp>();
-    await commandLineApp.Run(args);
+    await commandLineApp.Handler(parsedOptions);
 }
-catch (Exception ex)
+catch (Exception e)
 {
-    var logger = services.GetRequiredService<ILogger>();
-    const string error = "An error occurred while running the app";
-    logger.Error(ex, error);
+    Log.Fatal(e, "An error occurred while running the app");
+    throw;
 }

@@ -15,12 +15,6 @@
 **/packages/
 flake.lock
 
-!important!.vscode/settings.json
-!important!.vscode/tasks.json
-!important!.vscode/launch.json
-!important!.vscode/extensions.json
-!important!.vscode/*.code-snippets
-
 # auto generated files
 *.dll
 *.exe
@@ -28,7 +22,6 @@ flake.lock
 *.json
 *.rsp
 *.cache
-*.config
 *.csproj.user
 
 .history/

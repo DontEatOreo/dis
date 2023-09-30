@@ -12,8 +12,6 @@ I created this project to make smaller videos that load faster for everyone and 
 
 To install **dis** 🎥, you need to have [FFmpeg](https://ffmpeg.org/download.html) and [YT-DLP](https://github.com/yt-dlp/yt-dlp) installed on your system. You can download them from their official websites or use your package manager of choice.
 
-You also need to have [.NET 7.0](https://dotnet.microsoft.com/download/dotnet/7.0) or higher installed on your system. You can download it from the official website or use your package manager of choice.
-
 You can then download the latest release of **dis** 🎥 from the [Releases](https://github.com/DontEatOreo/dis/releases) tab on GitHub. Alternatively, you can clone this repository and build the project yourself using [dotnet publish](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-publish).
 
 ## Usage

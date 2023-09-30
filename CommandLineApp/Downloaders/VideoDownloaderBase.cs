@@ -12,18 +12,85 @@ public abstract class VideoDownloaderBase : IVideoDownloader
     protected readonly DownloadQuery Query;
     protected readonly ILogger Logger;
 
-    protected const string LiveStreamError = "Live streams are not supported";
-    protected const string DownloadError = "Download failed";
+    private const string LiveStreamError = "Live streams are not supported";
+    private const string DownloadError = "Download failed";
+    private const string FetchError = "Failed to fetch url";
     private const string TrimTimeError = "Trim time exceeds video length";
 
-    protected VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery query, ILogger logger)
+    protected VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery query)
     {
         YoutubeDl = youtubeDl;
         Query = query;
-        Logger = logger;
+        Logger = Log.Logger.ForContext<VideoDownloaderBase>();
     }
 
-    protected readonly Progress<DownloadProgress> DownloadProgress = new(p =>
+    public async Task<DownloadResult> Download()
+    {
+        var fetch = await FetchVideoData();
+        if (fetch.Success is false)
+        {
+            Logger.Error(FetchError);
+            return new DownloadResult(null, null);
+        }
+        if (fetch.Data.IsLive is true)
+        {
+            Logger.Error(LiveStreamError);
+            return new DownloadResult(null, null);
+        }
+
+        var emptySections = EmptySections(fetch);
+        if (emptySections is false)
+            return new DownloadResult(null, null);
+
+        // Pre-download custom logic
+        await PreDownload(fetch);
+
+        // The downloading part can be overridden in child classes
+        var dlResult = await DownloadVideo(fetch);
+        if (dlResult is null)
+            return new DownloadResult(null, null);
+        Console.WriteLine();
+
+        // Post-download custom logic
+        var postDownload = await PostDownload(fetch);
+        var postNull = string.IsNullOrEmpty(postDownload);
+
+        var path = postNull
+            ? Directory.GetFiles(YoutubeDl.OutputFolder).FirstOrDefault()
+            : postDownload;
+        var date = fetch.Data.UploadDate ?? fetch.Data.ReleaseDate;
+        return new DownloadResult(path, date);
+    }
+
+    private async Task<RunResult<VideoData>> FetchVideoData()
+    {
+        Logger.Verbose("Started fetching {QueryUri}", Query.Uri);
+        var fetch = await YoutubeDl.RunVideoDataFetch(Query.Uri.ToString());
+        Logger.Verbose("Finished fetching {QueryUri}", Query.Uri);
+        return fetch;
+    }
+
+    protected virtual Task PreDownload(RunResult<VideoData> fetch)
+        => Task.CompletedTask;
+
+    protected virtual Task<string> PostDownload(RunResult<VideoData> fetch)
+        => Task.FromResult(string.Empty);
+
+    private async Task<RunResult<string?>?> DownloadVideo(RunResult<VideoData> fetch)
+    {
+        Logger.Verbose("Starting downloading {Title}", fetch.Data.Title);
+        var download = await YoutubeDl.RunVideoDownload(Query.Uri.ToString(),
+            overrideOptions: Query.OptionSet,
+            progress: _downloadProgress);
+        Logger.Verbose("Finished downloading {Title}", fetch.Data.Title);
+        if (download.Success)
+            return download;
+
+        Logger.Error(DownloadError);
+        return default;
+    }
+
+    private readonly Progress<DownloadProgress> _downloadProgress = new(p =>
     {
         var progress = Math.Round(p.Progress, 2);
         if (progress is 0)
@@ -40,10 +107,11 @@ public abstract class VideoDownloaderBase : IVideoDownloader
     /// </summary>
     /// <param name="fetch">The result of the video fetch operation, which also includes the duration.</param>
     /// <returns>True if the sections are empty or invalid; otherwise, false.</returns>
-    protected bool EmptySections(RunResult<VideoData> fetch)
+    private bool EmptySections(RunResult<VideoData> fetch)
     {
         /*
-         * For some reason check if DownloadSection (which is MultiValue<string>) is null and we run FirstOrDefault() on it we will get an exception
+         * For some reason check if DownloadSection (which is MultiValue<string>)
+         * is null and we run FirstOrDefault() on it we will get an exception
          * A work around is to use "is null" against it and return early if it's null
          */
         var emptySections = Query.OptionSet.DownloadSections is null;
@@ -86,6 +154,4 @@ public abstract class VideoDownloaderBase : IVideoDownloader
 
         return (start, end);
     }
-
-    public abstract Task<DownloadResult> Download();
 }

@@ -11,25 +11,36 @@ public sealed class CodecParser
         _globals = globals;
     }
 
-    public bool TryParseCodec(string? inputCodec, out VideoCodec outputCodec)
-    {
-        if (inputCodec is null)
-        {
-            outputCodec = VideoCodec.libx264;
-            return false;
-        }
+    /// <summary>
+    /// Retrieves the type of video codec from a given string
+    /// </summary>
+    /// <param name="inputCodec">The string that represents the video codec.</param>
+    /// <returns>The type of VideoCodec that matches the given string, or VideoCodec.libx264 if no match is found.</returns>
+    public VideoCodec GetCodec(string? inputCodec) => ParseCodec(inputCodec);
 
-        var validCodecs = _globals.ValidVideoCodecsMap;
-        foreach (var (key, value) in validCodecs)
+    /// <summary>
+    /// Checks the given string to find out the type of video codec.
+    /// If no match is found or if the string is empty, it returns the default video codec 'libx264'.
+    /// </summary>
+    /// <param name="inputCodec">The string that represents the video codec.</param>
+    /// <returns>The type of VideoCodec that matches the given string, or VideoCodec.libx264 if no match is found.</returns>
+    private VideoCodec ParseCodec(string? inputCodec)
+    {
+        // If the input string is null, return the default video codec
+        if (inputCodec is null)
+            return VideoCodec.libx264;
+
+        var videoCodecs = _globals.VideoCodecs;
+        foreach (var (key, value) in videoCodecs)
         {
+            // If the key does not contain the input string, continue to the next iteration
             if (key.Contains(inputCodec) is false)
                 continue;
 
-            outputCodec = value;
-            return true;
+            return value;
         }
 
-        outputCodec = VideoCodec.libx264;
-        return false;
+        // If no match is found in the dictionary, return the default video codec
+        return VideoCodec.libx264;
     }
 }

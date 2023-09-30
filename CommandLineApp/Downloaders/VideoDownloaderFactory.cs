@@ -25,56 +25,41 @@ public class VideoDownloaderFactory : IDownloaderFactory
     {
         Dictionary<string, Func<DownloadQuery, IVideoDownloader>> downloaderDictionary = new()
         {
-            { TikTokUrlPart, downloadQuery => new TikTokDownloader(_youtubeDl, downloadQuery, o.KeepWatermark) },
+            { TikTokUrlPart, downloadQuery => new TikTokDownloader(_youtubeDl, downloadQuery, o.Options.KeepWatermark) },
             { YouTubeUrlPart, downloadQuery => new YouTubeDownloader(_youtubeDl, downloadQuery) },
             { RedditUrlPart, downloadQuery => new RedditDownloader(_youtubeDl, downloadQuery) },
         };
 
         var optionSet = GenerateOptionSet(o);
 
-        DownloadQuery query;
-        foreach (var (key, value) in downloaderDictionary)
-        {
-            if (o.Uri.Host.Contains(key) is false)
-                continue;
-
-            query = new DownloadQuery(o.Uri, optionSet);
-            return value(query);
-        }
-
-        query = new DownloadQuery(o.Uri, optionSet);
-        return new GenericDownloader(_youtubeDl, query);
+        var entry = downloaderDictionary
+            .FirstOrDefault(e => o.Uri.Host.Contains(e.Key));
+        var query = new DownloadQuery(o.Uri, optionSet);
+        return entry.Key is not null
+            ? entry.Value(query)
+            : new GenericDownloader(_youtubeDl, query);
     }
 
     private static OptionSet GenerateOptionSet(DownloadOptions o)
     {
-        var trim = o.Trim;
-        var sponsorBlock = o.SponsorBlock;
-
         OptionSet optionSet = new()
         {
-            ForceKeyframesAtCuts = true,
             FormatSort = FormatSort
         };
 
-        if (trim is not null)
+        if (o.Options.Trim is not null)
         {
-            if (trim.Any(char.IsDigit) is false)
+            if (o.Options.Trim.Any(char.IsDigit) is false)
                 return optionSet;
 
-            var time = trim.Split('-');
+            var time = o.Options.Trim.Split('-');
 
-            optionSet = new OptionSet
-            {
-                DownloadSections = $"*{time[0]}-{time[1]}",
-            };
+            optionSet.ForceKeyframesAtCuts = true;
+            optionSet.DownloadSections = $"*{time[0]}-{time[1]}";
         }
 
-        if (sponsorBlock)
-            optionSet = new OptionSet
-            {
-                SponsorblockRemove = "all"
-            };
+        if (o.Options.SponsorBlock)
+            optionSet.SponsorblockRemove = "all";
 
         return optionSet;
     }

@@ -1,52 +1,77 @@
 using dis.CommandLineApp.Models;
+using Xabe.FFmpeg;
 
 namespace dis.CommandLineApp.Conversion;
 
 public sealed class PathHandler
 {
     private readonly CodecParser _codecParser;
-    private readonly Globals _globals;
 
-    public PathHandler(Globals globals, CodecParser codecParser)
+    private readonly Dictionary<string, VideoCodec[]> _videoExtMap = new()
     {
-        _globals = globals;
+        { "mp4", new[] { VideoCodec.libx264, VideoCodec.hevc } },
+        { "webm", new[] { VideoCodec.vp8, VideoCodec.vp9, VideoCodec.av1 } }
+    };
+
+    public PathHandler(CodecParser codecParser)
+    {
         _codecParser = codecParser;
     }
 
-    public string GetCompressPath(string file, ParsedOptions options)
+    /// <summary>
+    /// This method returns the path of the compressed file with the appropriate extension based on the codec.
+    /// </summary>
+    /// <param name="file">The original file path.</param>
+    /// <param name="codec">The codec used for compression, can be null.</param>
+    /// <returns>The new file path with the appropriate extension for the compressed file.</returns>
+    public string GetCompressPath(string file, string? codec)
     {
-        var videoExtMap = _globals.VideoExtMap;
-        _ = _codecParser.TryParseCodec(options.VideoCodec, out var videoCodec);
+        var videoCodec = _codecParser.GetCodec(codec);
+
+        var matchingExtensions = _videoExtMap
+            .Where(kvp => kvp.Value.Contains(videoCodec))
+            .ToList();
 
         string? extension = null;
-        foreach (var kvp in
-                 videoExtMap.Where(kvp => kvp.Value.Contains(videoCodec)))
-        {
-            extension = kvp.Key;
+        if (matchingExtensions.Any() is false)
             return Path.ChangeExtension(file, extension);
-        }
+
+        // If the file already has the correct extension, return the file path
+        extension = matchingExtensions.First().Key;
 
         return Path.ChangeExtension(file, extension);
     }
 
-    public string ConstructFilePath(ParsedOptions options, string compressedVideoPath)
+    /// <summary>
+    /// Constructs the file path for the output file based on the provided options and the path of the compressed file.
+    /// </summary>
+    /// <param name="o">The parsed options for file processing.</param>
+    /// <param name="cmpPath">The path of the compressed file.</param>
+    /// <returns>The constructed file path for the output file.</returns>
+    /// <exception cref="Exception">Thrown when the original file name cannot be retrieved from the compressed file path.</exception>
+    public string ConstructFilePath(ParsedOptions o, string cmpPath)
     {
-        var uuid = Guid.NewGuid().ToString()[..4];
+        var id = Guid.NewGuid().ToString()[..4];
 
-        var ogFileName = Path.GetFileName(compressedVideoPath);
-        if (ogFileName is null)
-            throw new Exception("Could not get the original file name");
+        var orgName = Path.GetFileName(cmpPath);
 
-        var outputFilePath = Path.Combine(options.Output, ogFileName);
-        var ogExtension = Path.GetExtension(compressedVideoPath);
+        if (orgName is null)
+            throw new FileNotFoundException("Could not get the original file name");
 
-        var outputFileName = File.Exists(outputFilePath)
-            ? $"{Path.GetFileNameWithoutExtension(ogFileName)}-{uuid}{ogExtension}"
-            : ogFileName;
+        var iniOutPath = Path.Combine(o.Output, orgName);
 
-        if (options.RandomFileName)
-            outputFileName = $"{uuid}{ogExtension}";
+        var orgExt = Path.GetExtension(cmpPath);
 
-        return Path.Combine(options.Output, outputFileName);
+        var outName = File.Exists(iniOutPath)
+            // If a file exists, append the id to the original file name
+            ? $"{Path.GetFileNameWithoutExtension(orgName)}-{id}{orgExt}"
+            // If no file exists, use the original file name
+            : orgName;
+
+        // If random file names are enabled, use the id as the file name
+        if (o.RandomFileName)
+            outName = $"{id}{orgExt}";
+
+        return Path.Combine(o.Output, outName);
     }
 }

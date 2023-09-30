@@ -1,37 +1,17 @@
 using dis.CommandLineApp.Models;
+using Serilog;
 using YoutubeDLSharp;
+using YoutubeDLSharp.Metadata;
 
 namespace dis.CommandLineApp.Downloaders;
 
 public class RedditDownloader : VideoDownloaderBase
 {
     public RedditDownloader(YoutubeDL youtubeDl, DownloadQuery downloadQuery)
-        : base(youtubeDl, downloadQuery, Serilog.Log.ForContext<RedditDownloader>()) { }
+        : base(youtubeDl, downloadQuery) { }
 
-    public override async Task<DownloadResult> Download()
+    protected override Task<string> PostDownload(RunResult<VideoData> fetch)
     {
-        var fetch = await YoutubeDl.RunVideoDataFetch(Query.Uri.ToString());
-        if (fetch.Success is false)
-            return new DownloadResult(null, null);
-        if (fetch.Data.IsLive is true)
-        {
-            Console.WriteLine();
-            Logger.Error(LiveStreamError);
-            return new DownloadResult(null, null);
-        }
-
-        var emptySections = EmptySections(fetch);
-        if (emptySections is false)
-            return new DownloadResult(null, null);
-
-        var download = await YoutubeDl.RunVideoDownload(
-            url: Query.Uri.ToString(),
-            overrideOptions: Query.OptionSet,
-            progress: DownloadProgress);
-
-        if (download.Success is false)
-            return new DownloadResult(null, null);
-
         var videoId = fetch.Data.ID;
         var displayId = fetch.Data.DisplayID;
 
@@ -39,17 +19,19 @@ public class RedditDownloader : VideoDownloaderBase
             .FirstOrDefault(f => f.Contains(videoId));
 
         if (File.Exists(videoPath) is false)
-            throw new FileNotFoundException($"File {videoId} with ID {displayId} not found", videoPath);
+            throw new FileNotFoundException($"File {videoId} with ID {displayId} not found",
+                Path.GetFileName(videoPath));
 
         var extension = Path.GetExtension(videoPath);
         var destFile = Path.Combine(YoutubeDl.OutputFolder, $"{displayId}{extension}");
 
+        Logger.Verbose("Renaming {VideoPath} to {DestFile}",
+            videoPath,
+            destFile);
         File.Move(videoPath, destFile);
 
         var path = Directory.GetFiles(YoutubeDl.OutputFolder)
             .FirstOrDefault(f => f.Contains(displayId));
-
-        var date = fetch.Data.UploadDate ?? fetch.Data.ReleaseDate;
-        return new DownloadResult(path, date);
+        return Task.FromResult(path ?? string.Empty);
     }
 }
