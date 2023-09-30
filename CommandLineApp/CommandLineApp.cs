@@ -1,5 +1,4 @@
 using System.CommandLine;
-using System.CommandLine.Invocation;
 using dis.CommandLineApp.Conversion;
 using dis.CommandLineApp.Interfaces;
 using dis.CommandLineApp.Models;
@@ -7,71 +6,60 @@ using Serilog;
 
 namespace dis.CommandLineApp;
 
-public sealed class CommandLineApp
+public sealed class CommandLineApp : ICommandLineApp
 {
     private readonly ILogger _logger;
     private readonly Globals _globals;
     private readonly IDownloader _downloader;
     private readonly Converter _converter;
-    private readonly CommandLineOptions _commandLineOptions;
 
     public CommandLineApp(ILogger logger,
         Globals globals,
         IDownloader downloader,
-        Converter converter,
-        CommandLineOptions commandLineOptions)
+        Converter converter)
     {
         _logger = logger;
         _globals = globals;
         _downloader = downloader;
         _converter = converter;
-        _commandLineOptions = commandLineOptions;
     }
 
-    public async Task Run(string[] args)
+    public async Task Handler(ParsedOptions o)
     {
-        var (rootCommand, unParseOptions) = await _commandLineOptions.GetCommandLineOptions();
-        rootCommand.SetHandler(context => RunHandler(context, unParseOptions));
-        await rootCommand.InvokeAsync(args);
-    }
-
-    private async Task RunHandler(InvocationContext context, UnParseOptions options)
-    {
-        var parsed = ParseOptions(context, options);
-
         // On links list we ignore all files by check if they exist
-        var links = parsed.Inputs.Where(video =>
-                Uri.IsWellFormedUriString(video, UriKind.RelativeOrAbsolute) && File.Exists(video) is false)
-            .Select(video => new Uri(video))
-            .ToList();
+        var links = o.Inputs
+            .Where(video =>
+                Uri.IsWellFormedUriString(video, UriKind.RelativeOrAbsolute) &&
+                File.Exists(video) is false)
+            .Select(video => new Uri(video));
+
         // And now we add them to Separate list
-        var files = parsed.Inputs.Where(File.Exists).ToList();
+        var files = o.Inputs
+            .Where(File.Exists);
 
         // We store all the downloaded videos here
         Dictionary<string, DateTime?> paths = new();
-        await DownloadVideosAsync(links, paths, parsed);
+        await Download(links, paths, o);
 
         // Add existing files to the videoPaths list
         foreach (var file in files)
             paths.TryAdd(file, null);
 
-        await ConvertVideosAsync(paths, parsed);
+        await Convert(paths, o);
     }
 
-    private async Task DownloadVideosAsync(IReadOnlyCollection<Uri> links,
+    private async Task Download(IEnumerable<Uri> links,
         Dictionary<string, DateTime?> videos,
         ParsedOptions options)
     {
-        if (links.Any() is false)
+        var list = links.ToList();
+        if (list.Any() is false)
             return;
 
-        foreach (var link in links)
+        ParallelOptions parallel = new() { MaxDegreeOfParallelism = 4 };
+        await Parallel.ForEachAsync(list, parallel, async (link, _) =>
         {
-            var trim = options.Trim;
-            var keepWatermark = options.KeepWatermark;
-            var sponsorBlock = options.SponsorBlock;
-
-            DownloadOptions downloadOptions = new(link, trim, keepWatermark, sponsorBlock);
+            DownloadOptions downloadOptions = new(link, options);
             var (path, date) = await _downloader.DownloadTask(downloadOptions);
 
             if (path is null)
@@ -82,9 +70,8 @@ public sealed class CommandLineApp
                 if (added is false)
                     _logger.Error("Failed to add video to list: {Path}", path);
             }
-        }
+        });
 
-        Console.WriteLine(); // New line after download progress
         foreach (var path in videos.Keys)
         {
             // Converts the file size to a string with the appropriate unit
@@ -92,50 +79,23 @@ public sealed class CommandLineApp
             var fileSizeStr = fileSize < 1024 * 1024
                 ? $"{fileSize / 1024.0:F2} KiB"
                 : $"{fileSize / 1024.0 / 1024.0:F2} MiB";
+
             _logger.Information(
-                "Downloaded video to: {Path} | Size: {Size}", path, fileSizeStr);
+                "Downloaded video to: {Path} | Size: {Size}",
+                path,
+                fileSizeStr);
         }
     }
 
-    private static ParsedOptions ParseOptions(InvocationContext context, UnParseOptions o)
-    {
-        var inputs = context.ParseResult.GetValueForOption(o.Inputs)!;
-        var output = context.ParseResult.GetValueForOption(o.Output)!;
-        var crf = context.ParseResult.GetValueForOption(o.Crf);
-        var resolution = context.ParseResult.GetValueForOption(o.Resolution!);
-        var videoCodec = context.ParseResult.GetValueForOption(o.VideoCodec!);
-        var trim = context.ParseResult.GetValueForOption(o.Trim!);
-
-        var audioBitrate = context.ParseResult.GetValueForOption(o.AudioBitrate);
-
-        var randomFileName = context.ParseResult.GetValueForOption(o.RandomFileName);
-        var keepWaterMark = context.ParseResult.GetValueForOption(o.KeepWatermark);
-        var sponsorBlock = context.ParseResult.GetValueForOption(o.SponsorBlock);
-
-        ParsedOptions options = new()
-        {
-            Inputs = inputs,
-            Output = output,
-            Crf = crf,
-            Resolution = resolution,
-            VideoCodec = videoCodec,
-            Trim = trim,
-            AudioBitrate = audioBitrate,
-            RandomFileName = randomFileName,
-            KeepWatermark = keepWaterMark,
-            SponsorBlock = sponsorBlock
-        };
-
-        return options;
-    }
-
-    private async Task ConvertVideosAsync(IEnumerable<KeyValuePair<string, DateTime?>> videos, ParsedOptions options)
+    private async Task Convert(IEnumerable<KeyValuePair<string, DateTime?>> videos, ParsedOptions options)
     {
         foreach (var (path, date) in videos)
         {
             try
             {
+                _logger.Verbose("Converting video: {Path}", path);
                 await _converter.ConvertVideo(path, date, options);
+                _logger.Verbose("Finished converting video: {Path}", path);
             }
             catch (Exception ex)
             {
@@ -143,6 +103,48 @@ public sealed class CommandLineApp
             }
         }
 
-        _globals.DeleteLeftOvers();
+        var hasAny = _globals.TempDir.Any();
+        if (hasAny is false)
+            return;
+
+        _globals.TempDir.ForEach(d =>
+        {
+            Directory.Delete(d, true);
+            _logger.Verbose("Deleted temp dir: {Dir}", d);
+        });
+    }
+
+    public ParsedOptions ParseOptions(ParseResult result, UnParsedOptions unparsed)
+    {
+        var inputs = result.GetResult(unparsed.Inputs)?.GetValueOrDefault<string[]>()!;
+        var output = result.GetResult(unparsed.Output)?.GetValueOrDefault<string>()!;
+        var multiThread = result.GetResult(unparsed.MultiThread)?.GetValueOrDefault<int>() ?? 0;
+        var crf = result.GetResult(unparsed.Crf)?.GetValueOrDefault<int>() ?? 0;
+        var resolution = result.GetResult(unparsed.Resolution)?.GetValueOrDefault<string>()!;
+        var videoCodec = result.GetResult(unparsed.VideoCodec)?.GetValueOrDefault<string>()!;
+        var trim = result.GetResult(unparsed.Trim)?.GetValueOrDefault<string>()!;
+        var audioBitrate = result.GetResult(unparsed.AudioBitrate)?.GetValueOrDefault<int>() ?? 0;
+        var randomFileName = result.GetResult(unparsed.RandomFileName)?.GetValueOrDefault<bool>() ?? false;
+        var keepWaterMark = result.GetResult(unparsed.KeepWatermark)?.GetValueOrDefault<bool>() ?? false;
+        var sponsorBlock = result.GetResult(unparsed.SponsorBlock)?.GetValueOrDefault<bool>() ?? false;
+        var verbose = result.GetResult(unparsed.Verbose)?.GetValueOrDefault<bool>() ?? false;
+
+        ParsedOptions parsed = new()
+        {
+            Inputs = inputs,
+            Output = output,
+            MultiThread = multiThread,
+            Crf = crf,
+            Resolution = resolution,
+            VideoCodec = videoCodec,
+            Trim = trim,
+            AudioBitrate = audioBitrate,
+            RandomFileName = randomFileName,
+            KeepWatermark = keepWaterMark,
+            SponsorBlock = sponsorBlock,
+            Verbose = verbose
+        };
+
+        return parsed;
     }
 }

@@ -4,83 +4,96 @@ using dis.CommandLineApp.Models;
 
 namespace dis.CommandLineApp;
 
-public sealed class CommandLineOptions
+public sealed class CommandLineOptions : ICommandLineOptions
 {
-    private readonly Globals _globals;
     private readonly ICommandLineValidator _validator;
 
-    public CommandLineOptions(Globals globals, ICommandLineValidator validator)
+    public CommandLineOptions(ICommandLineValidator validator)
     {
-        _globals = globals;
         _validator = validator;
     }
 
-    public Task<(RootCommand, UnParseOptions)> GetCommandLineOptions()
+    public (CliConfiguration, UnParsedOptions) GetCommandLineOptions()
     {
-        RootCommand rootCommand = new();
+        CliRootCommand rootCommand = new();
 
-        const string randomDescription = "Randomize the filename";
-        string[] randomArr = { "-rn", "-rd", "-rnd", "--random" };
-        Option<bool> randomFileName = new(randomArr, randomDescription);
-        randomFileName.SetDefaultValue(false);
-
-        string[] watermarkArr = { "-k", "-kw", "-kwm", "--keep" };
-        const string watermarkDescription = "Keep the watermark";
-        Option<bool> keepWatermark = new(watermarkArr, watermarkDescription);
-        keepWatermark.SetDefaultValue(false);
-
-        string[] sponsorArr = { "-sb", "-sponsorblock", "--sponsorblock" };
-        const string sponsorDescription = "Remove the sponsorblock from the video";
-        Option<bool> sponsorBlock = new(sponsorArr, sponsorDescription);
-        keepWatermark.SetDefaultValue(false);
-
-        string[] inputArr = { "-i", "--input", "-f", "--file" };
-        const string inputDescription = "A path to a video file or a link to a video";
-        Option<string[]> input = new(inputArr, inputDescription)
+        CliOption<bool> randomFileName = new("input", "-rd", "--random")
         {
-            AllowMultipleArgumentsPerToken = true,
-            IsRequired = true
+            Description = "Generate a random file name",
         };
-        input.AddValidator(_validator.ValidateInputs);
 
-        string[] outputArr = { "-o", "--output" };
-        var outputDescription = $"Directory to save the compressed video to{Environment.NewLine}";
-        Option<string> output = new(outputArr, outputDescription);
-        output.SetDefaultValue(Environment.CurrentDirectory);
-        output.AddValidator(_validator.ValidateOutput);
+        CliOption<bool> keepWatermark = new("watermark", "-k", "--keep")
+        {
+            Description = "Keep the watermark",
+        };
 
-        string[] videoArr = { "-vc", "--codec", "--video-codec" };
-        Option<string> videoCodec = new(videoArr, "Video codec");
-        foreach (var key in _globals.ValidVideoCodecsMap.Keys)
-            videoCodec.AddCompletions(key);
-        videoCodec.AddValidator(_validator.ValidateVideoCodec);
+        CliOption<bool> sponsorBlock = new("sponsorBlock", "-sb", "--sponsor")
+        {
+            Description = "Remove sponsors segments from the video",
+        };
 
-        string[] crfArr = { "-c", "--crf" };
-        Option<int> crf = new(crfArr, "CRF value");
-        crf.SetDefaultValue(29);
-        crf.AddValidator(_validator.ValidateCrf);
+        CliOption<string[]> input = new("input", "-i", "--input")
+        {
+            Description = "A path to a video link or file",
+            AllowMultipleArgumentsPerToken = true,
+            Required = true,
+            Validators = { _validator.Inputs }
+        };
 
-        string[] resolutionArr = { "-r", "--resolution" };
-        Option<string> resolution = new(resolutionArr, "Resolution");
-        resolution.AddCompletions(_globals.ResolutionList);
-        resolution.AddValidator(_validator.ValidateResolution);
+        CliOption<string> output = new("output", "-o", "--output")
+        {
+            Description = "Directory to save the compressed video to",
+            DefaultValueFactory = _ => Environment.CurrentDirectory,
+            Validators = { _validator.Output },
+        };
 
-        string[] trimArr = { "-t", "--trim" };
-        Option<string> trim = new(trimArr, $"Trim a video/audio from a website{Environment.NewLine}" +
-                                           $"You need to use the following format:{Environment.NewLine}" +
-                                           $"start-end");
-        trim.AddValidator(_validator.ValidateTrim);
+        CliOption<string> videoCodec = new("videoCodec", "-vc", "--video-codec")
+        {
+            Description = "Video codec",
+            Validators = { _validator.VideoCodec },
+        };
 
+        CliOption<int> multiThread = new("multiThread", "-mt", "--multi-thread")
+        {
+            Description = "Number of threads to use",
+            DefaultValueFactory = _ => 1,
+            Validators = { _validator.MultiThread }
+        };
 
-        string[] audioArr = { "-a", "-ab", "--audio-bitrate" };
-        var audioDescription = $"Audio bitrate{Environment.NewLine}Possible values: 32, 64, 96, 128, 192, 256, 320";
-        Option<int> audioBitrate = new(audioArr, audioDescription);
-        audioBitrate.SetDefaultValue(128);
-        audioBitrate.AddValidator(_validator.ValidateAudioBitrate);
+        CliOption<int> crf = new("crf", "-c", "--crf")
+        {
+            Description = "CRF value",
+            DefaultValueFactory = _ => 29,
+            Validators = { _validator.Crf },
+        };
+
+        CliOption<string> resolution = new("resolution", "-r", "--resolution")
+        {
+            Description = "Resolution",
+            Validators = { _validator.Resolution }
+        };
+
+        CliOption<string> trim = new("trim", "-t", "--trim")
+        {
+            Description = "Trim a video from a website",
+            Validators = { _validator.Trim }
+        };
+
+        CliOption<int> audioBitrate = new("audioBitrate", "-ab", "--audio-bitrate")
+        {
+            Description = "Audio bitrate",
+            Validators = { _validator.AudioBitRate }
+        };
+
+        CliOption<bool> verbose = new("verbose", "--verbose")
+        {
+            Description = "Verbose output",
+            DefaultValueFactory = _ => false
+        };
 
         rootCommand.TreatUnmatchedTokensAsErrors = true;
 
-        Option[] options =
+        CliOption[] options =
         {
             randomFileName,
             input,
@@ -90,17 +103,19 @@ public sealed class CommandLineOptions
             audioBitrate,
             keepWatermark,
             sponsorBlock,
+            verbose,
             videoCodec,
             trim
         };
 
         foreach (var option in options)
-            rootCommand.AddOption(option);
+            rootCommand.Add(option);
 
-        UnParseOptions o = new()
+        UnParsedOptions o = new()
         {
             Inputs = input,
             Output = output,
+            MultiThread = multiThread,
             Crf = crf,
             Resolution = resolution,
             VideoCodec = videoCodec,
@@ -109,8 +124,11 @@ public sealed class CommandLineOptions
             RandomFileName = randomFileName,
             KeepWatermark = keepWatermark,
             SponsorBlock = sponsorBlock,
+            Verbose = verbose,
         };
 
-        return Task.FromResult<(RootCommand, UnParseOptions)>((rootCommand, o));
+        CliConfiguration config = new(rootCommand);
+
+        return (config, o);
     }
 }

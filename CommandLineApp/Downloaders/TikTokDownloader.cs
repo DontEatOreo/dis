@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using dis.CommandLineApp.Models;
 using YoutubeDLSharp;
-using YoutubeDLSharp.Options;
+using YoutubeDLSharp.Metadata;
 
 namespace dis.CommandLineApp.Downloaders;
 
@@ -10,60 +10,25 @@ public partial class TikTokDownloader : VideoDownloaderBase
     private readonly bool _keepWaterMarkValue;
 
     public TikTokDownloader(YoutubeDL youtubeDl, DownloadQuery downloadQuery, bool keepWaterMarkValue)
-        : base(youtubeDl, downloadQuery, Serilog.Log.ForContext<TikTokDownloader>())
+        : base(youtubeDl, downloadQuery)
     {
         _keepWaterMarkValue = keepWaterMarkValue;
     }
 
-    public override async Task<DownloadResult> Download()
+    protected override Task PreDownload(RunResult<VideoData> fetch)
     {
-        var fetch = await YoutubeDl.RunVideoDataFetch(Query.Uri.ToString());
-        if (fetch.Success is false)
-            return new DownloadResult(null, null);
-        if (fetch.Data.IsLive is true)
-        {
-            Console.WriteLine();
-            Logger.Error(LiveStreamError);
-            return new DownloadResult(null, null);
-        }
-
-        var emptySections = EmptySections(fetch);
-        if (emptySections is false)
-            return new DownloadResult(null, null);
-
-        var date = fetch.Data.UploadDate ?? fetch.Data.ReleaseDate;
-
         var tikTokRegex = TikTokRegex();
         var formatMatch = fetch.Data.Formats
             .Select(format => tikTokRegex.Match(format.FormatId))
             .FirstOrDefault(match => match.Success);
-
         if (formatMatch is null)
-            return new DownloadResult(null, null);
+            throw new InvalidOperationException("No TikTok format found");
 
         var resolution = formatMatch.Groups[1].Value; // e.g. "360p"
         var tikTokValue = formatMatch.Groups[2].Value; // e.g. "4000000"
         var format = $"h264_{resolution}_{tikTokValue}-0";
-
-        var download = await YoutubeDl.RunVideoDownload(Query.Uri.ToString(),
-            progress: DownloadProgress,
-            overrideOptions: new OptionSet
-            {
-                Format = _keepWaterMarkValue ? "download_addr-0" : format
-            });
-
-        if (download.Success is false)
-        {
-            Logger.Error(DownloadError);
-            return new DownloadResult(null, null);
-        }
-
-        // get path of downloaded video
-        var path = Directory.GetFiles(YoutubeDl.OutputFolder).FirstOrDefault();
-        if (path is null)
-            throw new InvalidOperationException("No file found in output folder");
-
-        return new DownloadResult(path, date);
+        Query.OptionSet.Format = _keepWaterMarkValue ? "download_addr-0" : format;
+        return Task.CompletedTask;
     }
 
     /// <summary>

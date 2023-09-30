@@ -1,4 +1,3 @@
-using dis.CommandLineApp.Downloaders;
 using dis.CommandLineApp.Models;
 
 namespace dis.CommandLineApp.Interfaces;

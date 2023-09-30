@@ -17,17 +17,24 @@ public sealed class Converter
         _logger = logger;
     }
 
-    public async Task ConvertVideo(string file, DateTime? dateTime, ParsedOptions options)
+    /// <summary>
+    /// Converts a video file to a specified format using FFmpeg.
+    /// </summary>
+    /// <param name="file">The path to the input video file.</param>
+    /// <param name="dateTime">The optional date and time to set for the output file.</param>
+    /// <param name="o">The options to use for the conversion.</param>
+    /// <returns>A task that represents the asynchronous conversion operation.</returns>
+    public async Task ConvertVideo(string file, DateTime? dateTime, ParsedOptions o)
     {
         Console.CancelKeyPress += HandleCancellation;
 
-        var compressPath = _pathHandler.GetCompressPath(file, options);
-        var outputPath = _pathHandler.ConstructFilePath(options, compressPath);
+        var cmpPath = _pathHandler.GetCompressPath(file, o.VideoCodec);
+        var outP = _pathHandler.ConstructFilePath(o, cmpPath);
 
         var mediaInfo = await FFmpeg.GetMediaInfo(file);
         var streams = mediaInfo.Streams;
 
-        var conversion = _processHandler.ConfigureConversion(options, streams, outputPath);
+        var conversion = _processHandler.ConfigureConversion(o, streams, outP);
         if (conversion is null)
         {
             _logger.Error("Could not configure conversion");
@@ -38,7 +45,7 @@ public sealed class Converter
         {
             await conversion.Start();
             if (dateTime.HasValue)
-                _processHandler.SetTimeStamps(outputPath, dateTime.Value);
+                _processHandler.SetTimeStamps(outP, dateTime.Value);
         }
         catch (Exception e)
         {
@@ -46,14 +53,14 @@ public sealed class Converter
             return;
         }
 
-        var fileSize = new FileInfo(outputPath).Length;
+        var fileSize = new FileInfo(outP).Length;
         var fileSizeStr = fileSize < 1024 * 1024
             ? $"{fileSize / 1024.0:F2} KiB"
             : $"{fileSize / 1024.0 / 1024.0:F2} MiB";
 
         Console.WriteLine(); // New line after progress bar
         _logger.Information("Converted video saved at: {OutputFilePath} | Size: {FileSize}",
-            outputPath,
+            outP,
             fileSizeStr);
     }
 
