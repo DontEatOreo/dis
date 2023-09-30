@@ -95,17 +95,18 @@ public sealed class CommandLineOptions : ICommandLineOptions
 
         CliOption[] options =
         {
-            randomFileName,
             input,
             output,
+            multiThread,
             crf,
             resolution,
+            videoCodec,
+            trim,
             audioBitrate,
+            randomFileName,
             keepWatermark,
             sponsorBlock,
             verbose,
-            videoCodec,
-            trim
         };
 
         foreach (var option in options)
