@@ -55,11 +55,9 @@ public sealed class CommandLineApp : ICommandLineApp
         var list = links.ToList();
         if (list.Any() is false)
             return;
-
-        ParallelOptions parallel = new() { MaxDegreeOfParallelism = 4 };
-        await Parallel.ForEachAsync(list, parallel, async (link, _) =>
+        
+        foreach (var downloadOptions in list.Select(link => new DownloadOptions(link, options)))
         {
-            DownloadOptions downloadOptions = new(link, options);
             var (path, date) = await _downloader.DownloadTask(downloadOptions);
 
             if (path is null)
@@ -70,7 +68,7 @@ public sealed class CommandLineApp : ICommandLineApp
                 if (added is false)
                     _logger.Error("Failed to add video to list: {Path}", path);
             }
-        });
+        }
 
         foreach (var path in videos.Keys)
         {
