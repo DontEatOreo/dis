@@ -44,13 +44,13 @@ public sealed class CommandLineOptions : ICommandLineOptions
         {
             Description = "Directory to save the compressed video to",
             DefaultValueFactory = _ => Environment.CurrentDirectory,
-            Validators = { _validator.Output },
+            Validators = { _validator.Output }
         };
 
         CliOption<string> videoCodec = new("videoCodec", "-vc", "--video-codec")
         {
             Description = "Video codec",
-            Validators = { _validator.VideoCodec },
+            Validators = { _validator.VideoCodec }
         };
 
         CliOption<int> multiThread = new("multiThread", "-mt", "--multi-thread")
@@ -64,7 +64,7 @@ public sealed class CommandLineOptions : ICommandLineOptions
         {
             Description = "CRF value",
             DefaultValueFactory = _ => 29,
-            Validators = { _validator.Crf },
+            Validators = { _validator.Crf }
         };
 
         CliOption<string> resolution = new("resolution", "-r", "--resolution")

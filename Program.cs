@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.CommandLine.Hosting;
+using System.Globalization;
 using dis;
 using dis.CommandLineApp;
 using dis.CommandLineApp.Conversion;
@@ -68,9 +69,13 @@ var parsedOptions = commandLineApp.ParseOptions(parseResult, unParsedOptions);
 levelSwitch.MinimumLevel = parsedOptions.Verbose ? LogEventLevel.Verbose : // Set the minimum level to Verbose
     LogEventLevel.Information;
 
+CancellationTokenSource cancellationTokenSource = new();
+Console.CancelKeyPress += (_, _) =>  {  cancellationTokenSource.Cancel(); };
+
 try
 {
-    await commandLineApp.Handler(parsedOptions);
+    config.RootCommand.SetAction(async (_, _) => await commandLineApp.Handler(parsedOptions));
+    await config.InvokeAsync(args, cancellationTokenSource.Token);
 }
 catch (Exception e)
 {
