@@ -6,8 +6,8 @@ namespace dis.CommandLineApp.Downloaders;
 
 public class TwitterDownloader : VideoDownloaderBase
 {
-    public TwitterDownloader(YoutubeDL youtubeDl, DownloadQuery query) 
-        : base(youtubeDl, query) {  }
+    public TwitterDownloader(YoutubeDL youtubeDl, DownloadQuery query)
+        : base(youtubeDl, query) { }
 
     protected override Task<string> PostDownload(RunResult<VideoData> fetch)
     {

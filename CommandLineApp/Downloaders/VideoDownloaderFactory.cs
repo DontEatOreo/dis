@@ -11,7 +11,7 @@ public class VideoDownloaderFactory : IDownloaderFactory
     private const string TikTokUrlPart = "tiktok";
     private const string YouTubeUrlPart = "youtu";
     private const string RedditUrlPart = "redd";
-    
+
     private const string TwitterUrlPart = "twitter";
     private const string XUrlPart = "x.com"; // New Twitter URL
 

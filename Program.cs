@@ -16,18 +16,16 @@ ConfigurationReaderOptions options = new(consoleLoggerConfigExtension, serilogEx
 LoggingLevelSwitch levelSwitch = new();
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
-var host = Host.CreateDefaultBuilder()
-    .ConfigureServices((_, services) => services.AddMyServices())
-    .UseSerilog((context, configuration) =>
-    {
-        configuration
-            .MinimumLevel.ControlledBy(levelSwitch)
-            .ReadFrom.Configuration(context.Configuration, options)
-            .Enrich.FromLogContext()
-            .WriteTo.Console();
-    })
-    .Build();
+IHostBuilder hostBuilder = new HostBuilder();
+hostBuilder.ConfigureServices((_, services) => services.AddMyServices());
+hostBuilder.UseSerilog((context, configuration) =>
+    configuration
+        .MinimumLevel.ControlledBy(levelSwitch)
+        .ReadFrom.Configuration(context.Configuration, options)
+        .Enrich.FromLogContext()
+        .WriteTo.Console());
 
+using var host = hostBuilder.Build();
 using var serviceScope = host.Services.CreateScope();
 var services = serviceScope.ServiceProvider;
 
