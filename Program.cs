@@ -1,11 +1,6 @@
-﻿using System.CommandLine.Hosting;
-using System.Globalization;
-using dis;
+﻿using System.Globalization;
 using dis.CommandLineApp;
-using dis.CommandLineApp.Conversion;
-using dis.CommandLineApp.Downloaders;
 using dis.CommandLineApp.Interfaces;
-using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -22,29 +17,7 @@ LoggingLevelSwitch levelSwitch = new();
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
 var host = Host.CreateDefaultBuilder()
-    .ConfigureServices((_, services) =>
-    {
-        services.AddSingleton<Globals>();
-        services.AddSingleton<FileExtensionContentTypeProvider>();
-        services.AddSingleton<ICommandLineApp, CommandLineApp>();
-        services.AddSingleton<ICommandLineOptions, CommandLineOptions>();
-        services.AddSingleton<ICommandLineValidator, CommandLineValidator>();
-        services.AddSingleton<IDownloaderFactory, VideoDownloaderFactory>();
-
-        services.AddTransient<CodecParser>();
-        services.AddTransient<StreamConfigurator>();
-        services.AddTransient<ProcessHandler>();
-        services.AddTransient<PathHandler>();
-        services.AddTransient<Converter>();
-        services.AddTransient<LoggingLevelSwitch>();
-
-        services.AddTransient<IDownloader, DownloadCreator>();
-        services.AddSingleton<IDownloaderFactory>(sp =>
-        {
-            var globals = sp.GetRequiredService<Globals>();
-            return new VideoDownloaderFactory(globals.YoutubeDl);
-        });
-    })
+    .ConfigureServices((_, services) => services.AddMyServices())
     .UseSerilog((context, configuration) =>
     {
         configuration
@@ -70,7 +43,7 @@ levelSwitch.MinimumLevel = parsedOptions.Verbose ? LogEventLevel.Verbose : // Se
     LogEventLevel.Information;
 
 CancellationTokenSource cancellationTokenSource = new();
-Console.CancelKeyPress += (_, _) =>  {  cancellationTokenSource.Cancel(); };
+Console.CancelKeyPress += (_, _) => { cancellationTokenSource.Cancel(); };
 
 try
 {

@@ -55,7 +55,7 @@ public sealed class CommandLineApp : ICommandLineApp
         var list = links.ToList();
         if (list.Any() is false)
             return;
-        
+
         foreach (var downloadOptions in list.Select(link => new DownloadOptions(link, options)))
         {
             var (path, date) = await _downloader.DownloadTask(downloadOptions);
