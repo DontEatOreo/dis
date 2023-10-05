@@ -5,5 +5,5 @@ namespace dis.CommandLineApp.Interfaces;
 
 public interface ICommandLineOptions
 {
-    (CliConfiguration, UnParsedOptions) GetCommandLineOptions();
+    (CliConfiguration, ParsedOptions) GetCommandLineOptions();
 }

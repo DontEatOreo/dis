@@ -32,9 +32,7 @@ var services = serviceScope.ServiceProvider;
 var commandLineApp = services.GetRequiredService<ICommandLineApp>();
 var commandLineOptions = services.GetRequiredService<ICommandLineOptions>();
 
-var (config, unParsedOptions) = commandLineOptions.GetCommandLineOptions();
-var parseResult = config.Parse(args);
-var parsedOptions = commandLineApp.ParseOptions(parseResult, unParsedOptions);
+var (config, parsedOptions) = commandLineOptions.GetCommandLineOptions();
 
 // Set the MinimumLevel property of the switch based on the argument value
 levelSwitch.MinimumLevel = parsedOptions.Verbose ? LogEventLevel.Verbose : // Set the minimum level to Verbose
