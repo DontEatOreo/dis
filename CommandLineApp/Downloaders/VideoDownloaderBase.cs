@@ -49,7 +49,6 @@ public abstract class VideoDownloaderBase : IVideoDownloader
         var dlResult = await DownloadVideo(fetch);
         if (dlResult is null)
             return new DownloadResult(null, null);
-        Console.WriteLine();
 
         // Post-download custom logic
         var postDownload = await PostDownload(fetch);
@@ -82,6 +81,7 @@ public abstract class VideoDownloaderBase : IVideoDownloader
         var download = await YoutubeDl.RunVideoDownload(Query.Uri.ToString(),
             overrideOptions: Query.OptionSet,
             progress: _downloadProgress);
+        Console.WriteLine(); // New line after download progress
         Logger.Verbose("Finished downloading {Title}", fetch.Data.Title);
         if (download.Success)
             return download;
@@ -139,7 +139,8 @@ public abstract class VideoDownloaderBase : IVideoDownloader
     {
         /*
          * The download section string is split into two parts using '-' as a separator.
-         * The '*' character, which is used as a regex symbol for "yt-dlp", is not relevant for our parsing and is therefore removed.
+         * The '*' character, which is used as a regex symbol for "yt-dlp",
+         * it is not relevant for our parsing and is therefore removed.
          * The start time is always on the left side of the split, and the end time is always on the right side.
          */
 
