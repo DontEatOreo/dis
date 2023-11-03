@@ -64,7 +64,7 @@ public sealed class UnParsedOptions
         MultiThread = new CliOption<int>("multiThread", "-mt", "--multi-thread")
         {
             Description = "Number of threads to use",
-            DefaultValueFactory = _ => 1,
+            DefaultValueFactory = _ => Environment.ProcessorCount,
             Validators = { validator.MultiThread }
         };
 
