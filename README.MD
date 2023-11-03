@@ -20,16 +20,17 @@ To use **dis** 🎥, you need to provide an input video source using the `-i` (`
 
 You can also specify various options to customize the output video, such as:
 
-| Option                                          | Description                                                                                            | Default Value |
-|-------------------------------------------------|--------------------------------------------------------------------------------------------------------|---------------|
-| `-rd`, `-rn`, `-rnd`, `--random`                | Randomize the output filename                                                                          | `False`       |
-| `-c`, `--crf` <crf>                             | Constant Rate Factor (CRF) value for video compression                                                 | `29`          |
-| `-r`, `--resolution` <resolution>               | Output video resolution                                                                                | None          |
-| `-a`, `-ab`, `--audio-bitrate` <audio-bitrate>  | Output audio bitrate                                                                                   | `128k`        |
-| `-k`, `-kw`, `-kwm`, `--keep`                   | Keep the watermark on the output video                                                                 | `False`       |
-| `-sb`, `-sponsorblock`                          | Remove the sponsor segments from the output video using [SponsorBlock](https://sponsor.ajay.app/) API  | `False`       |
-| `-vc`, `--codec`, `--video-codec` <video-codec> | Output video codec                                                                                     | None          |
-| `-t`, `--trim` <trim>                           | Trim the input video/audio from a specific start and end time (in seconds) using the format: start-end | None          |
+| Option                                          | Description                                                                                            | Default Value  |
+|-------------------------------------------------|--------------------------------------------------------------------------------------------------------|----------------|
+| `-rd`, `-rn`, `-rnd`, `--random`                | Randomize the output filename                                                                          | `False`        |
+| `-c`, `--crf` <crf>                             | Constant Rate Factor (CRF) value for video compression                                                 | `22`           |
+| `-r`, `--resolution` <resolution>               | Output video resolution                                                                                | None           |
+| `-a`, `-ab`, `--audio-bitrate` <audio-bitrate>  | Output audio bitrate                                                                                   | `128k`         |
+| `-k`, `-kw`, `-kwm`, `--keep`                   | Keep the watermark on the output video                                                                 | `False`        |
+| `-sb`, `-sponsorblock`                          | Remove the sponsor segments from the output video using [SponsorBlock](https://sponsor.ajay.app/) API  | `False`        |
+| `-vc`, `--codec`, `--video-codec` <video-codec> | Output video codec                                                                                     | None           |
+| `-t`, `--trim` <trim>                           | Trim the input video/audio from a specific start and end time (in seconds) using the format: start-end | None           |
+| `-mt`, `--multi-thread`                         | Number of threads to use                                                                               | Your CPU Cores |
 
 The CRF is a video compression method that grants users control over the output video's quality, with higher values resulting in lower quality and vice versa. It is recommended to avoid values below 22 or above 38.
 
