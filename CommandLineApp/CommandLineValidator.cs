@@ -35,8 +35,7 @@ public sealed class CommandLineValidator : ICommandLineValidator
             if (File.Exists(item) || Uri.IsWellFormedUriString(item, UriKind.RelativeOrAbsolute))
                 continue;
 
-            _logger.Error("Invalid input file or link: {Input}", item);
-            Environment.Exit(1);
+            result.AddError($"Invalid input file or link: {item}");
         }
     }
 
@@ -46,9 +45,7 @@ public sealed class CommandLineValidator : ICommandLineValidator
         if (Directory.Exists(input))
             return;
 
-        const string errorMsg = "Output directory does not exist";
-        _logger.Error(errorMsg);
-        Environment.Exit(1);
+        result.AddError("Output directory does not exist");
     }
 
     public void MultiThread(OptionResult result)
@@ -65,8 +62,7 @@ public sealed class CommandLineValidator : ICommandLineValidator
         if (input <= threads)
             return;
 
-        _logger.Error("Number of threads cannot be greater than {Threads}", threads);
-        Environment.Exit(1);
+        result.AddError($"Number of threads cannot be greater than {threads}");
     }
 
     public void Crf(OptionResult result)
@@ -85,9 +81,7 @@ public sealed class CommandLineValidator : ICommandLineValidator
         if (validCrf)
             return;
 
-        _logger.Error("CRF value must be between {Min} and {Max} (Avoid values below 22)",
-            min, max);
-        Environment.Exit(1);
+        result.AddError($"CRF value must be between {min} and {max} (Avoid values below 22)");
     }
 
     public void AudioBitRate(OptionResult result)
@@ -95,17 +89,13 @@ public sealed class CommandLineValidator : ICommandLineValidator
         var input = result.GetValueOrDefault<int>();
 
         if (input < 0)
-        {
-            _logger.Error("Audio bitrate cannot be negative");
-            Environment.Exit(1);
-        }
+            result.AddError("Audio bitrate cannot be negative");
 
         var validBitrate = input % 2 is 0 && input > 0;
         if (validBitrate)
             return;
 
-        _logger.Error("Audio bitrate must be a multiple of 2");
-        Environment.Exit(1);
+        result.AddError("Audio bitrate must be a multiple of 2");
     }
 
     public void VideoCodec(OptionResult result)
@@ -116,8 +106,7 @@ public sealed class CommandLineValidator : ICommandLineValidator
             if (hasKeys)
                 return;
 
-        _logger.Error("Invalid video codec");
-        Environment.Exit(1);
+        result.AddError("Invalid video codec");
     }
 
     public void Resolution(OptionResult result)
@@ -126,8 +115,7 @@ public sealed class CommandLineValidator : ICommandLineValidator
         if (_resolutionList.Contains(input))
             return;
 
-        _logger.Error("Invalid resolution");
-        Environment.Exit(1);
+        result.AddError("Invalid resolution");
     }
 
     public void Trim(OptionResult result)
@@ -142,10 +130,7 @@ public sealed class CommandLineValidator : ICommandLineValidator
 
         // If there's no dash, show an error and stop.
         if (dashIndex is -1)
-        {
-            _logger.Error("Invalid trim format");
-            Environment.Exit(1);
-        }
+            result.AddError("Trim values must be in the format ss.ms-mm.ms");
 
         // Split the span into two parts at the dash.
         var startSpan = span[..dashIndex];
@@ -157,23 +142,14 @@ public sealed class CommandLineValidator : ICommandLineValidator
 
         // If either value is negative, show an error and stop.
         if (start < 0 || end < 0)
-        {
-            _logger.Error("Trim values must be positive");
-            Environment.Exit(1);
-        }
+            result.AddError("Trim values cannot be negative");
 
         // If the start value is greater than the end value, show an error and stop.
         if (start > end)
-        {
-            _logger.Error("Start value must be lower than end value");
-            Environment.Exit(1);
-        }
+            result.AddError("Start value cannot be greater than end value");
 
         // If the difference between the start and end values is less than 1, show an error and stop.
         if (end - start < 1)
-        {
-            _logger.Error("Trim values must be at least 1 second apart");
-            Environment.Exit(1);
-        }
+            result.AddError("Trim values must be at least 1 second apart");
     }
 }
