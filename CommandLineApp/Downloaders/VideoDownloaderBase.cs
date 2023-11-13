@@ -6,23 +6,16 @@ using YoutubeDLSharp.Metadata;
 
 namespace dis.CommandLineApp.Downloaders;
 
-public abstract class VideoDownloaderBase : IVideoDownloader
+public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery query) : IVideoDownloader
 {
-    protected readonly YoutubeDL YoutubeDl;
-    protected readonly DownloadQuery Query;
-    protected readonly ILogger Logger;
+    protected readonly YoutubeDL YoutubeDl = youtubeDl;
+    protected readonly DownloadQuery Query = query;
+    protected readonly ILogger Logger = Log.Logger.ForContext<VideoDownloaderBase>();
 
     private const string LiveStreamError = "Live streams are not supported";
     private const string DownloadError = "Download failed";
     private const string FetchError = "Failed to fetch url";
     private const string TrimTimeError = "Trim time exceeds video length";
-
-    protected VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery query)
-    {
-        YoutubeDl = youtubeDl;
-        Query = query;
-        Logger = Log.Logger.ForContext<VideoDownloaderBase>();
-    }
 
     public async Task<DownloadResult> Download()
     {

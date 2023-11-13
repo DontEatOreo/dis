@@ -4,11 +4,8 @@ using Serilog;
 
 namespace dis.CommandLineApp;
 
-public sealed class CommandLineValidator : ICommandLineValidator
+public sealed class CommandLineValidator(ILogger logger, Globals globals) : ICommandLineValidator
 {
-    private readonly Globals _globals;
-    private readonly ILogger _logger;
-
     private readonly string[] _resolutionList =
     {
         "144p",
@@ -20,12 +17,6 @@ public sealed class CommandLineValidator : ICommandLineValidator
         "1440p",
         "2160p"
     };
-
-    public CommandLineValidator(ILogger logger, Globals globals)
-    {
-        _logger = logger;
-        _globals = globals;
-    }
 
     public void Inputs(OptionResult result)
     {
@@ -55,7 +46,7 @@ public sealed class CommandLineValidator : ICommandLineValidator
 
         if (input > 16)
         {
-            _logger.Information("Due to the way FFmpeg works, anything more than 16 threads will be ignored");
+            logger.Information("Due to the way FFmpeg works, anything more than 16 threads will be ignored");
             input = 16;
         }
 
@@ -101,7 +92,7 @@ public sealed class CommandLineValidator : ICommandLineValidator
     public void VideoCodec(OptionResult result)
     {
         var input = result.GetValueOrDefault<string?>();
-        var hasKeys = _globals.VideoCodecs.Any(kv => kv.Key.Contains(input));
+        var hasKeys = globals.VideoCodecs.Any(kv => kv.Key.Contains(input));
         if (input is not null)
             if (hasKeys)
                 return;

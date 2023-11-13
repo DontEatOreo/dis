@@ -4,15 +4,8 @@ using dis.CommandLineApp.Models;
 
 namespace dis.CommandLineApp;
 
-public sealed class CommandLineOptions : ICommandLineOptions
+public sealed class CommandLineOptions(ICommandLineValidator validator) : ICommandLineOptions
 {
-    private readonly ICommandLineValidator _validator;
-
-    public CommandLineOptions(ICommandLineValidator validator)
-    {
-        _validator = validator;
-    }
-
     public (CliConfiguration, ParsedOptions) GetCommandLineOptions()
     {
         CliRootCommand rootCommand = new()
@@ -20,7 +13,7 @@ public sealed class CommandLineOptions : ICommandLineOptions
             TreatUnmatchedTokensAsErrors = true
         };
 
-        UnParsedOptions unParsedOptions = new(_validator);
+        UnParsedOptions unParsedOptions = new(validator);
 
         CliOption[] options =
         {

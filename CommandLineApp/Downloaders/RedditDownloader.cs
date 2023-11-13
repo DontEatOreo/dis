@@ -5,11 +5,9 @@ using YoutubeDLSharp.Metadata;
 
 namespace dis.CommandLineApp.Downloaders;
 
-public class RedditDownloader : VideoDownloaderBase
+public class RedditDownloader(YoutubeDL youtubeDl, DownloadQuery downloadQuery)
+    : VideoDownloaderBase(youtubeDl, downloadQuery)
 {
-    public RedditDownloader(YoutubeDL youtubeDl, DownloadQuery downloadQuery)
-        : base(youtubeDl, downloadQuery) { }
-
     protected override Task<string> PostDownload(RunResult<VideoData> fetch)
     {
         var videoId = fetch.Data.ID;

@@ -3,8 +3,5 @@ using YoutubeDLSharp;
 
 namespace dis.CommandLineApp.Downloaders;
 
-public class GenericDownloader : VideoDownloaderBase
-{
-    public GenericDownloader(YoutubeDL youtubeDl, DownloadQuery downloadQuery)
-        : base(youtubeDl, downloadQuery) { }
-}
+public class GenericDownloader(YoutubeDL youtubeDl, DownloadQuery downloadQuery)
+    : VideoDownloaderBase(youtubeDl, downloadQuery);

@@ -2,15 +2,8 @@ using Xabe.FFmpeg;
 
 namespace dis.CommandLineApp.Conversion;
 
-public sealed class CodecParser
+public sealed class CodecParser(Globals globals)
 {
-    private readonly Globals _globals;
-
-    public CodecParser(Globals globals)
-    {
-        _globals = globals;
-    }
-
     /// <summary>
     /// Retrieves the type of video codec from a given string
     /// </summary>
@@ -30,7 +23,7 @@ public sealed class CodecParser
         if (inputCodec is null)
             return VideoCodec.libx264;
 
-        var videoCodecs = _globals.VideoCodecs;
+        var videoCodecs = globals.VideoCodecs;
         foreach (var (key, value) in videoCodecs)
         {
             // If the key does not contain the input string, continue to the next iteration

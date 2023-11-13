@@ -3,22 +3,13 @@ using dis.CommandLineApp.Models;
 
 namespace dis.CommandLineApp.Downloaders;
 
-public sealed class DownloadCreator : IDownloader
+public sealed class DownloadCreator(Globals globals, IDownloaderFactory factory) : IDownloader
 {
-    private readonly Globals _globals;
-    private readonly IDownloaderFactory _factory;
-
-    public DownloadCreator(Globals globals, IDownloaderFactory factory)
-    {
-        _globals = globals;
-        _factory = factory;
-    }
-
     public async Task<DownloadResult> DownloadTask(DownloadOptions options)
     {
         PrepareTempDirectory();
 
-        var videoDownloader = _factory.Create(options);
+        var videoDownloader = factory.Create(options);
 
         var dlResult = await videoDownloader.Download();
         return dlResult.OutPath is null
@@ -37,7 +28,7 @@ public sealed class DownloadCreator : IDownloader
 
         Directory.CreateDirectory(tempPath);
 
-        _globals.YoutubeDl.OutputFolder = tempPath;
-        _globals.TempDir.Add(tempPath);
+        globals.YoutubeDl.OutputFolder = tempPath;
+        globals.TempDir.Add(tempPath);
     }
 }

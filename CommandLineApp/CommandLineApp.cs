@@ -5,24 +5,13 @@ using Serilog;
 
 namespace dis.CommandLineApp;
 
-public sealed class CommandLineApp : ICommandLineApp
+public sealed class CommandLineApp(
+    ILogger logger,
+    Globals globals,
+    IDownloader downloader,
+    Converter converter)
+    : ICommandLineApp
 {
-    private readonly ILogger _logger;
-    private readonly Globals _globals;
-    private readonly IDownloader _downloader;
-    private readonly Converter _converter;
-
-    public CommandLineApp(ILogger logger,
-        Globals globals,
-        IDownloader downloader,
-        Converter converter)
-    {
-        _logger = logger;
-        _globals = globals;
-        _downloader = downloader;
-        _converter = converter;
-    }
-
     public async Task Handler(ParsedOptions o)
     {
         // On links list we ignore all files by check if they exist
@@ -57,15 +46,15 @@ public sealed class CommandLineApp : ICommandLineApp
 
         foreach (var downloadOptions in list.Select(link => new DownloadOptions(link, options)))
         {
-            var (path, date) = await _downloader.DownloadTask(downloadOptions);
+            var (path, date) = await downloader.DownloadTask(downloadOptions);
 
             if (path is null)
-                _logger.Error("There was an error downloading the video");
+                logger.Error("There was an error downloading the video");
             else
             {
                 var added = videos.TryAdd(path, date);
                 if (added is false)
-                    _logger.Error("Failed to add video to list: {Path}", path);
+                    logger.Error("Failed to add video to list: {Path}", path);
             }
         }
 
@@ -77,7 +66,7 @@ public sealed class CommandLineApp : ICommandLineApp
                 ? $"{fileSize / 1024.0:F2} KiB"
                 : $"{fileSize / 1024.0 / 1024.0:F2} MiB";
 
-            _logger.Information(
+            logger.Information(
                 "Downloaded video to: {Path} | Size: {Size}",
                 path,
                 fileSizeStr);
@@ -90,24 +79,24 @@ public sealed class CommandLineApp : ICommandLineApp
         {
             try
             {
-                _logger.Verbose("Converting video: {Path}", path);
-                await _converter.ConvertVideo(path, date, options);
-                _logger.Verbose("Finished converting video: {Path}", path);
+                logger.Verbose("Converting video: {Path}", path);
+                await converter.ConvertVideo(path, date, options);
+                logger.Verbose("Finished converting video: {Path}", path);
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Failed to convert video: {Path}", path);
+                logger.Error(ex, "Failed to convert video: {Path}", path);
             }
         }
 
-        var hasAny = _globals.TempDir.Any();
+        var hasAny = globals.TempDir.Any();
         if (hasAny is false)
             return;
 
-        _globals.TempDir.ForEach(d =>
+        globals.TempDir.ForEach(d =>
         {
             Directory.Delete(d, true);
-            _logger.Verbose("Deleted temp dir: {Dir}", d);
+            logger.Verbose("Deleted temp dir: {Dir}", d);
         });
     }
 }

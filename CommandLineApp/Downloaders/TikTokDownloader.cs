@@ -5,16 +5,9 @@ using YoutubeDLSharp.Metadata;
 
 namespace dis.CommandLineApp.Downloaders;
 
-public partial class TikTokDownloader : VideoDownloaderBase
+public partial class TikTokDownloader(YoutubeDL youtubeDl, DownloadQuery downloadQuery, bool keepWaterMarkValue)
+    : VideoDownloaderBase(youtubeDl, downloadQuery)
 {
-    private readonly bool _keepWaterMarkValue;
-
-    public TikTokDownloader(YoutubeDL youtubeDl, DownloadQuery downloadQuery, bool keepWaterMarkValue)
-        : base(youtubeDl, downloadQuery)
-    {
-        _keepWaterMarkValue = keepWaterMarkValue;
-    }
-
     protected override Task PreDownload(RunResult<VideoData> fetch)
     {
         var tikTokRegex = TikTokRegex();
@@ -27,7 +20,7 @@ public partial class TikTokDownloader : VideoDownloaderBase
         var resolution = formatMatch.Groups[1].Value; // e.g. "360p"
         var tikTokValue = formatMatch.Groups[2].Value; // e.g. "4000000"
         var format = $"h264_{resolution}_{tikTokValue}-0";
-        Query.OptionSet.Format = _keepWaterMarkValue ? "download_addr-0" : format;
+        Query.OptionSet.Format = keepWaterMarkValue ? "download_addr-0" : format;
         return Task.CompletedTask;
     }
 

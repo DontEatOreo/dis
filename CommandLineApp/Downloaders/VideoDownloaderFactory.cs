@@ -5,7 +5,7 @@ using YoutubeDLSharp.Options;
 
 namespace dis.CommandLineApp.Downloaders;
 
-public class VideoDownloaderFactory : IDownloaderFactory
+public class VideoDownloaderFactory(YoutubeDL youtubeDl) : IDownloaderFactory
 {
     // Constants for URL checking
     private const string TikTokUrlPart = "tiktok";
@@ -17,22 +17,15 @@ public class VideoDownloaderFactory : IDownloaderFactory
 
     private const string FormatSort = "vcodec:h264,ext:mp4:m4a";
 
-    private readonly YoutubeDL _youtubeDl;
-
-    public VideoDownloaderFactory(YoutubeDL youtubeDl)
-    {
-        _youtubeDl = youtubeDl;
-    }
-
     public IVideoDownloader Create(DownloadOptions o)
     {
         Dictionary<string, Func<DownloadQuery, IVideoDownloader>> downloaderDictionary = new()
         {
-            { TikTokUrlPart, downloadQuery => new TikTokDownloader(_youtubeDl, downloadQuery, o.Options.KeepWatermark) },
-            { YouTubeUrlPart, downloadQuery => new YouTubeDownloader(_youtubeDl, downloadQuery) },
-            { RedditUrlPart, downloadQuery => new RedditDownloader(_youtubeDl, downloadQuery) },
-            { TwitterUrlPart, downloadQuery => new TwitterDownloader(_youtubeDl, downloadQuery)},
-            { XUrlPart, downloadQuery => new TwitterDownloader(_youtubeDl, downloadQuery)}
+            { TikTokUrlPart, downloadQuery => new TikTokDownloader(youtubeDl, downloadQuery, o.Options.KeepWatermark) },
+            { YouTubeUrlPart, downloadQuery => new YouTubeDownloader(youtubeDl, downloadQuery) },
+            { RedditUrlPart, downloadQuery => new RedditDownloader(youtubeDl, downloadQuery) },
+            { TwitterUrlPart, downloadQuery => new TwitterDownloader(youtubeDl, downloadQuery)},
+            { XUrlPart, downloadQuery => new TwitterDownloader(youtubeDl, downloadQuery)}
         };
 
         var optionSet = GenerateOptionSet(o);
@@ -42,7 +35,7 @@ public class VideoDownloaderFactory : IDownloaderFactory
         var query = new DownloadQuery(o.Uri, optionSet);
         return entry.Key is not null
             ? entry.Value(query)
-            : new GenericDownloader(_youtubeDl, query);
+            : new GenericDownloader(youtubeDl, query);
     }
 
     private static OptionSet GenerateOptionSet(DownloadOptions o)

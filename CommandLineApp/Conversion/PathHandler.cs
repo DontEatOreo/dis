@@ -3,20 +3,13 @@ using Xabe.FFmpeg;
 
 namespace dis.CommandLineApp.Conversion;
 
-public sealed class PathHandler
+public sealed class PathHandler(CodecParser codecParser)
 {
-    private readonly CodecParser _codecParser;
-
     private readonly Dictionary<string, VideoCodec[]> _videoExtMap = new()
     {
         { "mp4", new[] { VideoCodec.libx264, VideoCodec.hevc } },
         { "webm", new[] { VideoCodec.vp8, VideoCodec.vp9, VideoCodec.av1 } }
     };
-
-    public PathHandler(CodecParser codecParser)
-    {
-        _codecParser = codecParser;
-    }
 
     /// <summary>
     /// This method returns the path of the compressed file with the appropriate extension based on the codec.
@@ -26,7 +19,7 @@ public sealed class PathHandler
     /// <returns>The new file path with the appropriate extension for the compressed file.</returns>
     public string GetCompressPath(string file, string? codec)
     {
-        var videoCodec = _codecParser.GetCodec(codec);
+        var videoCodec = codecParser.GetCodec(codec);
 
         var matchingExtensions = _videoExtMap
             .Where(kvp => kvp.Value.Contains(videoCodec))

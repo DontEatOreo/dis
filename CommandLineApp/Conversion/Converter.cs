@@ -4,19 +4,8 @@ using Xabe.FFmpeg;
 
 namespace dis.CommandLineApp.Conversion;
 
-public sealed class Converter
+public sealed class Converter(PathHandler pathHandler, ProcessHandler processHandler, ILogger logger)
 {
-    private readonly PathHandler _pathHandler;
-    private readonly ProcessHandler _processHandler;
-    private readonly ILogger _logger;
-
-    public Converter(PathHandler pathHandler, ProcessHandler processHandler, ILogger logger)
-    {
-        _pathHandler = pathHandler;
-        _processHandler = processHandler;
-        _logger = logger;
-    }
-
     /// <summary>
     /// Converts a video file to a specified format using FFmpeg.
     /// </summary>
@@ -28,16 +17,16 @@ public sealed class Converter
     {
         Console.CancelKeyPress += HandleCancellation;
 
-        var cmpPath = _pathHandler.GetCompressPath(file, o.VideoCodec);
-        var outP = _pathHandler.ConstructFilePath(o, cmpPath);
+        var cmpPath = pathHandler.GetCompressPath(file, o.VideoCodec);
+        var outP = pathHandler.ConstructFilePath(o, cmpPath);
 
         var mediaInfo = await FFmpeg.GetMediaInfo(file);
         var streams = mediaInfo.Streams;
 
-        var conversion = _processHandler.ConfigureConversion(o, streams, outP);
+        var conversion = processHandler.ConfigureConversion(o, streams, outP);
         if (conversion is null)
         {
-            _logger.Error("Could not configure conversion");
+            logger.Error("Could not configure conversion");
             return;
         }
 
@@ -45,11 +34,11 @@ public sealed class Converter
         {
             await conversion.Start();
             if (dateTime.HasValue)
-                _processHandler.SetTimeStamps(outP, dateTime.Value);
+                processHandler.SetTimeStamps(outP, dateTime.Value);
         }
         catch (Exception e)
         {
-            _logger.Error(e, "Conversion failed");
+            logger.Error(e, "Conversion failed");
             return;
         }
 
@@ -59,7 +48,7 @@ public sealed class Converter
             : $"{fileSize / 1024.0 / 1024.0:F2} MiB";
 
         Console.WriteLine(); // New line after progress bar
-        _logger.Information("Converted video saved at: {OutputFilePath} | Size: {FileSize}",
+        logger.Information("Converted video saved at: {OutputFilePath} | Size: {FileSize}",
             outP,
             fileSizeStr);
     }
@@ -69,6 +58,6 @@ public sealed class Converter
         if (e.SpecialKey is not ConsoleSpecialKey.ControlC)
             return;
         Console.WriteLine();
-        _logger.Information("Canceled");
+        logger.Information("Canceled");
     }
 }

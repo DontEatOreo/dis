@@ -5,20 +5,9 @@ using Xabe.FFmpeg.Events;
 
 namespace dis.CommandLineApp.Conversion;
 
-public sealed class ProcessHandler
+public sealed class ProcessHandler(ILogger logger, CodecParser codecParser, StreamConfigurator configurator)
 {
-    private readonly CodecParser _codecParser;
-    private readonly StreamConfigurator _configurator;
-    private readonly ILogger _logger;
-
     private const string NoStreamError = "There is no video or audio stream in the file";
-
-    public ProcessHandler(ILogger logger, CodecParser codecParser, StreamConfigurator configurator)
-    {
-        _logger = logger;
-        _codecParser = codecParser;
-        _configurator = configurator;
-    }
 
     public void SetTimeStamps(string path, DateTime date)
     {
@@ -35,7 +24,7 @@ public sealed class ProcessHandler
 
         if (videoStream is null && audioStream is null)
         {
-            _logger.Error(NoStreamError);
+            logger.Error(NoStreamError);
             return default;
         }
 
@@ -47,7 +36,7 @@ public sealed class ProcessHandler
             .UseMultiThread(o.MultiThread)
             .AddParameter(parameters);
 
-        var videoCodec = _codecParser.GetCodec(o.VideoCodec);
+        var videoCodec = codecParser.GetCodec(o.VideoCodec);
 
         if (videoStream is not null)
         {
@@ -56,15 +45,15 @@ public sealed class ProcessHandler
             switch (videoCodec)
             {
                 case VideoCodec.vp9:
-                    _configurator.SetVp9Args(conversion);
+                    configurator.SetVp9Args(conversion);
                     break;
                 case VideoCodec.av1:
-                    _configurator.SetCpuForAv1(conversion, videoStream.Framerate);
+                    configurator.SetCpuForAv1(conversion, videoStream.Framerate);
                     break;
             }
 
             if (string.IsNullOrEmpty(o.Resolution) is false)
-                _configurator.SetResolution(videoStream, o.Resolution);
+                configurator.SetResolution(videoStream, o.Resolution);
         }
 
         conversion.OnProgress += ConversionProgress;
