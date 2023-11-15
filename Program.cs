@@ -16,7 +16,7 @@ ConfigurationReaderOptions options = new(consoleLoggerConfigExtension, serilogEx
 LoggingLevelSwitch levelSwitch = new();
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
-IHostBuilder hostBuilder = new HostBuilder();
+HostBuilder hostBuilder = new();
 hostBuilder.ConfigureServices((_, services) => services.AddMyServices());
 hostBuilder.UseSerilog((context, configuration) =>
     configuration
