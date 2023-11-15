@@ -56,7 +56,7 @@ public sealed class UnParsedOptions(ICommandLineValidator validator)
         DefaultValueFactory = _ => 22,
         Validators = { validator.Crf }
     };
-    public readonly CliOption<int> AudioBitrate = new("audioBitrate", "-ab", "--audio-bitrate")
+    public readonly CliOption<long> AudioBitrate = new("audioBitrate", "-ab", "--audio-bitrate")
     {
         Description = "Audio bitrate",
         DefaultValueFactory = _ => 128,

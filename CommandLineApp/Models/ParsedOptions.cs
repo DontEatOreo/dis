@@ -10,7 +10,7 @@ public sealed class ParsedOptions
 
     public int MultiThread { get; init; }
     public int Crf { get; init; }
-    public int AudioBitrate { get; init; }
+    public long AudioBitrate { get; init; }
 
     public bool RandomFileName { get; init; }
     public bool KeepWatermark { get; init; }

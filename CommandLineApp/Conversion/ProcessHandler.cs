@@ -61,7 +61,7 @@ public sealed class ProcessHandler(ILogger logger, CodecParser codecParser, Stre
         if (audioStream is null)
             return conversion;
 
-        audioStream.SetBitrate(o.AudioBitrate);
+        conversion.SetAudioBitrate(o.AudioBitrate * 1000);
 
         audioStream.SetCodec(videoCodec
             is VideoCodec.vp8 or VideoCodec.vp9 or VideoCodec.av1

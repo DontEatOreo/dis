@@ -50,7 +50,7 @@ public sealed class CommandLineOptions(ICommandLineValidator validator) : IComma
         var resolution = result.GetResult(unparsed.Resolution)?.GetValueOrDefault<string>()!;
         var videoCodec = result.GetResult(unparsed.VideoCodec)?.GetValueOrDefault<string>()!;
         var trim = result.GetResult(unparsed.Trim)?.GetValueOrDefault<string>()!;
-        var audioBitrate = result.GetResult(unparsed.AudioBitrate)?.GetValueOrDefault<int>() ?? 0;
+        var audioBitrate = result.GetResult(unparsed.AudioBitrate)?.GetValueOrDefault<long>() ?? 0;
         var randomFileName = result.GetResult(unparsed.RandomFileName)?.GetValueOrDefault<bool>() ?? false;
         var keepWaterMark = result.GetResult(unparsed.KeepWatermark)?.GetValueOrDefault<bool>() ?? false;
         var sponsorBlock = result.GetResult(unparsed.SponsorBlock)?.GetValueOrDefault<bool>() ?? false;

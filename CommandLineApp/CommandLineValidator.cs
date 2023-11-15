@@ -77,7 +77,7 @@ public sealed class CommandLineValidator(ILogger logger, Globals globals) : ICom
 
     public void AudioBitRate(OptionResult result)
     {
-        var input = result.GetValueOrDefault<int>();
+        var input = result.GetValueOrDefault<long>();
 
         if (input < 0)
             result.AddError("Audio bitrate cannot be negative");
