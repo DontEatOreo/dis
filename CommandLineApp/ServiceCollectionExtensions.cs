@@ -12,7 +12,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddMyServices(this IServiceCollection services)
     {
         services.AddSingleton<Globals>();
-        services.AddSingleton<FileExtensionContentTypeProvider>();
+        services.AddSingleton<IContentTypeProvider, FileExtensionContentTypeProvider>();
         services.AddSingleton<ICommandLineApp, CommandLineApp>();
         services.AddSingleton<ICommandLineOptions, CommandLineOptions>();
         services.AddSingleton<ICommandLineValidator, CommandLineValidator>();

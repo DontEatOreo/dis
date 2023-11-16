@@ -1,10 +1,11 @@
 using System.CommandLine.Parsing;
 using dis.CommandLineApp.Interfaces;
+using Microsoft.AspNetCore.StaticFiles;
 using Serilog;
 
 namespace dis.CommandLineApp;
 
-public sealed class CommandLineValidator(ILogger logger, Globals globals) : ICommandLineValidator
+public sealed class CommandLineValidator(ILogger logger, IContentTypeProvider type, Globals globals) : ICommandLineValidator
 {
     private readonly string[] _resolutionList =
     {
@@ -24,7 +25,10 @@ public sealed class CommandLineValidator(ILogger logger, Globals globals) : ICom
         foreach (var item in inputs)
         {
             if (File.Exists(item) || Uri.IsWellFormedUriString(item, UriKind.RelativeOrAbsolute))
-                continue;
+                if (File.Exists(item))
+                    if (type.TryGetContentType(item, out var contentType))
+                        if (contentType.Contains("video") || contentType.Contains("audio"))
+                            continue;
 
             result.AddError($"Invalid input file or link: {item}");
         }
