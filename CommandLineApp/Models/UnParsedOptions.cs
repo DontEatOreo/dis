@@ -33,7 +33,7 @@ public sealed class UnParsedOptions(ICommandLineValidator validator)
     {
         Description = """
                       Trim the video
-                      Format: ss.ms-mm.ms
+                      Format: ss.ms-ss.ms
                       Example: 12.35-67.40
                       """,
         Validators = { validator.Trim }
