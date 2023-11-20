@@ -8,7 +8,7 @@ namespace dis.CommandLineApp;
 public sealed class CommandLineValidator(ILogger logger, IContentTypeProvider type, Globals globals) : ICommandLineValidator
 {
     private readonly string[] _resolutionList =
-    {
+    [
         "144p",
         "240p",
         "360p",
@@ -17,7 +17,7 @@ public sealed class CommandLineValidator(ILogger logger, IContentTypeProvider ty
         "1080p",
         "1440p",
         "2160p"
-    };
+    ];
 
     public void Inputs(OptionResult result)
     {
