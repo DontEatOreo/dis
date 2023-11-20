@@ -24,13 +24,16 @@ public sealed class CommandLineValidator(ILogger logger, IContentTypeProvider ty
         var inputs = result.GetValueOrDefault<string[]>();
         foreach (var item in inputs)
         {
-            if (File.Exists(item) || Uri.IsWellFormedUriString(item, UriKind.RelativeOrAbsolute))
-                if (File.Exists(item))
-                    if (type.TryGetContentType(item, out var contentType))
-                        if (contentType.Contains("video") || contentType.Contains("audio"))
-                            continue;
-
-            result.AddError($"Invalid input file or link: {item}");
+            if (File.Exists(item))
+            {
+                if (!type.TryGetContentType(item, out var contentType)) continue;
+                if (contentType.Contains("video") || contentType.Contains("audio"))
+                    return;
+            }
+            else if (Uri.IsWellFormedUriString(item, UriKind.RelativeOrAbsolute))
+                return;
+            else
+                result.AddError($"Invalid input file or link: {item}");
         }
     }
 

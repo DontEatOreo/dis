@@ -43,7 +43,7 @@ Console.CancelKeyPress += (_, _) => { cancellationTokenSource.Cancel(); };
 
 try
 {
-    config.RootCommand.SetAction(async (_, _) => await commandLineApp.Handler(parsedOptions));
+    config.RootCommand.SetAction((_, _) => commandLineApp.Handler(parsedOptions));
     await config.InvokeAsync(args, cancellationTokenSource.Token);
 }
 catch (Exception e)
