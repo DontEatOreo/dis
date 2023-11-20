@@ -17,7 +17,7 @@ public sealed class Globals
     /// This list maintains the paths to videos that have been temporarily downloaded.
     /// These paths are stored for future deletion of the corresponding files.
     /// </summary>
-    public readonly List<string> TempDir = new();
+    public readonly List<string> TempDir = [];
 
     public readonly Dictionary<string[], VideoCodec> VideoCodecs = new()
     {
