@@ -41,7 +41,7 @@ public sealed class CommandLineApp(
         ParsedOptions options)
     {
         var list = links.ToList();
-        if (list.Any() is false)
+        if (list.Count != 0)
             return;
 
         foreach (var downloadOptions in list.Select(link => new DownloadOptions(link, options)))
@@ -89,7 +89,7 @@ public sealed class CommandLineApp(
             }
         }
 
-        var hasAny = globals.TempDir.Any();
+        var hasAny = globals.TempDir.Count != 0;
         if (hasAny is false)
             return;
 
