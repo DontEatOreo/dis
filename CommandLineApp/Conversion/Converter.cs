@@ -36,9 +36,10 @@ public sealed class Converter(PathHandler pathHandler, ProcessHandler processHan
             if (dateTime.HasValue)
                 processHandler.SetTimeStamps(outP, dateTime.Value);
         }
-        catch (Exception e)
+        catch (Exception)
         {
-            logger.Error(e, "Conversion failed");
+            logger.Error( "Conversion failed");
+            logger.Error("FFmpeg args: {Conversion}", $"ffmpeg {conversion.Build().Trim()}");
             return;
         }
 
