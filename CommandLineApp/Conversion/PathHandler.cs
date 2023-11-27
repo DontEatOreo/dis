@@ -26,7 +26,7 @@ public sealed class PathHandler(CodecParser codecParser)
             .ToList();
 
         string? extension = null;
-        if (matchingExtensions.Count != 0)
+        if (matchingExtensions.Count == 0)
             return Path.ChangeExtension(file, extension);
 
         // If the file already has the correct extension, return the file path

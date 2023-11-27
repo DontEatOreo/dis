@@ -13,7 +13,6 @@
 **/.vs/
 **/.vscode/
 **/packages/
-flake.lock
 
 # auto generated files
 *.dll

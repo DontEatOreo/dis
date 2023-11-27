@@ -41,7 +41,7 @@ public sealed class CommandLineApp(
         ParsedOptions options)
     {
         var list = links.ToList();
-        if (list.Count != 0)
+        if (list.Count == 0)
             return;
 
         foreach (var downloadOptions in list.Select(link => new DownloadOptions(link, options)))
