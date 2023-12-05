@@ -4,8 +4,9 @@
   dotnetCorePackages,
   ffmpeg,
   yt-dlp,
+  ...
 }:
-buildDotnetModule rec {
+buildDotnetModule {
   pname = "dis";
   version = "8.1.5";
 
@@ -15,9 +16,6 @@ buildDotnetModule rec {
   nugetDeps = ./deps.nix;
 
   dotnet-sdk = dotnetCorePackages.sdk_8_0;
-  # dotnet-runtime = dotnetCorePackages.runtime_8_0;
-
-  buildType = true;
   selfContainedBuild = true;
 
   executables = ["dis"];
@@ -28,5 +26,6 @@ buildDotnetModule rec {
     homepage = "https://github.com/DontEatOreo/dis";
     license = licenses.agpl3Plus;
     platforms = platforms.all;
+    maintainers = with maintainers; [DontEatOreo];
   };
 }

@@ -15,14 +15,10 @@
         });
   in {
     devShells = forEachSupportedSystem ({pkgs}: {
-      default = pkgs.mkShell {
-        packages = with pkgs; [
-          dotnet-sdk_8
-        ];
-      };
+      devShells.default = import ./shell.nix {inherit pkgs;};
     });
     packages = forEachSupportedSystem ({pkgs}: {
-      default = pkgs.callPackage ./default.nix {};
+      default = pkgs.callPackage ./default.nix;
     });
   };
 }
