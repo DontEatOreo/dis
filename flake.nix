@@ -18,7 +18,7 @@
       devShells.default = import ./shell.nix {inherit pkgs;};
     });
     packages = forEachSupportedSystem ({pkgs}: {
-      default = pkgs.callPackage ./default.nix;
+      default = pkgs.callPackage ./default.nix {};
     });
   };
 }
