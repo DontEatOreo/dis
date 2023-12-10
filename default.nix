@@ -44,7 +44,7 @@ in
       # This is akin to setting an environment variable, allowing our program to locate the 'ffmpeg' and 'yt-dl' utilities at runtime.
       # We prefix the PATH with the paths to 'ffmpeg' and 'yt-dlp', ensuring they are available to our application when it runs.
       wrapProgram "$out/bin/dis" \
-        --prefix PATH : ${ffmpeg}/bin \
+        --prefix PATH : ${ffmpeg-patched}/bin \
         --prefix PATH : ${yt-dlp}/bin
     '';
 
