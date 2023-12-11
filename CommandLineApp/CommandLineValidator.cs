@@ -122,6 +122,7 @@ public sealed class CommandLineValidator(ILogger logger, IContentTypeProvider ty
         if (input is null)
             return;
 
+        input = input.Replace("*", "");
         var span = input.AsSpan();
         // Find the position of the dash in the span.
         var dashIndex = span.IndexOf('-');
