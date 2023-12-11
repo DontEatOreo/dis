@@ -31,9 +31,13 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
             return new DownloadResult(null, null);
         }
 
-        var validTimeRange = ValidTimeRange(fetch);
-        if (validTimeRange is false)
-            return new DownloadResult(null, null);
+        var hasKeyframes = Query.OptionSet.ForceKeyframesAtCuts;
+        if (hasKeyframes)
+        {
+            var validTimeRange = ValidTimeRange(fetch);
+            if (validTimeRange is false)
+                return new DownloadResult(null, null);
+        }
 
         // Pre-download custom logic
         await PreDownload(fetch);
