@@ -31,8 +31,8 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
             return new DownloadResult(null, null);
         }
 
-        var emptySections = EmptySections(fetch);
-        if (emptySections is false)
+        var validTimeRange = ValidTimeRange(fetch);
+        if (validTimeRange is false)
             return new DownloadResult(null, null);
 
         // Pre-download custom logic
@@ -96,28 +96,29 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
     });
 
     /// <summary>
-    /// Determines if the sections specified in the OptionSet for downloading are empty.
+    /// Validates if the given time range is valid within the video length.
     /// </summary>
-    /// <param name="fetch">The result of the video fetch operation, which also includes the duration.</param>
-    /// <returns>True if the sections are empty or invalid; otherwise, false.</returns>
-    private bool EmptySections(RunResult<VideoData> fetch)
+    private bool ValidTimeRange(RunResult<VideoData> fetch)
     {
-        /*
-         * For some reason check if DownloadSection (which is MultiValue<string>)
-         * is null and we run FirstOrDefault() on it we will get an exception
-         * A work around is to use "is null" against it and return early if it's null
-         */
-        var emptySections = Query.OptionSet.DownloadSections is null;
-        if (emptySections)
-            return true;
-
+        // check if the time range is beyond the video length
         var split = Query.OptionSet.DownloadSections!.Values[0];
         var (start, end) = ParseStartAndEndTime(split);
 
         var duration = fetch.Data.Duration;
-        var validTimeRange = (start > end || end > duration) is false;
+
+        /* The variable 'validTimeRange' checks whether the start time is
+         * not greater than the end time, and the end time does not exceed
+         * the video's total duration. Therefore, the valid time range for
+         * the video is between the start time and the end time, and this
+         * range should not be beyond the video's length.
+         * The subsequent 'if' condition returns true if both conditions
+         * in 'validTimeRange' are satisfied, thus indicating that the
+         * defined time range for downloading a section of the video is valid.
+         */
+        var validTimeRange = start <= end && end <= duration;
+
         if (validTimeRange)
-            return validTimeRange;
+            return true;
 
         Logger.Error(TrimTimeError);
         return false;

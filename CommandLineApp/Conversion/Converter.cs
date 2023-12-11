@@ -38,7 +38,7 @@ public sealed class Converter(PathHandler pathHandler, ProcessHandler processHan
         }
         catch (Exception)
         {
-            logger.Error( "Conversion failed");
+            logger.Error("Conversion failed");
             logger.Error("FFmpeg args: {Conversion}", $"ffmpeg {conversion.Build().Trim()}");
             return;
         }
