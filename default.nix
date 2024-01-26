@@ -4,6 +4,7 @@
   dotnetCorePackages,
   yt-dlp,
   ffmpeg_6-full,
+  icu,
   ...
 }:
 buildDotnetModule {
@@ -32,6 +33,8 @@ buildDotnetModule {
       --prefix PATH : ${ffmpeg_6-full}/bin \
       --prefix PATH : ${yt-dlp}/bin
   '';
+
+  runtimeDeps = [icu];
 
   meta = with lib; {
     homepage = "https://github.com/DontEatOreo/dis";
