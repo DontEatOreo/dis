@@ -23,9 +23,6 @@ public class RedditDownloader(YoutubeDL youtubeDl, DownloadQuery downloadQuery)
         var extension = Path.GetExtension(videoPath);
         var destFile = Path.Combine(YoutubeDl.OutputFolder, $"{displayId}{extension}");
 
-        Logger.Verbose("Renaming {VideoPath} to {DestFile}",
-            videoPath,
-            destFile);
         File.Move(videoPath, destFile);
 
         var path = Directory.GetFiles(YoutubeDl.OutputFolder)

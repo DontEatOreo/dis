@@ -1,3 +1,3 @@
 namespace dis.CommandLineApp.Models;
 
-public sealed record DownloadOptions(Uri Uri, ParsedOptions Options);
+public sealed record DownloadOptions(Uri Uri, Settings Options);

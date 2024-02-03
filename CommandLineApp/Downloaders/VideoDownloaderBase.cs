@@ -1,6 +1,7 @@
 using dis.CommandLineApp.Interfaces;
 using dis.CommandLineApp.Models;
 using Serilog;
+using Spectre.Console;
 using YoutubeDLSharp;
 using YoutubeDLSharp.Metadata;
 
@@ -10,7 +11,7 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
 {
     protected readonly YoutubeDL YoutubeDl = youtubeDl;
     protected readonly DownloadQuery Query = query;
-    protected readonly ILogger Logger = Log.Logger.ForContext<VideoDownloaderBase>();
+    private readonly ILogger _logger = Log.Logger.ForContext<VideoDownloaderBase>();
 
     private const string LiveStreamError = "Live streams are not supported";
     private const string DownloadError = "Download failed";
@@ -22,12 +23,12 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
         var fetch = await FetchVideoData();
         if (fetch.Success is false)
         {
-            Logger.Error(FetchError);
+            _logger.Error(FetchError);
             return new DownloadResult(null, null);
         }
         if (fetch.Data.IsLive is true)
         {
-            Logger.Error(LiveStreamError);
+            _logger.Error(LiveStreamError);
             return new DownloadResult(null, null);
         }
 
@@ -43,7 +44,7 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
         await PreDownload(fetch);
 
         // The downloading part can be overridden in child classes
-        var dlResult = await DownloadVideo(fetch);
+        var dlResult = await DownloadVideo();
         if (dlResult is null)
             return new DownloadResult(null, null);
 
@@ -60,9 +61,13 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
 
     private async Task<RunResult<VideoData>> FetchVideoData()
     {
-        Logger.Verbose("Started fetching {QueryUri}", Query.Uri);
-        var fetch = await YoutubeDl.RunVideoDataFetch(Query.Uri.ToString());
-        Logger.Verbose("Finished fetching {QueryUri}", Query.Uri);
+        RunResult<VideoData> fetch = null!;
+        await AnsiConsole.Status().StartAsync("Fetching data...", async ctx =>
+        {
+            ctx.Spinner(Spinner.Known.Arrow);
+            fetch = await YoutubeDl.RunVideoDataFetch(Query.Uri.ToString());
+            ctx.Refresh();
+        });
         return fetch;
     }
 
@@ -72,32 +77,30 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
     protected virtual Task<string> PostDownload(RunResult<VideoData> fetch)
         => Task.FromResult(string.Empty);
 
-    private async Task<RunResult<string?>?> DownloadVideo(RunResult<VideoData> fetch)
+    private async Task<RunResult<string?>?> DownloadVideo()
     {
-        Logger.Verbose("Starting downloading {Title}", fetch.Data.Title);
-        var download = await YoutubeDl.RunVideoDownload(Query.Uri.ToString(),
-            overrideOptions: Query.OptionSet,
-            progress: _downloadProgress);
-        Console.WriteLine(); // New line after download progress
-        Logger.Verbose("Finished downloading {Title}", fetch.Data.Title);
+        RunResult<string?> download = null!;
+        await AnsiConsole.Status().StartAsync("Downloading...", async ctx =>
+        {
+            ctx.Spinner(Spinner.Known.Arrow);
+
+            download = await YoutubeDl.RunVideoDownload(Query.Uri.ToString(),
+                overrideOptions: Query.OptionSet,
+                progress: new Progress<DownloadProgress>(p =>
+                {
+                    var progress = (int)Math.Round(p.Progress * 100);
+
+                    ctx.Status($"[green]Download Progress: {progress}%[/]");
+                    ctx.Refresh();
+                }));
+            return Task.CompletedTask;
+        });
         if (download.Success)
             return download;
 
-        Logger.Error(DownloadError);
+        _logger.Error(DownloadError);
         return default;
     }
-
-    private readonly Progress<DownloadProgress> _downloadProgress = new(p =>
-    {
-        var progress = Math.Round(p.Progress, 2);
-        if (progress is 0)
-            return;
-
-        var downloadString = p.DownloadSpeed is not null
-            ? $"\rDownload Progress: {progress:P2} | Download speed: {p.DownloadSpeed}"
-            : $"\rDownload Progress: {progress:P2}";
-        Console.Write(downloadString);
-    });
 
     /// <summary>
     /// Validates if the given time range is valid within the video length.
@@ -124,7 +127,7 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
         if (validTimeRange)
             return true;
 
-        Logger.Error(TrimTimeError);
+        _logger.Error(TrimTimeError);
         return false;
     }
 

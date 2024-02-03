@@ -21,10 +21,10 @@ public sealed class Globals
 
     public readonly Dictionary<string[], VideoCodec> VideoCodecs = new()
     {
-        { new[] { "h264", "libx264" }, VideoCodec.libx264 },
-        { new[] { "h265", "libx265", "hevc" }, VideoCodec.hevc },
-        { new[] { "vp8", "libvpx" }, VideoCodec.vp8 },
-        { new[] { "vp9", "libvpx-vp9" }, VideoCodec.vp9 },
-        { new[] { "av1", "libaom-av1" }, VideoCodec.av1 },
+        { ["h264", "libx264"], VideoCodec.libx264 },
+        { ["h265", "libx265", "hevc"], VideoCodec.hevc },
+        { ["vp8", "libvpx"], VideoCodec.vp8 },
+        { ["vp9", "libvpx-vp9"], VideoCodec.vp9 },
+        { ["av1", "libaom-av1"], VideoCodec.av1 }
     };
 }

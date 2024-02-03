@@ -7,8 +7,8 @@ public sealed class PathHandler(CodecParser codecParser)
 {
     private readonly Dictionary<string, VideoCodec[]> _videoExtMap = new()
     {
-        { "mp4", new[] { VideoCodec.libx264, VideoCodec.hevc } },
-        { "webm", new[] { VideoCodec.vp8, VideoCodec.vp9, VideoCodec.av1 } }
+        { "mp4", [VideoCodec.libx264, VideoCodec.hevc] },
+        { "webm", [VideoCodec.vp8, VideoCodec.vp9, VideoCodec.av1] }
     };
 
     /// <summary>
@@ -42,7 +42,7 @@ public sealed class PathHandler(CodecParser codecParser)
     /// <param name="cmpPath">The path of the compressed file.</param>
     /// <returns>The constructed file path for the output file.</returns>
     /// <exception cref="Exception">Thrown when the original file name cannot be retrieved from the compressed file path.</exception>
-    public string ConstructFilePath(ParsedOptions o, string cmpPath)
+    public string ConstructFilePath(Settings o, string cmpPath)
     {
         var id = Guid.NewGuid().ToString()[..4];
 
@@ -51,7 +51,7 @@ public sealed class PathHandler(CodecParser codecParser)
         if (orgName is null)
             throw new FileNotFoundException("Could not get the original file name");
 
-        var iniOutPath = Path.Combine(o.Output, orgName);
+        var iniOutPath = Path.Combine(o.Output!, orgName);
 
         var orgExt = Path.GetExtension(cmpPath);
 
@@ -65,6 +65,6 @@ public sealed class PathHandler(CodecParser codecParser)
         if (o.RandomFileName)
             outName = $"{id}{orgExt}";
 
-        return Path.Combine(o.Output, outName);
+        return Path.Combine(o.Output!, outName);
     }
 }
