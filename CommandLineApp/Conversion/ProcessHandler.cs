@@ -1,7 +1,6 @@
 using dis.CommandLineApp.Models;
 using Serilog;
 using Xabe.FFmpeg;
-using Xabe.FFmpeg.Events;
 
 namespace dis.CommandLineApp.Conversion;
 
@@ -16,7 +15,7 @@ public sealed class ProcessHandler(ILogger logger, CodecParser codecParser, Stre
         File.SetLastAccessTime(path, date);
     }
 
-    public IConversion? ConfigureConversion(ParsedOptions o, IEnumerable<IStream> streams, string outP)
+    public IConversion? ConfigureConversion(Settings o, IEnumerable<IStream> streams, string outP)
     {
         var listOfStreams = streams.ToList();
         var videoStream = listOfStreams.OfType<IVideoStream>().FirstOrDefault();
@@ -56,12 +55,10 @@ public sealed class ProcessHandler(ILogger logger, CodecParser codecParser, Stre
                 configurator.SetResolution(videoStream, o.Resolution);
         }
 
-        conversion.OnProgress += ConversionProgress;
-
         if (audioStream is null)
             return conversion;
 
-        conversion.SetAudioBitrate(o.AudioBitrate * 1000);
+        if (o.AudioBitrate is not null) conversion.SetAudioBitrate((long)(o.AudioBitrate * 1000));
 
         audioStream.SetCodec(videoCodec
             is VideoCodec.vp8 or VideoCodec.vp9 or VideoCodec.av1
@@ -70,16 +67,5 @@ public sealed class ProcessHandler(ILogger logger, CodecParser codecParser, Stre
         conversion.AddStream(audioStream);
 
         return conversion;
-    }
-
-    private static void ConversionProgress(object sender, ConversionProgressEventArgs args)
-    {
-        var percent = (int)Math.Round(args.Duration.TotalSeconds / args.TotalLength.TotalSeconds * 100);
-        if (percent is 0)
-            return;
-
-        // Write the new progress message
-        var progressMessage = $"\rProgress: {args.Duration.TotalSeconds / args.TotalLength.TotalSeconds:P2}";
-        Console.Write(progressMessage);
     }
 }

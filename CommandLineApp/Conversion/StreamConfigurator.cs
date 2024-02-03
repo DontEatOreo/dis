@@ -5,15 +5,15 @@ namespace dis.CommandLineApp.Conversion;
 public sealed class StreamConfigurator
 {
     private readonly string[] _av1Args =
-    {
+    [
         "-lag-in-frames 48",
         "-row-mt 1",
         "-tile-rows 0",
         "-tile-columns 1"
-    };
+    ];
 
     private readonly string[] _vp9Args =
-    {
+    [
         "-row-mt 1",
         "-lag-in-frames 25",
         "-cpu-used 4",
@@ -22,8 +22,8 @@ public sealed class StreamConfigurator
         "-arnr-strength 4",
         "-aq-mode 0",
         "-enable-tpl 1",
-        "-row-mt 1",
-    };
+        "-row-mt 1"
+    ];
 
     public void SetResolution(IVideoStream stream, string res)
     {

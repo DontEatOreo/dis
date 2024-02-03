@@ -12,10 +12,8 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddMyServices(this IServiceCollection services)
     {
         services.AddSingleton<Globals>();
-        services.AddSingleton<IContentTypeProvider, FileExtensionContentTypeProvider>();
-        services.AddSingleton<ICommandLineApp, CommandLineApp>();
-        services.AddSingleton<ICommandLineOptions, CommandLineOptions>();
-        services.AddSingleton<ICommandLineValidator, CommandLineValidator>();
+        services.AddSingleton<FileExtensionContentTypeProvider>();
+        services.AddSingleton<RootCommand>();
         services.AddSingleton<IDownloaderFactory, VideoDownloaderFactory>();
 
         services.AddTransient<CodecParser>();
@@ -31,7 +29,6 @@ public static class ServiceCollectionExtensions
             var globals = sp.GetRequiredService<Globals>();
             return new VideoDownloaderFactory(globals.YoutubeDl);
         });
-
         return services;
     }
 }
