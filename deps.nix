@@ -178,13 +178,13 @@
   })
   (fetchNuGet {
     pname = "Serilog.AspNetCore";
-    version = "8.0.0";
-    sha256 = "0g1scn1a5paiydxk1nnrwzzqny2vabc3hniy6jwjqycag6ch2pni";
+    version = "8.0.1";
+    sha256 = "0vmrbhj9vb00fhvxrw3w5j1gvdx4xzxz8d2cp65hps988zxwykkb";
   })
   (fetchNuGet {
     pname = "Serilog.Expressions";
-    version = "4.0.0";
-    sha256 = "180zqpryffg1awccyhsz4cfvjs2kqayr9hds4a7dcpwyns3ygkhh";
+    version = "4.0.1-dev-00151";
+    sha256 = "1hqn248h1wl9l1gzlwpgg4k7pyx6jffm3qka2fnz66paz8n712hv";
   })
   (fetchNuGet {
     pname = "Serilog.Extensions.Hosting";
