@@ -1,53 +1,54 @@
 ﻿using System.Globalization;
 using dis.CommandLineApp;
-using dis.CommandLineApp.Interfaces;
+using dis.CommandLineApp.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
-using Serilog.Core;
-using Serilog.Events;
 using Serilog.Expressions;
 using Serilog.Settings.Configuration;
+using Spectre.Console;
+using Spectre.Console.Cli;
 
 var consoleLoggerConfigExtension = typeof(ConsoleLoggerConfigurationExtensions).Assembly;
 var serilogExpression = typeof(SerilogExpression).Assembly;
 ConfigurationReaderOptions options = new(consoleLoggerConfigExtension, serilogExpression);
 
-LoggingLevelSwitch levelSwitch = new();
 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
+IServiceCollection collection = new ServiceCollection();
 HostBuilder hostBuilder = new();
-hostBuilder.ConfigureServices((_, services) => services.AddMyServices());
+hostBuilder.ConfigureServices((_, services) =>
+{
+    services.AddMyServices();
+    collection = services;
+});
 hostBuilder.UseSerilog((context, configuration) =>
     configuration
-        .MinimumLevel.ControlledBy(levelSwitch)
         .ReadFrom.Configuration(context.Configuration, options)
         .Enrich.FromLogContext()
         .WriteTo.Console());
+hostBuilder.Build();
 
-using var host = hostBuilder.Build();
-using var serviceScope = host.Services.CreateScope();
-var services = serviceScope.ServiceProvider;
+var registrar = new TypeRegistrar(collection);
 
-var commandLineApp = services.GetRequiredService<ICommandLineApp>();
-var commandLineOptions = services.GetRequiredService<ICommandLineOptions>();
-
-var (config, parsedOptions) = commandLineOptions.GetCommandLineOptions();
-
-// Set the MinimumLevel property of the switch based on the argument value
-levelSwitch.MinimumLevel = parsedOptions.Verbose ? LogEventLevel.Verbose : // Set the minimum level to Verbose
-    LogEventLevel.Information;
-
-CancellationTokenSource cancellationTokenSource = new();
-Console.CancelKeyPress += (_, _) => { cancellationTokenSource.Cancel(); };
+var app = new CommandApp<RootCommand>(registrar);
+#if DEBUG
+app.Configure(config =>
+{
+    config.PropagateExceptions();
+    config.ValidateExamples();
+    config.AddExample("-i", "https://youtu.be/hT_nvWreIhg");
+    config.AddExample("-i", "https://youtu.be/hT_nvWreIhg", "-t", "73.25-110");
+    config.AddExample("-i", "https://youtu.be/hT_nvWreIhg", "-o", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos)));
+});
+#endif
 
 try
 {
-    config.RootCommand.SetAction((_, _) => commandLineApp.Handler(parsedOptions));
-    await config.InvokeAsync(args, cancellationTokenSource.Token);
+    await app.RunAsync(args);
 }
-catch (Exception e)
+catch (CommandAppException e)
 {
-    Log.Fatal(e, "An error occurred while running the app");
+    AnsiConsole.WriteLine(e.Message);
     throw;
 }

@@ -247,12 +247,6 @@
     sha256 = "1ga40f5lrwldiyw6vy67d0sg7jd7ww6kgwbksm19wrvq9hr0bsm6";
   })
   (fetchNuGet {
-    pname = "System.CommandLine";
-    version = "2.0.0-beta4.23407.1";
-    sha256 = "1qsil8pmy3zwzn1hb7iyw2ic9fzdj1giqd5cz27mnb13x97mi9ck";
-    url = "https://pkgs.dev.azure.com/dnceng/9ee6d478-d288-47f7-aacc-f6e6d082ae6d/_packaging/516521bf-6417-457e-9a9c-0a4bdfde03e7/nuget/v3/flat2/system.commandline/2.0.0-beta4.23407.1/system.commandline.2.0.0-beta4.23407.1.nupkg";
-  })
-  (fetchNuGet {
     pname = "System.Diagnostics.Debug";
     version = "4.0.11";
     sha256 = "0gmjghrqmlgzxivd2xl50ncbglb7ljzb66rlx8ws6dv8jm0d5siz";
