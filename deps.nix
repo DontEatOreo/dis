@@ -222,6 +222,26 @@
     sha256 = "097rngmgcrdfy7jy8j7dq3xaq2qky8ijwg0ws6bfv5lx0f3vvb0q";
   })
   (fetchNuGet {
+    pname = "Spectre.Console";
+    version = "0.48.1-preview.0.20";
+    sha256 = "1xs86c46396l1pwrzpmy8hncj0g4w66668airkg9d6z99c3s8z6a";
+  })
+  (fetchNuGet {
+    pname = "Spectre.Console.Analyzer";
+    version = "0.48.1-preview.0.20";
+    sha256 = "1fc9svvb2c770hkrs4q7iw3j6yy4sqrmrkjw0pyl9zyiq4h5aiq4";
+  })
+  (fetchNuGet {
+    pname = "Spectre.Console.Cli";
+    version = "0.48.1-preview.0.20";
+    sha256 = "1313lwxgwhsm23y9z1d53gga53n6mci9n01cv69rkz0bs0hif0sz";
+  })
+  (fetchNuGet {
+    pname = "Spectre.Console.Extensions.Progress";
+    version = "1.0.0";
+    sha256 = "09dwzy6cd9fji5fw0x4jayg9zk8bn48fmjrii9ynid4wjznas22v";
+  })
+  (fetchNuGet {
     pname = "System.Collections";
     version = "4.0.11";
     sha256 = "1ga40f5lrwldiyw6vy67d0sg7jd7ww6kgwbksm19wrvq9hr0bsm6";
@@ -286,6 +306,11 @@
     pname = "System.Linq.Expressions";
     version = "4.1.0";
     sha256 = "1gpdxl6ip06cnab7n3zlcg6mqp7kknf73s8wjinzi4p0apw82fpg";
+  })
+  (fetchNuGet {
+    pname = "System.Memory";
+    version = "4.5.5";
+    sha256 = "08jsfwimcarfzrhlyvjjid61j02irx6xsklf32rv57x2aaikvx0h";
   })
   (fetchNuGet {
     pname = "System.ObjectModel";
