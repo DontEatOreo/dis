@@ -14,23 +14,37 @@ To install **dis** 🎥, you need to have [FFmpeg](https://ffmpeg.org/download.h
 
 You can then download the latest release of **dis** 🎥 from the [Releases](https://github.com/DontEatOreo/dis/releases) tab on GitHub. Alternatively, you can clone this repository and build the project yourself using [dotnet publish](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-publish).
 
+### If you're using Nix package manager *(and have flakes enabled)*
+
+```bash
+nix profile install github:DontEatOreo/dis
+```
+
+Alternatively you can also invoke a `nix-shell` with dis available in the environment:
+
+```bash
+nix shell github:DontEatOreo/dis
+```
+
 ## Usage
 
 To use **dis** 🎥, you need to provide an input video source using the `-i` (`--input`) option. The input source can be either a local file or an online URL (e.g: Discord Server, YouTube, Twitter, Reddit, etc...).
 
 You can also specify various options to customize the output video, such as:
 
-| Option                                          | Description                                                                                            | Default Value  |
-|-------------------------------------------------|--------------------------------------------------------------------------------------------------------|----------------|
-| `-rd`, `-rn`, `-rnd`, `--random`                | Randomize the output filename                                                                          | `False`        |
-| `-c`, `--crf` <crf>                             | Constant Rate Factor (CRF) value for video compression                                                 | `22`           |
-| `-r`, `--resolution` <resolution>               | Output video resolution                                                                                | None           |
-| `-a`, `-ab`, `--audio-bitrate` <audio-bitrate>  | Output audio bitrate                                                                                   | `128k`         |
-| `-k`, `-kw`, `-kwm`, `--keep`                   | Keep the watermark on the output video                                                                 | `False`        |
-| `-sb`, `-sponsorblock`                          | Remove the sponsor segments from the output video using [SponsorBlock](https://sponsor.ajay.app/) API  | `False`        |
-| `-vc`, `--codec`, `--video-codec` <video-codec> | Output video codec                                                                                     | None           |
-| `-t`, `--trim` <trim>                           | Trim the input video/audio from a specific start and end time (in seconds) using the format: start-end | None           |
-| `-mt`, `--multi-thread`                         | Number of threads to use                                                                               | Your CPU Cores |
+| Option                              | Description                                                                                           | Default Value |
+|-------------------------------------|-------------------------------------------------------------------------------------------------------|---------------|
+| `-i`, `--input` `<input>`           | Input video source                                                                                    | None          |
+| `-o`, `--output` `<output>`         | Output directory for the compressed video                                                             | Current Path  |
+| `-c`, `--crf` `<crf>`               | Constant Rate Factor (CRF) Higher values mean lower quality, Lower values mean higher quality         | `25`          |
+| `-r`, `--resolution` `<resolution>` | Output video resolution                                                                               | None          |
+| `-t`, `--trim` `<trim>`             | Trim input using the format: ss.ms-ss.ms                                                              | None          |
+| `--video-codec` `<video-codec>`     | Output video codec                                                                                    | None          |
+| `--audio-bitrate` `<audio-bitrate>` | Output audio bitrate (in kbit/s) (only divisible by 2)                                                | `128k`        |
+| `--multi-thread`                    | Use all available threads (for faster compression)                                                    | true          |
+| `--random`                          | Randomize the output filename                                                                         | `False`       |
+| `--keep`                            | Keep watermark for TikTok videos                                                                      | `False`       |
+| `--sponsor`                         | Remove the sponsor segments from the output video using [SponsorBlock](https://sponsor.ajay.app/) API | `False`       |
 
 The CRF is a video compression method that grants users control over the output video's quality, with higher values resulting in lower quality and vice versa. It is recommended to avoid values below 22 or above 38.
 
@@ -51,7 +65,7 @@ dis -i video.webm -r 480p -o /home/user/Downloads
 Compressing a video from YouTube and change the video codec to `h265`, resolution to `720p`, and audio bitrate to `128`, with a custom CRF value:
 
 ```bash
-dis -i https://youtu.be/xxxxxxx -vc h265 -r 720p -ab 128 -c 20
+dis -i https://youtu.be/xxxxxxx --video-codec h265 -r 720p --audio-bitrate 128 -c 28
 ```
 
 Compressing a video from YouTube and trimming only a 60 seconds period of time.
