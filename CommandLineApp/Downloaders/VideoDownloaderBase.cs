@@ -89,6 +89,8 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
                 progress: new Progress<DownloadProgress>(p =>
                 {
                     var progress = (int)Math.Round(p.Progress * 100);
+                    if (progress is 0 or 1)
+                        return;
 
                     ctx.Status($"[green]Download Progress: {progress}%[/]");
                     ctx.Refresh();
