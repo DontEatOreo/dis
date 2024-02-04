@@ -20,7 +20,7 @@
     <PackageReference Include="Spectre.Console.Cli" Version="0.48.1-preview.0.20" />
     <PackageReference Include="Spectre.Console.Extensions.Progress" Version="1.0.0" />
     <PackageReference Include="Xabe.FFmpeg" Version="5.2.6" />
-    <PackageReference Include="YoutubeDLSharp" Version="1.0.0" />
+    <PackageReference Include="YoutubeDLSharp" Version="1.1.0" />
   </ItemGroup>
 
 </Project>

@@ -433,7 +433,7 @@
   })
   (fetchNuGet {
     pname = "YoutubeDLSharp";
-    version = "1.0.0";
-    sha256 = "0ws9hszjv2x8z1qpiirpiq2ghl6g4svi9hpqfdk1psck6398l2iz";
+    version = "1.1.0";
+    sha256 = "14gh4i21kg9fj3xiy0rmlb1gzxjms0yhmavj32k77p6nlzx9i35q";
   })
 ]
