@@ -61,35 +61,60 @@ public sealed class Converter(PathHandler pathHandler, ProcessHandler processHan
 
         AnsiConsole.MarkupLine($"Converted video saved at: [green]{outP}[/]");
 
-        // Show how much space we saved
-        var originalSize = new FileInfo(file).Length;
-        var compressedSize = new FileInfo(outP).Length;
+        /*
+         * File sizes are read and compared to calculate the difference and percentage saved.
+         *
+         * Sizes are shown in bytes, KiB, or MiB, depending on the magnitude. If file sizes are less than 1 MiB,
+         * they are represented in KiB for better readability. Savings (and increases, if present) are color-coded
+         * for user convenience.
+         *
+         * The results are presented in a table with columns "Original", "Compressed", and "Saved".
+         *
+         * For example:
+         * ┌─────────────────────────┬─────────────────────────────┬────────────────────────────┐
+         * │ Original                │ Compressed                  │ Saved                      │
+         * ├─────────────────────────┼─────────────────────────────┼────────────────────────────┤
+         * │ Original size: 1.10 MiB │ Compressed size: 417.28 KiB │ Saved: 709.82 KiB (62.98%) │
+         * └─────────────────────────┴─────────────────────────────┴────────────────────────────┘
+         */
+
+        var originalSize = (double)new FileInfo(file).Length;
+        var compressedSize = (double)new FileInfo(outP).Length;
 
         var saved = originalSize - compressedSize;
-        var savedPercent = (double)saved / originalSize * 100;
+        var savedPercent = saved / originalSize * 100;
         var savedPercentRounded = Math.Round(savedPercent, 2)
             .ToString(CultureInfo.InvariantCulture);
 
         var originalMiB = originalSize / 1024.0 / 1024.0;
-        var originalMiBRounded = Math.Round(originalMiB, 2)
-            .ToString(CultureInfo.InvariantCulture);
+        var originalKiB = originalSize / 1024.0;
+        var originalSizeString = originalMiB < 1
+            ? $"Original size: [red]{Math.Round(originalKiB, 2):F2} KiB[/]"
+            : $"Original size: [red]{Math.Round(originalMiB, 2):F2} MiB[/]";
 
         var compressedMiB = compressedSize / 1024.0 / 1024.0;
-        var compressedMiBRounded = Math.Round(compressedMiB, 2)
-            .ToString(CultureInfo.InvariantCulture);
+        var compressedKiB = compressedSize / 1024.0;
+        var compressedColor = compressedSize > originalSize ? "red" : "green";
+        var compressedSizeString = compressedMiB < 1
+            ? $"Compressed size: [{compressedColor}]{Math.Round(compressedKiB, 2):F2} KiB[/]"
+            : $"Compressed size: [{compressedColor}]{Math.Round(compressedMiB, 2):F2} MiB[/]";
 
-        var originalSizeString = $"Original size: [red]{originalMiBRounded} MiB[/]";
-        var compressedSizeString = compressedMiB > originalMiB
-            ? $"Compressed size: [red]{compressedMiBRounded} MiB[/]"
-            : $"Compressed size: [green]{compressedMiBRounded} MiB[/]";
+        var savedMiB = Math.Abs(saved) / 1024.0 / 1024.0;
+        var savedKiB = Math.Abs(saved) / 1024.0;
+        var savedColor = saved < 0 ? "red" : "green";
+        var savedChange = saved < 0 ? "+Increased" : "-Saved";
+        var savedSizeString = savedMiB < 1
+            ? $"{Math.Round(savedKiB, 2):F2} KiB"
+            : $"{Math.Round(savedMiB, 2):F2} MiB";
+        var savedString = $"{savedChange}: [{savedColor}]{savedSizeString} ({savedPercentRounded}%)[/]";
 
-        var savedString = saved < 0
-            ? $"Increased: [red]{-saved / 1024.0 / 1024.0:F2} MiB (+{savedPercentRounded}%)[/]"
-            : $"Saved: [green]{saved / 1024.0 / 1024.0:F2} MiB (-{savedPercentRounded}%)[/]";
+        var table = new Table();
+        table.AddColumn("Original");
+        table.AddColumn("Compressed");
+        table.AddColumn("Saved");
+        table.AddRow(originalSizeString, compressedSizeString, savedString);
 
-        AnsiConsole.Write(new Grid()
-            .AddColumns(new GridColumn(), new GridColumn(), new GridColumn())
-            .AddRow(originalSizeString, compressedSizeString, savedString));
+        AnsiConsole.Write(table);
     }
 
     private void HandleCancellation(object? sender, ConsoleCancelEventArgs e)
