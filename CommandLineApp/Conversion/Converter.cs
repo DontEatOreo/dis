@@ -102,16 +102,18 @@ public sealed class Converter(PathHandler pathHandler, ProcessHandler processHan
         var savedMiB = Math.Abs(saved) / 1024.0 / 1024.0;
         var savedKiB = Math.Abs(saved) / 1024.0;
         var savedColor = saved < 0 ? "red" : "green";
-        var savedChange = saved < 0 ? "+Increased" : "-Saved";
+        var savedChange = saved < 0 ? "Increased" : "Saved";
+        var savedSymbol = saved < 0 ? "+" : "-";
         var savedSizeString = savedMiB < 1
-            ? $"{Math.Round(savedKiB, 2):F2} KiB"
-            : $"{Math.Round(savedMiB, 2):F2} MiB";
+            ? $"{savedSymbol}{Math.Round(savedKiB, 2):F2} KiB"
+            : $"{savedSymbol}{Math.Round(savedMiB, 2):F2} MiB";
         var savedString = $"{savedChange}: [{savedColor}]{savedSizeString} ({savedPercentRounded}%)[/]";
+
 
         var table = new Table();
         table.AddColumn("Original");
         table.AddColumn("Compressed");
-        table.AddColumn("Saved");
+        table.AddColumn(savedChange);
         table.AddRow(originalSizeString, compressedSizeString, savedString);
 
         AnsiConsole.Write(table);
