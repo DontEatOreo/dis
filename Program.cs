@@ -9,6 +9,8 @@ using Serilog.Settings.Configuration;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
+if (args.Length is 0) args = ["--help"];
+
 var consoleLoggerConfigExtension = typeof(ConsoleLoggerConfigurationExtensions).Assembly;
 var serilogExpression = typeof(SerilogExpression).Assembly;
 ConfigurationReaderOptions options = new(consoleLoggerConfigExtension, serilogExpression);
