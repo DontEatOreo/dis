@@ -14,6 +14,20 @@ public sealed class Globals
     };
 
     /// <summary>
+    /// Lists of valid video resolutions.
+    /// </summary>
+    public readonly IEnumerable<string> ValidResolutions = [
+        "144p",
+        "240p",
+        "360p",
+        "480p",
+        "720p",
+        "1080p",
+        "1440p",
+        "2160p"
+    ];
+
+    /// <summary>
     /// This list maintains the paths to videos that have been temporarily downloaded.
     /// These paths are stored for future deletion of the corresponding files.
     /// </summary>
