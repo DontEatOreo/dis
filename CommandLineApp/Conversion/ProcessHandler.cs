@@ -15,11 +15,10 @@ public sealed class ProcessHandler(ILogger logger, CodecParser codecParser, Stre
         File.SetLastAccessTime(path, date);
     }
 
-    public IConversion? ConfigureConversion(Settings o, IEnumerable<IStream> streams, string outP)
+    public IConversion? ConfigureConversion(Settings o, IList<IStream> streams, string outP)
     {
-        var listOfStreams = streams.ToList();
-        var videoStream = listOfStreams.OfType<IVideoStream>().FirstOrDefault();
-        var audioStream = listOfStreams.OfType<IAudioStream>().FirstOrDefault();
+        var videoStream = streams.OfType<IVideoStream>().FirstOrDefault();
+        var audioStream = streams.OfType<IAudioStream>().FirstOrDefault();
 
         if (videoStream is null && audioStream is null)
         {
@@ -29,11 +28,9 @@ public sealed class ProcessHandler(ILogger logger, CodecParser codecParser, Stre
 
         var parameters = $"-crf {o.Crf}";
         var conversion = FFmpeg.Conversions.New()
-            .SetPreset(ConversionPreset.VerySlow)
+            .AddParameter(parameters)
             .SetPixelFormat(PixelFormat.yuv420p)
-            .SetOutput(outP)
-            .UseMultiThread(o.MultiThread)
-            .AddParameter(parameters);
+            .SetPreset(ConversionPreset.VerySlow);
 
         var videoCodec = codecParser.GetCodec(o.VideoCodec);
 
@@ -44,16 +41,30 @@ public sealed class ProcessHandler(ILogger logger, CodecParser codecParser, Stre
             switch (videoCodec)
             {
                 case VideoCodec.vp9:
-                    configurator.SetVp9Args(conversion);
-                    break;
+                    {
+                        configurator.SetVp9Args(conversion);
+                        outP = Path.ChangeExtension(outP, "webm");
+                        break;
+                    }
                 case VideoCodec.av1:
-                    configurator.SetCpuForAv1(conversion, videoStream.Framerate);
-                    break;
+                    {
+                        configurator.SetCpuForAv1(conversion, videoStream.Framerate);
+                        outP = Path.ChangeExtension(outP, "webm");
+                        conversion.SetPixelFormat(PixelFormat.yuv420p10le);
+                        break;
+                    }
+                default:
+                    {
+                        conversion.UseMultiThread(o.MultiThread);
+                        break;
+                    }
             }
 
             if (string.IsNullOrEmpty(o.Resolution) is false)
                 configurator.SetResolution(videoStream, o.Resolution);
         }
+
+        conversion.SetOutput(outP);
 
         if (audioStream is null)
             return conversion;
