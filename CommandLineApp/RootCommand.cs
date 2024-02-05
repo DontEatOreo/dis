@@ -142,20 +142,9 @@ public sealed partial class RootCommand(
     private void ValidateResolution(string? resolution)
     {
         var hasResolution = resolution is not null;
-        if (!hasResolution) return;
+        if (hasResolution is false) return;
 
-        var validResolution = resolution switch
-        {
-            "144p" => true,
-            "240p" => true,
-            "360p" => true,
-            "480p" => true,
-            "720p" => true,
-            "1080p" => true,
-            "1440p" => true,
-            "2160p" => true,
-            _ => false
-        };
+        var validResolution = globals.ValidResolutions.Contains(resolution);
         if (validResolution is false)
             ValidationResult.Error("Invalid resolution");
     }
@@ -165,14 +154,10 @@ public sealed partial class RootCommand(
         var hasVideoCodec = videoCodec is not null;
         if (!hasVideoCodec) return;
 
-        var validVideoCodec = videoCodec switch
-        {
-            "h264" => true,
-            "h265" => true,
-            "vp8" => true,
-            "vp9" => true,
-            _ => false
-        };
+        var validVideoCodec = globals.VideoCodecs.Values
+            .Any(codec => codec.ToString()
+                .Equals(videoCodec,
+                StringComparison.InvariantCultureIgnoreCase));
         if (validVideoCodec is false)
             ValidationResult.Error("Invalid video codec");
     }
@@ -218,7 +203,7 @@ public sealed partial class RootCommand(
     private async Task Download(IEnumerable<Uri> links, Dictionary<string, DateTime?> videos, Settings options)
     {
         var list = links.ToList();
-        if (list.Count == 0)
+        if (list.Count is 0)
             return;
 
         foreach (var downloadOptions in list.Select(link => new DownloadOptions(link, options)))
