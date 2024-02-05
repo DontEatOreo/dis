@@ -41,6 +41,7 @@ app.Configure(config =>
     config.AddExample("-i", "https://youtu.be/hT_nvWreIhg");
     config.AddExample("-i", "https://youtu.be/hT_nvWreIhg", "-t", "73.25-110");
     config.AddExample("-i", "https://youtu.be/hT_nvWreIhg", "-o", Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos)));
+    config.SetApplicationName("dis");
 });
 
 try
