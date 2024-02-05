@@ -23,10 +23,15 @@ public sealed class Settings : CommandSettings
                  """)]
     [CommandOption("-c|--crf")]
     [DefaultValue(25)]
-    public int Crf { get; init; }
+    public int Crf { get; set; }
 
+    [Description("""
+                 Resolution to be used for when compressing the video.
+                 Available resolutions:
+                 144p, 240p, 360p, 480p, 720p, 1080p, 1440p, 2160p
+                 """)]
     [CommandOption("-r|--resolution")]
-    public string? Resolution { get; init; }
+    public string? Resolution { get; set; }
 
     [Description("""
         Trim input
@@ -36,7 +41,12 @@ public sealed class Settings : CommandSettings
     [CommandOption("-t|--trim")]
     public string? Trim { get; init; }
 
-    [Description("Video codec")]
+    [Description("""
+                 Avaliable codecs:
+                 h264, libx264 - default
+                 vp9, libvpx-vp9 - VP9 (Webm) is recommended for 1080p
+                 av1, libaom-av1 - AV1 is recommended for 4K
+                 """)]
     [CommandOption("--video-codec")]
     public string? VideoCodec { get; init; }
 
