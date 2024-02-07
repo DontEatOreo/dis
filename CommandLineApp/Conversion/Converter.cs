@@ -133,20 +133,22 @@ public sealed class Converter(PathHandler pathHandler, Globals globals, ProcessH
         return (originalSize, compressedSize);
     }
 
-    private bool ShouldRetry(Settings s, string outP, List<IStream> enumerable)
+    private bool ShouldRetry(Settings s, string outP, IEnumerable<IStream> streams)
     {
         AnsiConsole.MarkupLine("[yellow]The resulting file is larger than the original.[/]");
 
         var deleteAndRetry = AskForRetry();
         if (deleteAndRetry is false) return false;
+        if (File.Exists(outP))
+        {
+            File.Delete(outP);
+            AnsiConsole.MarkupLine("[green]Deleted the converted video.[/]");
+        }
 
-        var resolutionChanged = AskForResolutionChange(enumerable, s);
+        var resolutionChanged = AskForResolutionChange(streams, s);
         var crfChanged = AskForCrfChange(s);
 
-        if (resolutionChanged || crfChanged)
-            return true;
-
-        return DeleteConvertedVideo(outP);
+        return resolutionChanged || crfChanged;
     }
 
     private static bool AskForRetry()
@@ -159,7 +161,7 @@ public sealed class Converter(PathHandler pathHandler, Globals globals, ProcessH
         return deleteAndRetry is "Yes";
     }
 
-    private bool AskForResolutionChange(List<IStream> enumerable, Settings s)
+    private bool AskForResolutionChange(IEnumerable<IStream> streams, Settings s)
     {
         var resolutionChanged = false;
         var changeResolution = AnsiConsole.Prompt(
@@ -167,31 +169,47 @@ public sealed class Converter(PathHandler pathHandler, Globals globals, ProcessH
                 .Title("Would you like to change the resolution?")
                 .AddChoices(["Yes", "No"]));
 
-        if (changeResolution is "Yes") resolutionChanged = ChangeResolution(enumerable, s);
+        if (changeResolution is "Yes") resolutionChanged = ChangeResolution(streams, s);
         return resolutionChanged;
     }
 
-    private bool ChangeResolution(List<IStream> enumerable, Settings s)
+    private bool ChangeResolution(IEnumerable<IStream> streams, Settings s)
     {
-        var width = enumerable.OfType<IVideoStream>().First().Width;
-        var height = enumerable.OfType<IVideoStream>().First().Height;
+        var videoStream = streams.OfType<IVideoStream>().First();
+        var width = videoStream.Width;
+        var height = videoStream.Height;
 
-        var maxDimension = Math.Max(width, height);
-        var currentResolution = $"{maxDimension}p";
+        var maxDimension = height > width ? height : Math.Max(width, height);
+        var currentResolution = GetClosestResolution(maxDimension);
 
         var resolutionList = globals.ValidResolutions.ToList();
-        var currentResolutionIndex = resolutionList.FindIndex(res => res == currentResolution);
+        var currentResolutionIndex = resolutionList.IndexOf(currentResolution);
 
         if (currentResolutionIndex <= 0) return false;
 
         var lowerResolutions = resolutionList.GetRange(0, currentResolutionIndex);
         var chosenResolution = AnsiConsole.Prompt(
             new SelectionPrompt<string>()
-                .Title("Please select a lower resolution for the conversion.")
-                .AddChoices(lowerResolutions));
+                .Title("Please select a lower resolution for the conversion:")
+                .AddChoices(lowerResolutions.Select(res => res + "p")));
 
         s.Resolution = chosenResolution;
         return true;
+    }
+
+    private int GetClosestResolution(int dimension)
+    {
+        var closestResolutionIndex = globals.ValidResolutions.BinarySearch(dimension);
+
+        // If dimension is not found, BinarySearch returns a negative number that is the bitwise complement 
+        // of the index of the next element that is larger than dimension or, if there is no larger element, 
+        // the bitwise complement of Count. So we have to handle this case and revert it to the correct value.
+        if (closestResolutionIndex < 0) closestResolutionIndex = ~closestResolutionIndex - 1;
+
+        // if there's no resolution smaller than dimension, choose the smallest one
+        if (closestResolutionIndex < 0) closestResolutionIndex = 0;
+
+        return globals.ValidResolutions[closestResolutionIndex];
     }
 
     private static bool AskForCrfChange(Settings s)
@@ -213,7 +231,7 @@ public sealed class Converter(PathHandler pathHandler, Globals globals, ProcessH
 
         while (true)
         {
-            var crfAnswer = AnsiConsole.Ask<string>("Please enter new value");
+            var crfAnswer = AnsiConsole.Ask<string>("Please enter new value:");
             var crfValue = int.Parse(new string(crfAnswer.Where(char.IsDigit).ToArray()));
 
             if (crfValue <= s.Crf)
@@ -229,22 +247,6 @@ public sealed class Converter(PathHandler pathHandler, Globals globals, ProcessH
 
         return crfChanged;
     }
-
-    private static bool DeleteConvertedVideo(string path)
-    {
-        var deleteAnswer = AnsiConsole.Prompt(
-            new SelectionPrompt<string>()
-                .Title("Do you want to delete the converted video?")
-                .AddChoices(["Yes", "No"]));
-        if (deleteAnswer is "No")
-            return false;
-
-        File.Delete(path);
-        AnsiConsole.MarkupLine("[green]Deleted the converted video.[/]");
-
-        return false;
-    }
-
 
     private static void HandleCancellation(object? sender, ConsoleCancelEventArgs e)
     {

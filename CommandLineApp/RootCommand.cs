@@ -144,7 +144,8 @@ public sealed partial class RootCommand(
         var hasResolution = resolution is not null;
         if (hasResolution is false) return;
 
-        var validResolution = globals.ValidResolutions.Contains(resolution);
+        var validResolution = globals.ValidResolutions
+            .Any(res => res.ToString().Equals($"{resolution}p", StringComparison.InvariantCultureIgnoreCase));
         if (validResolution is false)
             ValidationResult.Error("Invalid resolution");
     }
@@ -237,7 +238,7 @@ public sealed partial class RootCommand(
             }
         }
 
-        var hasAny = globals.TempDir.Count != 0;
+        var hasAny = globals.TempDir.Count is not 0;
         if (hasAny is false)
             return;
 

@@ -16,15 +16,16 @@ public sealed class Globals
     /// <summary>
     /// Lists of valid video resolutions.
     /// </summary>
-    public readonly IEnumerable<string> ValidResolutions = [
-        "144p",
-        "240p",
-        "360p",
-        "480p",
-        "720p",
-        "1080p",
-        "1440p",
-        "2160p"
+    public readonly List<int> ValidResolutions =
+    [
+        144,
+        240,
+        360,
+        480,
+        720,
+        1080,
+        1440,
+        2160
     ];
 
     /// <summary>
