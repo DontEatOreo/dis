@@ -9,7 +9,7 @@
 }:
 buildDotnetModule {
   pname = "dis";
-  version = "9.0.1";
+  version = "9.1.0";
 
   src = ./.;
 

@@ -111,7 +111,8 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
     {
         // check if the time range is beyond the video length
         var split = Query.OptionSet.DownloadSections!.Values[0];
-        var (start, end) = ParseStartAndEndTime(split);
+        var start = float.Parse(split.Split('-')[0].TrimStart('*'));
+        var end = float.Parse(split.Split('-')[1]);
 
         var duration = fetch.Data.Duration;
 
@@ -131,31 +132,5 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
 
         _logger.Error(TrimTimeError);
         return false;
-    }
-
-    /// <summary>
-    /// Extracts the start and end times from a given download section string.
-    /// </summary>
-    /// <param name="downloadSection">The string containing the download section details.</param>
-    /// <returns>A tuple containing the start and end times as floats.</returns>
-    private static (float, float) ParseStartAndEndTime(string downloadSection)
-    {
-        /*
-         * The download section string is split into two parts using '-' as a separator.
-         * The '*' character, which is used as a regex symbol for "yt-dlp",
-         * it is not relevant for our parsing and is therefore removed.
-         * The start time is always on the left side of the split, and the end time is always on the right side.
-         */
-
-        var span = downloadSection.AsSpan();
-        var separatorIndex = span.IndexOf('-');
-
-        var startSpan = span[..separatorIndex].Trim('*');
-        var endSpan = span[(separatorIndex + 1)..];
-
-        var start = float.Parse(startSpan);
-        var end = float.Parse(endSpan);
-
-        return (start, end);
     }
 }

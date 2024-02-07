@@ -6,61 +6,76 @@ using Xabe.FFmpeg;
 
 namespace dis.CommandLineApp.Conversion;
 
-public sealed class Converter(PathHandler pathHandler, ProcessHandler processHandler, ILogger logger)
+public sealed class Converter(PathHandler pathHandler, Globals globals, ProcessHandler processHandler, ILogger logger)
 {
     /// <summary>
     /// Converts a video file to a specified format using FFmpeg.
     /// </summary>
     /// <param name="file">The path to the input video file.</param>
     /// <param name="dateTime">The optional date and time to set for the output file.</param>
-    /// <param name="o">The options to use for the conversion.</param>
+    /// <param name="s">The options to use for the conversion.</param>
     /// <returns>A task that represents the asynchronous conversion operation.</returns>
-    public async Task ConvertVideo(string file, DateTime? dateTime, Settings o)
+    public async Task ConvertVideo(string file, DateTime? dateTime, Settings s)
     {
-        Console.CancelKeyPress += HandleCancellation;
-
-        var cmpPath = pathHandler.GetCompressPath(file, o.VideoCodec);
-        var outP = pathHandler.ConstructFilePath(o, cmpPath);
-
-        var mediaInfo = await FFmpeg.GetMediaInfo(file);
-        var streams = mediaInfo.Streams;
-
-        var conversion = processHandler.ConfigureConversion(o, streams, outP);
-        if (conversion is null)
+        while (true)
         {
-            logger.Error("Could not configure conversion");
-            return;
-        }
+            Console.CancelKeyPress += HandleCancellation;
 
-        try
-        {
-            await AnsiConsole.Status().StartAsync("Starting conversion...", async ctx =>
+            var cmpPath = pathHandler.GetCompressPath(file, s.VideoCodec);
+            var outP = pathHandler.ConstructFilePath(s, cmpPath);
+
+            var mediaInfo = await FFmpeg.GetMediaInfo(file);
+            var streams = mediaInfo.Streams.ToList();
+
+            var conversion = processHandler.ConfigureConversion(s, streams, outP);
+            if (conversion is null)
             {
-                ctx.Spinner(Spinner.Known.Arrow);
+                logger.Error("Could not configure conversion");
+                return;
+            }
 
-                conversion.OnProgress += (_, args) =>
-                {
-                    var percent = (int)Math.Round(args.Duration.TotalSeconds / args.TotalLength.TotalSeconds * 100);
-                    if (percent is 0)
-                        return;
+            try
+            {
+                await AnsiConsole.Status()
+                    .StartAsync("Starting conversion...", async ctx =>
+                    {
+                        ctx.Spinner(Spinner.Known.Arrow);
 
-                    ctx.Status($"[green]Conversion progress: {percent}%[/]");
-                    ctx.Refresh();
-                };
-                await conversion.Start();
-            });
-            if (dateTime.HasValue)
-                processHandler.SetTimeStamps(outP, dateTime.Value);
+                        conversion.OnProgress += (_, args) =>
+                        {
+                            var percent = (int)Math.Round(args.Duration.TotalSeconds / args.TotalLength.TotalSeconds * 100);
+                            if (percent is 0) return;
+
+                            ctx.Status($"[green]Conversion progress: {percent}%[/]");
+                            ctx.Refresh();
+                        };
+                        await conversion.Start();
+                    });
+                if (dateTime.HasValue) processHandler.SetTimeStamps(outP, dateTime.Value);
+            }
+            catch (Exception)
+            {
+                logger.Error("Conversion failed");
+                logger.Error("FFmpeg args: {Conversion}", $"ffmpeg {conversion.Build().Trim()}");
+                return;
+            }
+
+            AnsiConsole.MarkupLine($"Converted video saved at: [green]{outP}[/]");
+
+            var (originalSize, compressedSize) = ResultsTable(file, outP);
+            if (compressedSize > originalSize)
+            {
+                var videoStream = streams.OfType<IVideoStream>().FirstOrDefault();
+                if (videoStream is not null)
+                    if (ShouldRetry(s, outP, streams)) continue;
+            }
+
+            break;
         }
-        catch (Exception)
-        {
-            logger.Error("Conversion failed");
-            logger.Error("FFmpeg args: {Conversion}", $"ffmpeg {conversion.Build().Trim()}");
-            return;
-        }
+    }
 
-        AnsiConsole.MarkupLine($"Converted video saved at: [green]{outP}[/]");
-
+    private static (double, double) ResultsTable(string file, string outP)
+    {
         /*
          * File sizes are read and compared to calculate the difference and percentage saved.
          *
@@ -71,19 +86,18 @@ public sealed class Converter(PathHandler pathHandler, ProcessHandler processHan
          * The results are presented in a table with columns "Original", "Compressed", and "Saved".
          *
          * For example:
-         * ┌─────────────────────────┬─────────────────────────────┬────────────────────────────┐
-         * │ Original                │ Compressed                  │ Saved                      │
-         * ├─────────────────────────┼─────────────────────────────┼────────────────────────────┤
-         * │ Original size: 1.10 MiB │ Compressed size: 417.28 KiB │ Saved: 709.82 KiB (62.98%) │
-         * └─────────────────────────┴─────────────────────────────┴────────────────────────────┘
+         * ┌───────────────────────────┬─────────────────────────────┬─────────────────────────────┐
+         * │ Original                  │ Compressed                  │ Saved                       │
+         * ├───────────────────────────┼─────────────────────────────┼─────────────────────────────┤
+         * │ Original size: 710.86 KiB │ Compressed size: 467.02 KiB │ Saved: -243.84 KiB (-34.3%) │
+         * └───────────────────────────┴─────────────────────────────┴─────────────────────────────┘ 
          */
-
         var originalSize = (double)new FileInfo(file).Length;
         var compressedSize = (double)new FileInfo(outP).Length;
 
         var saved = originalSize - compressedSize;
         var savedPercent = saved / originalSize * 100;
-        var savedPercentRounded = Math.Round(savedPercent, 2)
+        var savedPercentRounded = (savedPercent > 0 ? "-" : "+") + Math.Round(Math.Abs(savedPercent), 2)
             .ToString(CultureInfo.InvariantCulture);
 
         var originalMiB = originalSize / 1024.0 / 1024.0;
@@ -109,7 +123,6 @@ public sealed class Converter(PathHandler pathHandler, ProcessHandler processHan
             : $"{savedSymbol}{Math.Round(savedMiB, 2):F2} MiB";
         var savedString = $"{savedChange}: [{savedColor}]{savedSizeString} ({savedPercentRounded}%)[/]";
 
-
         var table = new Table();
         table.AddColumn("Original");
         table.AddColumn("Compressed");
@@ -117,13 +130,127 @@ public sealed class Converter(PathHandler pathHandler, ProcessHandler processHan
         table.AddRow(originalSizeString, compressedSizeString, savedString);
 
         AnsiConsole.Write(table);
+        return (originalSize, compressedSize);
     }
 
-    private void HandleCancellation(object? sender, ConsoleCancelEventArgs e)
+    private bool ShouldRetry(Settings s, string outP, List<IStream> enumerable)
+    {
+        AnsiConsole.MarkupLine("[yellow]The resulting file is larger than the original.[/]");
+
+        var deleteAndRetry = AskForRetry();
+        if (deleteAndRetry is false) return false;
+
+        var resolutionChanged = AskForResolutionChange(enumerable, s);
+        var crfChanged = AskForCrfChange(s);
+
+        if (resolutionChanged || crfChanged)
+            return true;
+
+        return DeleteConvertedVideo(outP);
+    }
+
+    private static bool AskForRetry()
+    {
+        var deleteAndRetry = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("Do you want to delete the converted video and try again with a better setting?")
+                .AddChoices(["Yes", "No"]));
+
+        return deleteAndRetry is "Yes";
+    }
+
+    private bool AskForResolutionChange(List<IStream> enumerable, Settings s)
+    {
+        var resolutionChanged = false;
+        var changeResolution = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("Would you like to change the resolution?")
+                .AddChoices(["Yes", "No"]));
+
+        if (changeResolution is "Yes") resolutionChanged = ChangeResolution(enumerable, s);
+        return resolutionChanged;
+    }
+
+    private bool ChangeResolution(List<IStream> enumerable, Settings s)
+    {
+        var width = enumerable.OfType<IVideoStream>().First().Width;
+        var height = enumerable.OfType<IVideoStream>().First().Height;
+
+        var maxDimension = Math.Max(width, height);
+        var currentResolution = $"{maxDimension}p";
+
+        var resolutionList = globals.ValidResolutions.ToList();
+        var currentResolutionIndex = resolutionList.FindIndex(res => res == currentResolution);
+
+        if (currentResolutionIndex <= 0) return false;
+
+        var lowerResolutions = resolutionList.GetRange(0, currentResolutionIndex);
+        var chosenResolution = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("Please select a lower resolution for the conversion.")
+                .AddChoices(lowerResolutions));
+
+        s.Resolution = chosenResolution;
+        return true;
+    }
+
+    private static bool AskForCrfChange(Settings s)
+    {
+        var crfChanged = false;
+        var crfAnswer = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+            .Title("Would you like to enter a new crf value?")
+            .AddChoices(["Yes", "No"]));
+
+        if (crfAnswer is "Yes") crfChanged = ChangeCrfValue(s);
+
+        return crfChanged;
+    }
+
+    private static bool ChangeCrfValue(Settings s)
+    {
+        bool crfChanged;
+
+        while (true)
+        {
+            var crfAnswer = AnsiConsole.Ask<string>("Please enter new value");
+            var crfValue = int.Parse(new string(crfAnswer.Where(char.IsDigit).ToArray()));
+
+            if (crfValue <= s.Crf)
+            {
+                AnsiConsole.WriteLine("Please enter a value higher than the current CRF.");
+                continue;
+            }
+
+            s.Crf = crfValue;
+            crfChanged = true;
+            break;
+        }
+
+        return crfChanged;
+    }
+
+    private static bool DeleteConvertedVideo(string path)
+    {
+        var deleteAnswer = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("Do you want to delete the converted video?")
+                .AddChoices(["Yes", "No"]));
+        if (deleteAnswer is "No")
+            return false;
+
+        File.Delete(path);
+        AnsiConsole.MarkupLine("[green]Deleted the converted video.[/]");
+
+        return false;
+    }
+
+
+    private static void HandleCancellation(object? sender, ConsoleCancelEventArgs e)
     {
         if (e.SpecialKey is not ConsoleSpecialKey.ControlC)
             return;
-        AnsiConsole.WriteLine();
+
         AnsiConsole.WriteLine("Canceled");
     }
 }
