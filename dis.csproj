@@ -9,15 +9,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
-    <PackageReference Include="Serilog.AspNetCore" Version="8.0.1" />
-    <PackageReference Include="Serilog.Expressions" Version="4.0.1-dev-00151" />
-    <PackageReference Include="Spectre.Console" Version="0.48.1-preview.0.20" />
-    <PackageReference Include="Spectre.Console.Analyzer" Version="0.48.1-preview.0.20">
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0-preview.2.24128.5" />
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.2-dev-00334" />
+    <PackageReference Include="Serilog.Expressions" Version="4.0.1-dev-00154" />
+    <PackageReference Include="Spectre.Console" Version="0.48.1-preview.0.36" />
+    <PackageReference Include="Spectre.Console.Analyzer" Version="0.48.1-preview.0.36">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Spectre.Console.Cli" Version="0.48.1-preview.0.20" />
+    <PackageReference Include="Spectre.Console.Cli" Version="0.48.1-preview.0.36" />
     <PackageReference Include="Spectre.Console.Extensions.Progress" Version="1.0.0" />
     <PackageReference Include="Xabe.FFmpeg" Version="5.2.6" />
     <PackageReference Include="YoutubeDLSharp" Version="1.1.0" />
