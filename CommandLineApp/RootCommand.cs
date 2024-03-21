@@ -33,8 +33,8 @@ public sealed partial class RootCommand(
                     }
                 case true:
                     {
-                        if (type.TryGetContentType(input, out var contentType) is false) continue;
-                        if (contentType.Contains("video") || contentType.Contains("audio")) continue;
+                        if (type.TryGetContentType(input, out var contentType) is false) return;
+                        if (contentType.Contains("video") || contentType.Contains("audio")) return;
                         break;
                     }
             }
