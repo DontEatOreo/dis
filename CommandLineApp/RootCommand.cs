@@ -1,4 +1,6 @@
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using dis.CommandLineApp.Conversion;
 using dis.CommandLineApp.Interfaces;
@@ -191,6 +193,10 @@ public sealed partial class RootCommand(
             .Where(File.Exists);
 
         var paths = new Dictionary<string, DateTime?>();
+        
+        if (await CheckForFFmpegAndYtDlp() is false)
+            return 1;
+        
         await Download(links, paths, settings);
 
         foreach (var file in files)
@@ -199,6 +205,51 @@ public sealed partial class RootCommand(
         await Convert(paths, settings);
 
         return 0;
+    }
+    
+    private static async Task<bool> CheckForFFmpegAndYtDlp()
+    {
+        try
+        {
+            var cmd = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "where" : "which";
+            var ffmpegPath = await GetCommandPath(cmd, "ffmpeg");
+            var ytDlpPath = await GetCommandPath(cmd, "yt-dlp");
+
+            if (string.IsNullOrWhiteSpace(ffmpegPath))
+            {
+                AnsiConsole.WriteLine("FFmpeg not found in PATH. Please install FFmpeg and add it to PATH.");
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(ytDlpPath))
+            {
+                AnsiConsole.WriteLine("yt-dlp not found in PATH. Please install yt-dlp and add it to PATH.");
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            AnsiConsole.WriteLine($"An error occurred: {ex.Message}");
+            return false;
+        }
+    }
+
+    private static async Task<string> GetCommandPath(string cmd, string commandName)
+    {
+        ProcessStartInfo processInfo = new(cmd, commandName)
+        {
+            RedirectStandardOutput = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        using var process = Process.Start(processInfo);
+        var commandPath = await process?.StandardOutput.ReadToEndAsync()!;
+        await process.WaitForExitAsync();
+
+        return commandPath;
     }
 
     private async Task Download(IEnumerable<Uri> links, Dictionary<string, DateTime?> videos, Settings options)
