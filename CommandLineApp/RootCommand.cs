@@ -20,8 +20,13 @@ public sealed partial class RootCommand(
     Converter converter)
     : AsyncCommand<Settings>
 {
+    private static readonly string[] VersionArgs = ["-v", "--version"];
+    
     private void ValidateInputs(IEnumerable<string> inputs)
     {
+        if (VersionArgs.Any(Environment.GetCommandLineArgs().Contains))
+            return;
+        
         foreach (var input in inputs)
         {
             var isPath = File.Exists(input);
@@ -180,7 +185,14 @@ public sealed partial class RootCommand(
 
     public override async Task<int> ExecuteAsync(CommandContext context, Settings settings)
     {
-        // Patch up output directory to current dir, if it's empty
+        // This is a hacky way to check for the version, but the library doesn't really have a better way. So, we have to do what we have to do.
+        if (VersionArgs.Any(Environment.GetCommandLineArgs().Contains))
+        {
+            AnsiConsole.MarkupLine($"dis v{typeof(RootCommand).Assembly.GetName().Version!.ToString(3)}");
+            return 0;
+        }
+        
+        // Patch up output directory to current dir if it's empty
         if (string.IsNullOrEmpty(settings.Output)) settings.Output = Environment.CurrentDirectory;
 
         var links = settings.Input
