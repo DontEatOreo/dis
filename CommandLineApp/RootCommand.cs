@@ -41,14 +41,14 @@ public sealed partial class RootCommand(
         }
     }
 
-    private void ValidateOutput(string? output)
+    private static void ValidateOutput(string? output)
     {
         if (string.IsNullOrEmpty(output)) output = Environment.CurrentDirectory;
         if (Directory.Exists(output) is false)
             ValidationResult.Error("Output directory does not exist");
     }
 
-    private void ValidateCrf(int crf)
+    private static void ValidateCrf(int crf)
     {
         const int min = 6;
         const int minRecommended = 22;
@@ -92,7 +92,7 @@ public sealed partial class RootCommand(
         }
     }
 
-    private void ValidateAudioBitrate(int? audioBitrate)
+    private static void ValidateAudioBitrate(int? audioBitrate)
     {
         if (audioBitrate is null) return;
 
@@ -108,7 +108,7 @@ public sealed partial class RootCommand(
             ValidationResult.Error("Audio bitrate must be a multiple of 2");
     }
 
-    private void ValidateTrim(string? trim)
+    private static void ValidateTrim(string? trim)
     {
         if (string.IsNullOrEmpty(trim)) return;
 
