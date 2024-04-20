@@ -5,5 +5,6 @@ pkgs.mkShell {
     dotnet-sdk_8
     yt-dlp
     ffmpeg_6-full
+    icu
   ];
 }

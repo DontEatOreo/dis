@@ -18,7 +18,36 @@
       devShells.default = import ./shell.nix {inherit pkgs;};
     });
     packages = forEachSupportedSystem ({pkgs}: {
-      default = pkgs.callPackage ./default.nix {};
+      default = pkgs.buildDotnetModule {
+        pname = "dis";
+        version = "9.1.1";
+
+        src = ./.;
+
+        projectFile = "./dis.csproj";
+        nugetDeps = ./deps.nix;
+
+        dotnet-sdk = pkgs.dotnetCorePackages.sdk_8_0;
+        selfContainedBuild = true;
+
+        executables = ["dis"];
+
+        postFixup = ''
+          makeWrapper ${pkgs.dotnetCorePackages.sdk_8_0}/bin/dotnet $out/bin/dis --add-flags $out/lib/dis/dis.dll
+          wrapProgram "$out/bin/dis" \
+            --prefix PATH : ${pkgs.ffmpeg_6-full}/bin \
+            --prefix PATH : ${pkgs.yt-dlp}/bin
+        '';
+
+        runtimeDeps = [pkgs.icu];
+
+        meta = {
+          homepage = "https://github.com/DontEatOreo/dis";
+          license = pkgs.lib.licenses.agpl3Plus;
+          platforms = pkgs.lib.platforms.unix;
+          maintainers = [pkgs.lib.maintainers.donteatoreo];
+        };
+      };
     });
   };
 }
