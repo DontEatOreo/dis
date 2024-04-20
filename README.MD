@@ -8,6 +8,20 @@ dis is a simple tool to compress videos for platforms like Discord and likewise.
 
 I created this project to make smaller videos that load faster for everyone and are more easily shareable on Discord and other platforms.
 
+## Build
+
+### Nix
+
+1. Fetch Deps `nix build .#default.fetch-deps`
+2. Run the script `./result`
+3. Move the generate `deps.nix` *(the `./result` script will show where it was saved)* file to `.`
+
+### .NET
+
+1. `dotnet restore`
+2. `dotnet build dis.csproj -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true --self-contained true --configuration Release --runtime <rid>` [Know RIDs](https://learn.microsoft.com/en-us/dotnet/core/rid-catalog#known-rids)
+3. Then you can find the executable at `bin/Release/net8.0/<rid>/publish/`
+
 ## Installation
 
 To install **dis** 🎥, you need to have [FFmpeg](https://ffmpeg.org/download.html) and [YT-DLP](https://github.com/yt-dlp/yt-dlp) installed on your system. You can download them from their official websites or use your package manager of choice.
@@ -20,7 +34,7 @@ You can then download the latest release of **dis** 🎥 from the [Releases](htt
 nix profile install github:DontEatOreo/dis
 ```
 
-Alternatively you can also invoke a `nix-shell` with dis available in the environment:
+Alternatively you can also invoke a `nix-shell` with the required packages to build dis:
 
 ```bash
 nix shell github:DontEatOreo/dis
