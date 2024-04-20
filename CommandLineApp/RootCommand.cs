@@ -21,12 +21,12 @@ public sealed partial class RootCommand(
     : AsyncCommand<Settings>
 {
     private static readonly string[] VersionArgs = ["-v", "--version"];
-    
+
     private void ValidateInputs(IEnumerable<string> inputs)
     {
         if (VersionArgs.Any(Environment.GetCommandLineArgs().Contains))
             return;
-        
+
         foreach (var input in inputs)
         {
             var isPath = File.Exists(input);
@@ -188,10 +188,10 @@ public sealed partial class RootCommand(
         // This is a hacky way to check for the version, but the library doesn't really have a better way. So, we have to do what we have to do.
         if (VersionArgs.Any(Environment.GetCommandLineArgs().Contains))
         {
-            AnsiConsole.MarkupLine($"dis v{typeof(RootCommand).Assembly.GetName().Version!.ToString(3)}");
+            AnsiConsole.MarkupLine(typeof(RootCommand).Assembly.GetName().Version!.ToString(3));
             return 0;
         }
-        
+
         // Patch up output directory to current dir if it's empty
         if (string.IsNullOrEmpty(settings.Output)) settings.Output = Environment.CurrentDirectory;
 
@@ -205,10 +205,10 @@ public sealed partial class RootCommand(
             .Where(File.Exists);
 
         var paths = new Dictionary<string, DateTime?>();
-        
+
         if (await CheckForFFmpegAndYtDlp() is false)
             return 1;
-        
+
         await Download(links, paths, settings);
 
         foreach (var file in files)
@@ -218,7 +218,7 @@ public sealed partial class RootCommand(
 
         return 0;
     }
-    
+
     private static async Task<bool> CheckForFFmpegAndYtDlp()
     {
         try
