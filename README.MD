@@ -4,7 +4,7 @@
 [![GitHub release](https://img.shields.io/github/release/DontEatOreo/dis)](https://github.com/DontEatOreo/dis/releases)
 [![GitHub issues](https://img.shields.io/github/issues/DontEatOreo/dis)](https://github.com/DontEatOreo/dis/issues)
 
-dis is a simple and fast tool to compress videos for Discord and other platforms. It uses [YT-DLP](https://github.com/yt-dlp/yt-dlp) and [FFmpeg](https://ffmpeg.org/download.html) to download and process videos from various sources, such as YouTube, Twitter, Reddit, and more.
+dis is a simple tool to compress videos for platforms like Discord and likewise. It uses [YT-DLP](https://github.com/yt-dlp/yt-dlp) and [FFmpeg](https://ffmpeg.org/download.html) to download and process videos from various sources, such as YouTube, Twitter, Reddit, and more.
 
 I created this project to make smaller videos that load faster for everyone and are more easily shareable on Discord and other platforms.
 
