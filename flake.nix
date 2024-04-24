@@ -15,7 +15,7 @@
         });
   in {
     devShells = forEachSupportedSystem ({pkgs}: {
-      devShells.default = import ./shell.nix {inherit pkgs;};
+      default = import ./shell.nix {inherit pkgs;};
     });
     packages = forEachSupportedSystem ({pkgs}: {
       default = pkgs.buildDotnetModule {
