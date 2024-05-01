@@ -1,10 +1,19 @@
 {
   description = "Dis Flake";
 
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    devenv.url = "github:cachix/devenv";
+  };
 
-  outputs = {
+  nixConfig = {
+    extra-trusted-public-keys = "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=";
+    extra-substituters = "https://devenv.cachix.org";
+  };
+
+  outputs = inputs @ {
     self,
+    devenv,
     nixpkgs,
   }: let
     supportedSystems = ["x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin"];
@@ -14,8 +23,20 @@
           pkgs = import nixpkgs {inherit system;};
         });
   in {
-    devShells = forEachSupportedSystem ({pkgs}: {
-      default = import ./shell.nix {inherit pkgs;};
+    devShells = forEachSupportedSystem ({pkgs, ...}: {
+      default = devenv.lib.mkShell {
+        inherit inputs pkgs;
+        modules = [
+          ({pkgs, ...}: {
+            languages.dotnet = {
+              enable = true;
+              package = pkgs.dotnetCorePackages.combinePackages (builtins.attrValues {
+                inherit (pkgs.dotnetCorePackages) sdk_8_0;
+              });
+            };
+          })
+        ];
+      };
     });
     packages = forEachSupportedSystem ({pkgs}: {
       default = pkgs.buildDotnetModule {
