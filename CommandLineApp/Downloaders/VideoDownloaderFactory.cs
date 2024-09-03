@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using dis.CommandLineApp.Interfaces;
 using dis.CommandLineApp.Models;
 using Serilog;
@@ -8,34 +7,24 @@ using YoutubeDLSharp.Options;
 
 namespace dis.CommandLineApp.Downloaders;
 
-public partial class VideoDownloaderFactory(YoutubeDL youtubeDl) : IDownloaderFactory
+public class VideoDownloaderFactory(YoutubeDL youtubeDl) : IDownloaderFactory
 {
     // Constants for URL checking
     private const string TikTokUrlPart = "tiktok";
     private const string YouTubeUrlPart = "youtu";
-    private const string RedditUrlPart = "redd";
-
-    private const string TwitterUrlPart = "twitter";
-    private const string TwitterCo = "t.co"; // Shortened Twitter URL
-    private const string XUrlPart = "x.com"; // New Twitter URL
-
     private const string FormatSort = "vcodec:h264,ext:mp4:m4a";
 
     public IVideoDownloader Create(DownloadOptions o)
     {
-        Dictionary<string, Func<DownloadQuery, IVideoDownloader>> downloaderDictionary = new()
+        Dictionary<string, Func<DownloadQuery, IVideoDownloader>> customDownloadLogicDic = new()
         {
             { TikTokUrlPart, downloadQuery => new TikTokDownloader(youtubeDl, downloadQuery, o.Options.KeepWatermark) },
             { YouTubeUrlPart, downloadQuery => new YouTubeDownloader(youtubeDl, downloadQuery) },
-            { RedditUrlPart, downloadQuery => new RedditDownloader(youtubeDl, downloadQuery) },
-            { TwitterUrlPart, downloadQuery => new TwitterDownloader(youtubeDl, downloadQuery)},
-            { TwitterCo, downloadQuery => new TwitterDownloader(youtubeDl, downloadQuery)},
-            { XUrlPart, downloadQuery => new TwitterDownloader(youtubeDl, downloadQuery)}
         };
 
         var optionSet = GenerateOptionSet(o);
 
-        var entry = downloaderDictionary
+        var entry = customDownloadLogicDic
             .FirstOrDefault(e => o.Uri.Host.Contains(e.Key));
         var query = new DownloadQuery(o.Uri, optionSet);
         return entry.Key is not null
