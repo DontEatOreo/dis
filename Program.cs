@@ -31,9 +31,9 @@ hostBuilder.UseSerilog((context, configuration) =>
         .WriteTo.Console());
 hostBuilder.Build();
 
-var registrar = new TypeRegistrar(collection);
+TypeRegistrar registrar = new(collection);
 
-var app = new CommandApp<RootCommand>(registrar);
+CommandApp<RootCommand> app = new(registrar);
 app.Configure(config =>
 {
 #if DEBUG
