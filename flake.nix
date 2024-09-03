@@ -1,9 +1,9 @@
 {
-  description = "Dis Flake";
-
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:cachix/devenv-nixpkgs/rolling";
+    systems.url = "github:nix-systems/default";
     devenv.url = "github:cachix/devenv";
+    devenv.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   nixConfig = {
@@ -12,53 +12,21 @@
   };
 
   outputs =
-    inputs@{
-      self,
-      devenv,
+    {
       nixpkgs,
-    }:
+      devenv,
+      systems,
+      ...
+    }@inputs:
     let
-      supportedSystems = [
-        "x86_64-linux"
-        "aarch64-linux"
-        "x86_64-darwin"
-        "aarch64-darwin"
-      ];
-      forEachSupportedSystem =
-        f:
-        nixpkgs.lib.genAttrs supportedSystems (
-          system:
-          f {
-            pkgs = import nixpkgs { inherit system; };
-          }
-        );
+      forEachSystem = nixpkgs.lib.genAttrs (import systems);
     in
     {
-      devShells = forEachSupportedSystem (
-        { pkgs, ... }:
-        {
-          default = devenv.lib.mkShell {
-            inherit inputs pkgs;
-            modules = [
-              (
-                { pkgs, ... }:
-                {
-                  languages.dotnet = {
-                    enable = true;
-                    package = pkgs.dotnetCorePackages.combinePackages (
-                      builtins.attrValues {
-                        inherit (pkgs.dotnetCorePackages) sdk_8_0;
-                      }
-                    );
-                  };
-                }
-              )
-            ];
-          };
-        }
-      );
-      packages = forEachSupportedSystem (
-        { pkgs }:
+      packages = forEachSystem (
+        system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+        in
         {
           default = pkgs.buildDotnetModule {
             pname = "dis";
@@ -89,6 +57,30 @@
               platforms = pkgs.lib.platforms.unix;
               maintainers = [ pkgs.lib.maintainers.donteatoreo ];
             };
+          };
+        }
+      );
+      devShells = forEachSystem (
+        system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+        in
+        {
+          default = devenv.lib.mkShell {
+            inherit inputs pkgs;
+            modules = [
+              {
+                languages.dotnet = {
+                  enable = true;
+                  package = pkgs.dotnetCorePackages.combinePackages (
+                    builtins.attrValues {
+                      inherit (pkgs.dotnetCorePackages) sdk_8_0;
+                    }
+                  );
+                };
+                packages = builtins.attrValues { inherit (pkgs) ffmpeg_6-full yt-dlp; };
+              }
+            ];
           };
         }
       );

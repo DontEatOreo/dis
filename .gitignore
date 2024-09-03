@@ -13,7 +13,6 @@
 **/.vs/
 **/.vscode/
 **/packages/
-.direnv/
 
 # auto generated files
 *.dll
@@ -42,48 +41,8 @@
 
 # Package Files #
 *.snk
-# Devenv
-.devenv*
-devenv.local.nix
 
-# direnv
-.direnv
-
-# pre-commit
-.pre-commit-config.yaml
-# Devenv
-.devenv*
-devenv.local.nix
-
-# direnv
-.direnv
-
-# pre-commit
-.pre-commit-config.yaml
-# Devenv
-.devenv*
-devenv.local.nix
-
-# direnv
-.direnv
-
-# pre-commit
-.pre-commit-config.yaml
-# Devenv
-.devenv*
-devenv.local.nix
-
-# direnv
-.direnv
-
-# pre-commit
-.pre-commit-config.yaml
-# Devenv
-.devenv*
-devenv.local.nix
-
-# direnv
-.direnv
-
-# pre-commit
-.pre-commit-config.yaml
+# Nix
+.direnv/
+.devenv/
+result
