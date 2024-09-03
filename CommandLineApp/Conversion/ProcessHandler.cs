@@ -26,7 +26,19 @@ public sealed class ProcessHandler(ILogger logger, CodecParser codecParser, Stre
             return default;
         }
 
-        var parameters = $"-crf {o.Crf}";
+        // Optimize mp4 and mov for web playback 
+        const string fastStartParm = "-movflags +faststart";
+        var crfParm = $"-crf {o.Crf}";
+
+        var parameters = $"{crfParm}";
+
+        var isWebPlayBackFormat = o.VideoCodec is "libx264" or "h264" ||
+                                  (bool)o.Output?.Contains("mp4") ||
+                                  (bool)o.Output?.Contains("mov");
+        if (isWebPlayBackFormat)
+        {
+            parameters = $"{fastStartParm} {parameters}";
+        }
         var conversion = FFmpeg.Conversions.New()
             .AddParameter(parameters)
             .SetPixelFormat(PixelFormat.yuv420p)
