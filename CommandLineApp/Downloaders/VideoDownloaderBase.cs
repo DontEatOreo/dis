@@ -112,7 +112,9 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
         // check if the time range is beyond the video length
         var split = Query.OptionSet.DownloadSections!.Values[0];
         var start = float.Parse(split.Split('-')[0].TrimStart('*'));
-        var end = float.Parse(split.Split('-')[1]);
+        var endStr = split.Split('-')[1];
+        var isEndInf = endStr.Equals("inf", StringComparison.InvariantCultureIgnoreCase);
+        var end = isEndInf ? float.MaxValue : float.Parse(endStr);
 
         var duration = fetch.Data.Duration;
 
@@ -125,7 +127,7 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
          * in 'validTimeRange' are satisfied, thus indicating that the
          * defined time range for downloading a section of the video is valid.
          */
-        var validTimeRange = start <= end && end <= duration;
+        var validTimeRange = start <= end && (isEndInf || end <= duration);
 
         if (validTimeRange)
             return true;

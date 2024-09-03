@@ -36,32 +36,27 @@ public class VideoDownloaderFactory(YoutubeDL youtubeDl) : IDownloaderFactory
     {
         OptionSet optionSet = new()
         {
-            FormatSort = FormatSort
+            FormatSort = FormatSort,
+            EmbedMetadata = true
         };
 
         if (o.Options.SponsorBlock)
             optionSet.SponsorblockRemove = "all";
 
         var trim = o.Options.Trim;
-        if (string.IsNullOrEmpty(trim))
-        {
-            optionSet.EmbedMetadata = true;
-            Log.Verbose("EmbedMetadata is set to true");
-        }
-        else
-        {
-            // For instance, given the range 2.25-3.00,
-            // it will be split into [0] = 2.25 and [1] = 3.00.
-            var timeSplit = trim.Split('-');
-            if (timeSplit[0].Contains('.') is false)
-                timeSplit[0] += ".00";
-            if (timeSplit[1].Contains('.') is false)
-                timeSplit[1] += ".00";
+        if (string.IsNullOrEmpty(trim)) return optionSet;
 
-            optionSet.ForceKeyframesAtCuts = true;
-            optionSet.DownloadSections = $"*{timeSplit[0]}-{timeSplit[1]}";
-            AnsiConsole.MarkupLine($"Trimming video from {timeSplit[0]} to {timeSplit[1]}");
-        }
+        // For instance, given the range 2.25-3.00,
+        // it will be split into [0] = 2.25 and [1] = 3.00.
+        var timeSplit = trim.Split('-');
+        if (timeSplit[0].Contains('.') is false)
+            timeSplit[0] += ".00";
+        if (!timeSplit[1].Contains("inf") && timeSplit[1].Contains('.') is false)
+            timeSplit[1] += ".00";
+
+        optionSet.ForceKeyframesAtCuts = true;
+        optionSet.DownloadSections = $"*{timeSplit[0]}-{timeSplit[1]}";
+        AnsiConsole.MarkupLine($"Trimming video from {timeSplit[0]} to {timeSplit[1]}");
 
         return optionSet;
     }

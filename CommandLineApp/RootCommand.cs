@@ -131,11 +131,17 @@ public sealed partial class RootCommand(
         var span = input.AsSpan();
         var dashIndex = span.IndexOf('-');
         var startTimeStr = span[..dashIndex].ToString();
-        var endTimeStr = span[(dashIndex + 1)..].ToString();
+        var endTimeStr = span[(dashIndex + 1)..].ToString().ToLowerInvariant();
 
-        if (decimal.TryParse(startTimeStr, out var startTime)
-            && decimal.TryParse(endTimeStr, out var endTime))
+        var startParsed = decimal.TryParse(startTimeStr, out var startTime);
+        var endParsed = decimal.TryParse(endTimeStr, out var endTime);
+
+        var isValidStartEnd = startParsed && (endParsed || endTimeStr == "inf");
+        var isEndTimeInf = endTimeStr == "inf";
+
+        if (isValidStartEnd)
         {
+            if (isEndTimeInf) return;
             if (startTime > endTime)
                 ValidationResult.Error("Start time should not be later than end time in the 'trim' value");
 
@@ -313,27 +319,27 @@ public sealed partial class RootCommand(
     }
 
     /// <summary>
-    /// This regex pattern is used to parse time range strings in 'ss.ms-ss.ms' or 'ss-ss' format.
-    /// Here, 'ss' are one or more digits representing seconds, while 'ms' are one or two optional digits for milliseconds.
+    /// This regex pattern is used to parse time range strings in 'ss.ms-ss.ms', 'ss-ss', or 'ss.ms-inf' format.
+    /// Here, `ss` are one or more digits representing seconds, while 'ms' are one or two optional digits for milliseconds.
     /// </summary>
     ///
     /// <remarks>
     /// The pattern breakdown is as follows:
-    /// '^' : Starts the pattern.
-    /// '\d+' : Matches one or more digits (seconds part).
-    /// '(\.\d{1,2})?' : Optionally matches a dot and one or two digits (milliseconds part).
-    /// '-' : Matches the dash separating the start and end times.
-    /// '\d+' : Matches one or more digits for the end time seconds part.
-    /// '(\.\d{1,2})?' : Again, optionally matches a dot and one or two digits for end time milliseconds.
-    /// '$' : Ends the pattern.
+    /// `^`: Starts the pattern.
+    /// `\d+`: Matches one or more digits (second's part).
+    /// `(\.\d{1,2})?` Optionally matches a dot and one or two digits (millisecond's part).
+    /// `-`: Matches the dash separating the start and end times.
+    /// `(\d+(\.\d{1,2})?|inf)`: Matches either one or more digits (with optional milliseconds) or the string `inf`.
+    /// `$`: Ends the pattern.
     ///
-    /// If milliseconds part is present, it must have one or two digits only.
+    /// If millisecond's part is present, it must have one or two digits only.
     /// </remarks>
     ///
     /// <example>
     /// "222.22-222.22" is valid, having digits, optional dot and one or two digits after dot, separated by a dash.
     /// "222.222-222.222" is invalid, having three digits after the dot is not allowed.
+    /// "222.22-inf" is valid, having digits, optional dot and one or two digits after dot, followed by `inf`.
     /// </example>
-    [GeneratedRegex(@"^\d+(\.\d{1,2})?-\d+(\.\d{1,2})?$", RegexOptions.Compiled)]
+    [GeneratedRegex(@"^\d+(\.\d{1,2})?-(\d+(\.\d{1,2})?|inf)$", RegexOptions.Compiled)]
     private static partial Regex TrimRegex();
 }
