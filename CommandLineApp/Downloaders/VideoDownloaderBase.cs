@@ -21,6 +21,11 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
     public async Task<DownloadResult> Download()
     {
         var fetch = await FetchVideoData();
+        if (fetch is null)
+        {
+            _logger.Error(FetchError);
+            return new DownloadResult(null, null);
+        }
         if (fetch.Success is false)
         {
             _logger.Error(FetchError);
@@ -53,9 +58,9 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
         return new DownloadResult(path, date);
     }
 
-    private async Task<RunResult<VideoData>> FetchVideoData()
+    private async Task<RunResult<VideoData>?> FetchVideoData()
     {
-        RunResult<VideoData> fetch = null!;
+        RunResult<VideoData>? fetch = null;
         await AnsiConsole.Status().StartAsync("Fetching data...", async ctx =>
         {
             ctx.Spinner(Spinner.Known.Arrow);
