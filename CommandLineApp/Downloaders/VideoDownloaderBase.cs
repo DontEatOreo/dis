@@ -52,6 +52,11 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
         var dlResult = await DownloadVideo();
         if (dlResult is null)
             return new DownloadResult(null, null);
+        if (dlResult.Success is false)
+        {
+            _logger.Error(DownloadError);
+            return new DownloadResult(null, null);
+        }
 
         var path = Directory.GetFiles(YoutubeDl.OutputFolder).FirstOrDefault();
         var date = fetch.Data.UploadDate ?? fetch.Data.ReleaseDate;
@@ -75,7 +80,7 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
 
     private async Task<RunResult<string?>?> DownloadVideo()
     {
-        RunResult<string?> download = null!;
+        RunResult<string?>? download = null;
         await AnsiConsole.Status().StartAsync("Downloading...", async ctx =>
         {
             ctx.Spinner(Spinner.Known.Arrow);
@@ -93,11 +98,7 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
                 }));
             return Task.CompletedTask;
         });
-        if (download.Success)
-            return download;
-
-        _logger.Error(DownloadError);
-        return default;
+        return download;
     }
 
     /// <summary>
