@@ -35,7 +35,8 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
         var hasKeyframes = Query.OptionSet.ForceKeyframesAtCuts;
         if (hasKeyframes)
         {
-            var validTimeRange = ValidTimeRange(fetch);
+            var timeSplit = Query.OptionSet.DownloadSections!.Values[0].Split('-');
+            var validTimeRange = ValidTimeRange(timeSplit, fetch.Data.Duration);
             if (validTimeRange is false)
                 return new DownloadResult(null, null);
         }
@@ -107,27 +108,24 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
     /// <summary>
     /// Validates if the given time range is valid within the video length.
     /// </summary>
-    private bool ValidTimeRange(RunResult<VideoData> fetch)
+    private bool ValidTimeRange(string[] timeSplit, float? fetchDuration)
     {
         // check if the time range is beyond the video length
-        var split = Query.OptionSet.DownloadSections!.Values[0];
-        var start = float.Parse(split.Split('-')[0].TrimStart('*'));
-        var endStr = split.Split('-')[1];
+        var start = float.Parse(timeSplit[0].TrimStart('*'));
+        var endStr = timeSplit[1];
+        // `inf` in `yt-dlp` means that it will download the video until the end
         var isEndInf = endStr.Equals("inf", StringComparison.InvariantCultureIgnoreCase);
         var end = isEndInf ? float.MaxValue : float.Parse(endStr);
 
-        var duration = fetch.Data.Duration;
-
-        /* The variable 'validTimeRange' checks whether the start time is
-         * not greater than the end time, and the end time does not exceed
-         * the video's total duration. Therefore, the valid time range for
-         * the video is between the start time and the end time, and this
-         * range should not be beyond the video's length.
-         * The subsequent 'if' condition returns true if both conditions
-         * in 'validTimeRange' are satisfied, thus indicating that the
-         * defined time range for downloading a section of the video is valid.
+        /*
+         * Checks if the start time is less than or equal to the end time,
+         * and the end time does not exceed the video's total duration.
+         * Valid time range examples:
+         * start=0, end=10, duration=20; start=5, end=inf, duration=30
+         * Invalid time range examples:
+         * start=10, end=5, duration=20; start=0, end=25, duration=20
          */
-        var validTimeRange = start <= end && (isEndInf || end <= duration);
+        var validTimeRange = start <= end && (isEndInf || end <= fetchDuration);
 
         if (validTimeRange)
             return true;
