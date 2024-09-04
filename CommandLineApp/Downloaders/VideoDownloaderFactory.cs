@@ -1,6 +1,5 @@
 using dis.CommandLineApp.Interfaces;
 using dis.CommandLineApp.Models;
-using Serilog;
 using Spectre.Console;
 using YoutubeDLSharp;
 using YoutubeDLSharp.Options;
@@ -26,6 +25,7 @@ public class VideoDownloaderFactory(YoutubeDL youtubeDl) : IDownloaderFactory
 
         var entry = customDownloadLogicDic
             .FirstOrDefault(e => o.Uri.Host.Contains(e.Key));
+
         var query = new DownloadQuery(o.Uri, optionSet);
         return entry.Key is not null
             ? entry.Value(query)

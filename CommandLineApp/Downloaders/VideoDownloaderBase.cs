@@ -44,18 +44,11 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
         // Pre-download custom logic
         await PreDownload(fetch);
 
-        // The downloading part can be overridden in child classes
         var dlResult = await DownloadVideo();
         if (dlResult is null)
             return new DownloadResult(null, null);
 
-        // Post-download custom logic
-        var postDownload = await PostDownload(fetch);
-        var postNull = string.IsNullOrEmpty(postDownload);
-
-        var path = postNull
-            ? Directory.GetFiles(YoutubeDl.OutputFolder).FirstOrDefault()
-            : postDownload;
+        var path = Directory.GetFiles(YoutubeDl.OutputFolder).FirstOrDefault();
         var date = fetch.Data.UploadDate ?? fetch.Data.ReleaseDate;
         return new DownloadResult(path, date);
     }
@@ -74,9 +67,6 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
 
     protected virtual Task PreDownload(RunResult<VideoData> fetch)
         => Task.CompletedTask;
-
-    protected virtual Task<string> PostDownload(RunResult<VideoData> fetch)
-        => Task.FromResult(string.Empty);
 
     private async Task<RunResult<string?>?> DownloadVideo()
     {
