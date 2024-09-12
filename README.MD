@@ -45,7 +45,7 @@ nix profile install github:DontEatOreo/dis
 
 ### Using flakes
 
-You will need to add  **dis** 🎥 to your inputs and pass it down your outputs
+You will need to add **dis** 🎥 to your inputs and pass it down your outputs
 
 ```nix
 {
@@ -85,7 +85,8 @@ Example:
 
 ## Usage
 
-To use **dis** 🎥, you need to provide an input video source using the `-i` (`--input`) option. The input source can be either a local file or an online URL (e.g: Discord Server, YouTube, Twitter, Reddit, etc...).
+To use **dis** 🎥, you need to provide an input video source using the `-i` (`--input`) option.
+The input source can be either a local file or an online URL (e.g., Discord Server, YouTube, Twitter, Reddit, etc...).
 
 You can also specify various options to customize the output video, such as:
 
@@ -102,7 +103,9 @@ You can also specify various options to customize the output video, such as:
 | `--random`                          | Randomize the output filename                                                                         | `False`       |
 | `--sponsor`                         | Remove the sponsor segments from the output video using [SponsorBlock](https://sponsor.ajay.app/) API | `False`       |
 
-The CRF is a video compression method that grants users control over the output video's quality, with higher values resulting in lower quality and vice versa. It is recommended to avoid values below 22 or above 38.
+The CRF is a video compression method that grants users control over the output video quality,
+with higher values resulting in lower quality and vice versa.
+It is recommended to avoid values below 22 or above 38.
 
 Here are some examples of how to use **dis** 🎥:
 
@@ -124,7 +127,7 @@ Compressing a video from YouTube and change the video codec to `h265`, resolutio
 dis -i https://youtu.be/xxxxxxx --video-codec h265 -r 720p --audio-bitrate 128 -c 28
 ```
 
-Compressing a video from YouTube and trimming only a 60 seconds period of time.
+Compressing a video from YouTube and trimming only a 60-second period of time.
 
 ```bash
 dis -i https://youtu.be/xxxxxxx -t 50-110
