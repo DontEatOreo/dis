@@ -100,7 +100,6 @@ You can also specify various options to customize the output video, such as:
 | `--audio-bitrate` `<audio-bitrate>` | Output audio bitrate (in kbit/s) (only divisible by 2)                                                | `128k`        |
 | `--multi-thread`                    | Use all available threads (for faster compression)                                                    | true          |
 | `--random`                          | Randomize the output filename                                                                         | `False`       |
-| `--keep`                            | Keep watermark for TikTok videos                                                                      | `False`       |
 | `--sponsor`                         | Remove the sponsor segments from the output video using [SponsorBlock](https://sponsor.ajay.app/) API | `False`       |
 
 The CRF is a video compression method that grants users control over the output video's quality, with higher values resulting in lower quality and vice versa. It is recommended to avoid values below 22 or above 38.

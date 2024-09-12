@@ -9,7 +9,6 @@ namespace dis.CommandLineApp.Downloaders;
 public class VideoDownloaderFactory(YoutubeDL youtubeDl) : IDownloaderFactory
 {
     // Constants for URL checking
-    private const string TikTokUrlPart = "tiktok";
     private const string YouTubeUrlPart = "youtu";
     private const string FormatSort = "vcodec:h264,ext:mp4:m4a";
 
@@ -17,7 +16,6 @@ public class VideoDownloaderFactory(YoutubeDL youtubeDl) : IDownloaderFactory
     {
         Dictionary<string, Func<DownloadQuery, IVideoDownloader>> customDownloadLogicDic = new()
         {
-            { TikTokUrlPart, downloadQuery => new TikTokDownloader(youtubeDl, downloadQuery, o.Options.KeepWatermark) },
             { YouTubeUrlPart, downloadQuery => new YouTubeDownloader(youtubeDl, downloadQuery) },
         };
 

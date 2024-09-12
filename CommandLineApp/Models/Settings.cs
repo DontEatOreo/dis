@@ -64,11 +64,6 @@ public sealed class Settings : CommandSettings
     [DefaultValue(false)]
     public bool RandomFileName { get; init; }
 
-    [Description("Keep watermark for TikTok videos")]
-    [CommandOption("--keep")]
-    [DefaultValue(true)]
-    public bool KeepWatermark { get; init; }
-
     [Description("Remove all sponsor from YouTube Video")]
     [CommandOption("--sponsor")]
     [DefaultValue(false)]
