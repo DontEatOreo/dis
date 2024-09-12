@@ -16,7 +16,7 @@ I created this project to make smaller videos that load faster for everyone and 
 
 Alternatively you can also invoke a `nix shell github:DontEatOreo/dis` with the required packages to build **dis** 🎥
 
-### Updating depdendancies on Nix
+### Updating dependencies on Nix
 
 1. Fetch Deps `nix build .#default.fetch-deps`
 2. Run the script `./result`
