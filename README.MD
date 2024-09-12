@@ -20,7 +20,7 @@ Alternatively you can also invoke a `nix shell github:DontEatOreo/dis` with the 
 
 1. Fetch Deps `nix build .#default.fetch-deps`
 2. Run the script `./result`
-3. Move the generate `deps.nix` *(the `./result` script will show where it was saved)* file to `.`
+3. Move the generated `deps.nix` *(the `./result` script will show where it was saved)* file to `.`
 4. Now you can safely unlink the result `unlink result`
 
 ### .NET
