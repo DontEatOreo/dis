@@ -8,7 +8,29 @@
 
 I created this project to make smaller videos that load faster for everyone and are more easily shareable on Discord and other platforms.
 
-## Build
+### Nix Dev Environment
+
+**dis** 🎥 comes with a `nix develop` environment that carries all the  dependencies (dotnet, ffmpeg, and yt-dlp), allowing you to work on the project without having to manually install them. To activate this environment, all you need to do is:
+
+1. Have `nix` installed
+2. Have `flakes` and `nix-command` experimental features enabled
+3. Be in the same directory
+4. Run `nix develop --impure`
+
+## Building
+
+### .NET
+
+All you need to do is run `dotnet build`, then a `bin/` folder will be created that will contain all the build artifacts
+
+### Building a Single File Executable
+
+You can build a single file executable
+which you can run without having dotnet preinstalled and that you can place anywhere.
+To do that all you need to do is:
+
+1. `dotnet publish dis.csproj -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true --self-contained true --configuration Release --runtime <rid>` ([Know RIDs](https://learn.microsoft.com/en-us/dotnet/core/rid-catalog#known-rids))
+2. Then you can find the executable at `bin/Release/net8.0/<rid>/`
 
 ### Nix
 
@@ -22,12 +44,6 @@ Alternatively you can also invoke a `nix shell github:DontEatOreo/dis` with the 
 2. Run the script `./result`
 3. Move the generated `deps.nix` *(the `./result` script will show where it was saved)* file to `.`
 4. Now you can safely unlink the result `unlink result`
-
-### .NET
-
-1. `dotnet restore`
-2. `dotnet build dis.csproj -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true --self-contained true --configuration Release --runtime <rid>` ([Know RIDs](https://learn.microsoft.com/en-us/dotnet/core/rid-catalog#known-rids))
-3. Then you can find the executable at `bin/Release/net8.0/<rid>/publish/`
 
 ## Installation
 
