@@ -1,6 +1,5 @@
 using dis.CommandLineApp.Interfaces;
 using dis.CommandLineApp.Models;
-using Serilog;
 using Spectre.Console;
 using YoutubeDLSharp;
 using YoutubeDLSharp.Options;
