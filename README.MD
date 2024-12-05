@@ -118,15 +118,23 @@ You can also specify various options to customize the output video, such as:
 
 The CRF is a video compression method that grants users control over the output video quality, with higher values resulting in lower quality and vice versa. It is recommended to avoid values below 22 or above 38.
 
-Here are some examples of how to use **dis** 🎥:
+## Here are some examples of how to use **dis** 🎥
 
-Compressing a video from a website:
+### Compressing a video from a website
 
-Compressing a local file while adjusting its resolution to `480p` and saving it to a designated directory:
+![1](https://github.com/user-attachments/assets/71afc721-d57d-4a36-99f8-c236a58c2b72)
 
-Compressing a video from YouTube and change the video codec to `h265`, resolution to `720p`, and audio bitrate to `128`, with a custom CRF value:
+### Compressing a local file while adjusting its resolution to `480p` and saving it to a designated directory
 
-Compressing a video from YouTube and trimming from 10 seconds to 20 seconds:
+![2](https://github.com/user-attachments/assets/817a11c3-7be4-4890-a227-da1391f70112)
+
+### Compressing a video from YouTube and change the video codec to `h265`, resolution to `720p`, and audio bitrate to `128`, with a custom CRF value
+
+![3](https://github.com/user-attachments/assets/d08d5424-fa13-4fda-aef1-963d25a2c2aa)
+
+### Compressing a video from YouTube and trimming from 10 seconds to 20 seconds
+
+![4](https://github.com/user-attachments/assets/f648df70-0ce8-49bd-bdfd-4130d11840d3)
 
 ## Contributing
 
