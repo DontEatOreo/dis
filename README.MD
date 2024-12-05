@@ -4,6 +4,8 @@
 [![GitHub release](https://img.shields.io/github/release/DontEatOreo/dis)](https://github.com/DontEatOreo/dis/releases)
 [![GitHub issues](https://img.shields.io/github/issues/DontEatOreo/dis)](https://github.com/DontEatOreo/dis/issues)
 
+![292BEC87](https://github.com/user-attachments/assets/395cbfa1-f86c-403c-a40e-c33ee9200ce3)
+
 **dis** 🎥 is a simple CLI tool to compress videos for platforms like Discord and likewise. It uses [YT-DLP](https://github.com/yt-dlp/yt-dlp) to download videos from all sites that `yt-dlp` supports, such as YouTube, Twitter, Reddit, and more, and [FFmpeg](https://ffmpeg.org/download.html) for compression. It comes with a rich and easy to use TUI mode for trimming videos
 
 ## Nix Dev Environment
