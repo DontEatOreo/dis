@@ -49,7 +49,7 @@
             postFixup = ''
               makeWrapper ${pkgs.dotnetCorePackages.sdk_8_0}/bin/dotnet $out/bin/dis --add-flags $out/lib/dis/dis.dll
               wrapProgram "$out/bin/dis" \
-                --prefix PATH : ${pkgs.ffmpeg_6-full}/bin \
+                --prefix PATH : ${pkgs.ffmpeg-full}/bin \
                 --prefix PATH : ${pkgs.yt-dlp}/bin
             '';
 
@@ -82,7 +82,7 @@
                     }
                   );
                 };
-                packages = builtins.attrValues { inherit (pkgs) ffmpeg_6-full yt-dlp; };
+                packages = builtins.attrValues { inherit (pkgs) ffmpeg-full yt-dlp; };
               }
             ];
           };
