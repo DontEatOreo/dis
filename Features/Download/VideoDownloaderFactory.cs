@@ -44,7 +44,7 @@ public class VideoDownloaderFactory(YoutubeDL youtubeDl) : IDownloaderFactory
         {
             optionSet.ForceKeyframesAtCuts = true;
             optionSet.DownloadSections = o.TrimSettings.GetDownloadSection();
-            AnsiConsole.MarkupLine($"[green]Will download video section: {o.TrimSettings.GetDownloadSection()}[/]");
+            AnsiConsole.MarkupLine($"[green]Downloading video section: {o.TrimSettings.GetDownloadSection()}[/]");
         }
 
         return optionSet;
