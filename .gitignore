@@ -46,3 +46,4 @@
 .direnv/
 .devenv/
 result
+out/

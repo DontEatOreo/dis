@@ -1,6 +1,6 @@
 ﻿using System.Globalization;
-using dis.CommandLineApp;
-using dis.CommandLineApp.Infrastructure;
+using dis;
+using dis.Features.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
@@ -41,7 +41,7 @@ app.Configure(config =>
     config.ValidateExamples();
 #endif
     config.AddExample("-i", "https://youtu.be/hT_nvWreIhg");
-    config.AddExample("-i", "https://youtu.be/hT_nvWreIhg", "-t", "73.25-110");
+    // config.AddExample("-i", "https://youtu.be/hT_nvWreIhg", "-t", "73.25-110");
     config.AddExample("-i", "https://youtu.be/hT_nvWreIhg", "-o",
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos)));
     config.SetApplicationName("dis");

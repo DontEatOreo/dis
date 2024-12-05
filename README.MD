@@ -4,11 +4,9 @@
 [![GitHub release](https://img.shields.io/github/release/DontEatOreo/dis)](https://github.com/DontEatOreo/dis/releases)
 [![GitHub issues](https://img.shields.io/github/issues/DontEatOreo/dis)](https://github.com/DontEatOreo/dis/issues)
 
-**dis** 🎥 is a simple tool to compress videos for platforms like Discord and likewise. It uses [YT-DLP](https://github.com/yt-dlp/yt-dlp) and [FFmpeg](https://ffmpeg.org/download.html) to download and process videos from various sources, such as YouTube, Twitter, Reddit, and more.
+**dis** 🎥 is a simple CLI tool to compress videos for platforms like Discord and likewise. It uses [YT-DLP](https://github.com/yt-dlp/yt-dlp) to download videos from all sites that `yt-dlp` supports, such as YouTube, Twitter, Reddit, and more, and [FFmpeg](https://ffmpeg.org/download.html) for compression. It comes with a rich and easy to use TUI mode for trimming videos
 
-I created this project to make smaller videos that load faster for everyone and are more easily shareable on Discord and other platforms.
-
-### Nix Dev Environment
+## Nix Dev Environment
 
 **dis** 🎥 comes with a `nix develop` environment that carries all the  dependencies (dotnet, ffmpeg, and yt-dlp), allowing you to work on the project without having to manually install them. To activate this environment, all you need to do is:
 
@@ -40,10 +38,9 @@ Alternatively you can also invoke a `nix shell github:DontEatOreo/dis` with the 
 
 ### Updating dependencies on Nix
 
-1. Fetch Deps `nix build .#default.fetch-deps`
-2. Run the script `./result`
-3. Move the generated `deps.nix` *(the `./result` script will show where it was saved)* file to `.`
-4. Now you can safely unlink the result `unlink result`
+1. Run `nix run nixpkgs#dotnet-sdk -- restore --packages out`
+2. Run the script `nix-shell -p dotnet-sdk nuget-to-nix --run "nuget-to-nix out > deps.nix"`
+3. Run formatter `nix run nixpkgs#nixfmt-rfc-style -- deps.nix`
 
 ## Installation
 
@@ -87,12 +84,12 @@ After that in whichever `.nix` file is responsible for your packages you will ne
 Example:
 
 ```nix
-{pkgs, inputs, ...}: {
+{ pkgs, dis, ... }: {
   environment = {
     # ...
     systemPackages = builtins.attrValues {
         # ...
-        dis = inputs.dis.packages.${pkgs.system}.default;
+        dis = dis.packages.${pkgs.system}.default;
         # ...
     };
   };
@@ -112,42 +109,24 @@ You can also specify various options to customize the output video, such as:
 | `-o`, `--output` `<output>`         | Output directory for the compressed video                                                             | Current Path  |
 | `-c`, `--crf` `<crf>`               | Constant Rate Factor (CRF) Higher values mean lower quality, Lower values mean higher quality         | `25`          |
 | `-r`, `--resolution` `<resolution>` | Output video resolution                                                                               | None          |
-| `-t`, `--trim` `<trim>`             | Trim input using the format: ss.ms-ss.ms                                                              | None          |
+| `-t`, `--trim`                      | Enable video trimming                                                                                 | `false`       |
 | `--video-codec` `<video-codec>`     | Output video codec                                                                                    | None          |
 | `--audio-bitrate` `<audio-bitrate>` | Output audio bitrate (in kbit/s) (only divisible by 2)                                                | `128k`        |
 | `--multi-thread`                    | Use all available threads (for faster compression)                                                    | true          |
-| `--random`                          | Randomize the output filename                                                                         | `False`       |
+| `--random`                          | Randomize the output filename                                                                         | `false`       |
 | `--sponsor`                         | Remove the sponsor segments from the output video using [SponsorBlock](https://sponsor.ajay.app/) API | `False`       |
 
-The CRF is a video compression method that grants users control over the output video quality,
-with higher values resulting in lower quality and vice versa.
-It is recommended to avoid values below 22 or above 38.
+The CRF is a video compression method that grants users control over the output video quality, with higher values resulting in lower quality and vice versa. It is recommended to avoid values below 22 or above 38.
 
 Here are some examples of how to use **dis** 🎥:
 
-Compressing a video sourced from an online location:
-
-```bash
-dis -i https://cdn.discordapp.com/attachments/x/x/video.webm
-```
+Compressing a video from a website:
 
 Compressing a local file while adjusting its resolution to `480p` and saving it to a designated directory:
 
-```bash
-dis -i video.webm -r 480p -o /home/user/Downloads
-```
-
 Compressing a video from YouTube and change the video codec to `h265`, resolution to `720p`, and audio bitrate to `128`, with a custom CRF value:
 
-```bash
-dis -i https://youtu.be/xxxxxxx --video-codec h265 -r 720p --audio-bitrate 128 -c 28
-```
-
-Compressing a video from YouTube and trimming only a 60-second period of time.
-
-```bash
-dis -i https://youtu.be/xxxxxxx -t 50-110
-```
+Compressing a video from YouTube and trimming from 10 seconds to 20 seconds:
 
 ## Contributing
 
