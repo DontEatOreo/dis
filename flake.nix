@@ -34,7 +34,7 @@
         {
           default = pkgs.buildDotnetModule {
             pname = "dis";
-            version = "9.2.1";
+            version = "10.0.0";
 
             src = ./.;
 
