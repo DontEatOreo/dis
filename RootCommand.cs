@@ -94,14 +94,14 @@ public sealed class RootCommand(
         if (validCrf is false)
             ValidationResult.Error($"CRF value must be between {min} and {max} (Avoid values below {defaultValue})");
         else switch (crf)
-        {
-            case < minRecommended:
-                AnsiConsole.MarkupLine($"[yellow]CRF values below {minRecommended} are not recommended[/]");
-                break;
-            case > maxRecommended:
-                AnsiConsole.MarkupLine($"[yellow]CRF values above {maxRecommended} are not recommended[/]");
-                break;
-        }
+            {
+                case < minRecommended:
+                    AnsiConsole.MarkupLine($"[yellow]CRF values below {minRecommended} are not recommended[/]");
+                    break;
+                case > maxRecommended:
+                    AnsiConsole.MarkupLine($"[yellow]CRF values above {maxRecommended} are not recommended[/]");
+                    break;
+            }
     }
 
     private static void ValidateAudioBitrate(int? audioBitrate)

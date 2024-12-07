@@ -124,26 +124,21 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
     /// </summary>
     private bool ValidTimeRange(string[] timeSplit, float? fetchDuration)
     {
-        // check if the time range is beyond the video length
         var start = float.Parse(timeSplit[0].TrimStart('*'));
-        var endStr = timeSplit[1];
-        // `inf` in `yt-dlp` means that it will download the video until the end
-        var isEndInf = endStr.Equals("inf", StringComparison.InvariantCultureIgnoreCase);
-        var end = isEndInf ? float.MaxValue : float.Parse(endStr);
+        var end = float.Parse(timeSplit[1]);
 
         /*
          * Checks if the start time is less than or equal to the end time,
          * and the end time does not exceed the video's total duration.
          * Valid time range examples:
-         * start=0, end=10, duration=20; start=5, end=inf, duration=30
+         * start=0, end=10, duration=20;
          * Invalid time range examples:
          * start=10, end=5, duration=20; start=0, end=25, duration=20
          */
-        var validTimeRange = start <= end && (isEndInf || end <= fetchDuration);
+        var validTimeRange = start <= end && end <= (fetchDuration ?? float.MaxValue);
 
         if (validTimeRange)
         {
-            // Store the TrimSettings instance in the class field
             _trimSettings = new TrimSettings(start, end - start);
             Query.OptionSet.Output = $"%(display_id)s-{_trimSettings.GetFilenamePart()}.%(ext)s";
             return true;
