@@ -21,7 +21,7 @@ public sealed class Converter(
     /// <param name="s">The options to use for the conversion.</param>
     /// <param name="trimSettings">The optional trim settings for the conversion.</param>
     /// <returns>A task that represents the asynchronous conversion operation.</returns>
-    public async Task ConvertVideo(string file, DateTime? dateTime, Settings s, TrimSettings? trimSettings = null)
+    public async Task ConvertVideo(string file, DateTime? dateTime, Settings s, TrimSettings? trimSettings)
     {
         while (true)
         {
@@ -57,6 +57,7 @@ public sealed class Converter(
                         };
                         await conversion.Start();
                     });
+                if (dateTime.HasValue) ProcessHandler.SetTimeStamps(outP, dateTime.Value);
                 if (dateTime.HasValue) ProcessHandler.SetTimeStamps(outP, dateTime.Value);
             }
             catch (Exception)

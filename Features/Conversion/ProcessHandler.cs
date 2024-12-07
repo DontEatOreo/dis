@@ -16,7 +16,7 @@ public sealed class ProcessHandler(ILogger logger, CodecParser codecParser, Stre
         File.SetLastAccessTime(path, date);
     }
 
-    public IConversion? ConfigureConversion(Settings o, IList<IStream> streams, string outP, TrimSettings? trimSettings = null)
+    public IConversion? ConfigureConversion(Settings o, IList<IStream> streams, string outP, TrimSettings? trimSettings)
     {
         var videoStream = streams.OfType<IVideoStream>().FirstOrDefault();
         var audioStream = streams.OfType<IAudioStream>().FirstOrDefault();

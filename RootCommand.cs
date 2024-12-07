@@ -12,6 +12,8 @@ using Serilog;
 using Spectre.Console;
 using Spectre.Console.Cli;
 using Xabe.FFmpeg;
+using YoutubeDLSharp;
+using YoutubeDLSharp.Metadata;
 
 namespace dis;
 
@@ -94,14 +96,14 @@ public sealed class RootCommand(
         if (validCrf is false)
             ValidationResult.Error($"CRF value must be between {min} and {max} (Avoid values below {defaultValue})");
         else switch (crf)
-            {
-                case < minRecommended:
-                    AnsiConsole.MarkupLine($"[yellow]CRF values below {minRecommended} are not recommended[/]");
-                    break;
-                case > maxRecommended:
-                    AnsiConsole.MarkupLine($"[yellow]CRF values above {maxRecommended} are not recommended[/]");
-                    break;
-            }
+        {
+            case < minRecommended:
+                AnsiConsole.MarkupLine($"[yellow]CRF values below {minRecommended} are not recommended[/]");
+                break;
+            case > maxRecommended:
+                AnsiConsole.MarkupLine($"[yellow]CRF values above {maxRecommended} are not recommended[/]");
+                break;
+        }
     }
 
     private static void ValidateAudioBitrate(int? audioBitrate)
@@ -180,6 +182,7 @@ public sealed class RootCommand(
         var paths = new Dictionary<string, DateTime?>();
         TrimSettings? downloadTrimSettings = null;
         TrimSettings? ffmpegTrimSettings = null;
+        var videoMetadata = new Dictionary<Uri, RunResult<VideoData>>();
 
         if (await CheckForFFmpegAndYtDlp() is false)
             return 1;
@@ -188,25 +191,33 @@ public sealed class RootCommand(
         var linksList = links.ToList();
         if (settings.Trim && linksList.Count != 0)
         {
-            var duration = await GetVideoDuration(linksList.First(), settings);
-            if (duration.HasValue)
+            var firstLink = linksList.First();
+            // Pre-fetch metadata for the first video
+            var downloadOptions = new DownloadOptions(firstLink, settings);
+            var metadata = await downloader.FetchMetadata(downloadOptions);
+            if (metadata != null)
             {
-                var slider = new TrimmingSlider(duration.Value);
-                var trimResult = slider.ShowSlider();
-                if (string.IsNullOrEmpty(trimResult))  // If cancelled, exit immediately
-                    return 0;
-
-                var parts = trimResult.Split('-');
-                if (parts.Length == 2 &&
-                    double.TryParse(parts[0], out var start) &&
-                    double.TryParse(parts[1], out var end))
+                videoMetadata[firstLink] = metadata;
+                var duration = TimeSpan.FromSeconds(metadata.Data.Duration ?? 0);
+                if (duration > TimeSpan.Zero)
                 {
-                    downloadTrimSettings = new TrimSettings(start, end - start);
+                    var slider = new TrimmingSlider(duration);
+                    var trimResult = slider.ShowSlider();
+                    if (string.IsNullOrEmpty(trimResult))  // If cancelled, exit immediately
+                        return 0;
+
+                    var parts = trimResult.Split('-');
+                    if (parts.Length == 2 &&
+                        double.TryParse(parts[0], out var start) &&
+                        double.TryParse(parts[1], out var end))
+                    {
+                        downloadTrimSettings = new TrimSettings(start, end - start);
+                    }
                 }
             }
         }
 
-        await Download(linksList, paths, settings, downloadTrimSettings);
+        await Download(linksList, paths, settings, downloadTrimSettings, videoMetadata);
 
         // Get trim settings for local files if trimming is enabled
         var filesList = files.ToList();
@@ -253,13 +264,10 @@ public sealed class RootCommand(
                 return false;
             }
 
-            if (string.IsNullOrWhiteSpace(ytDlpPath))
-            {
-                AnsiConsole.WriteLine("yt-dlp not found in PATH. Please install yt-dlp and add it to PATH.");
-                return false;
-            }
+            if (!string.IsNullOrWhiteSpace(ytDlpPath)) return true;
+            AnsiConsole.WriteLine("yt-dlp not found in PATH. Please install yt-dlp and add it to PATH.");
+            return false;
 
-            return true;
         }
         catch (Exception ex)
         {
@@ -284,7 +292,12 @@ public sealed class RootCommand(
         return commandPath;
     }
 
-    private async Task Download(IEnumerable<Uri> links, Dictionary<string, DateTime?> videos, Settings options, TrimSettings? trimSettings)
+    private async Task Download(
+        IEnumerable<Uri> links, 
+        Dictionary<string, DateTime?> videos, 
+        Settings options, 
+        TrimSettings? trimSettings,
+        Dictionary<Uri, RunResult<VideoData>> videoMetadata)
     {
         var list = links.ToList();
         if (list.Count is 0)
@@ -293,7 +306,18 @@ public sealed class RootCommand(
         foreach (var link in list)
         {
             var downloadOptions = new DownloadOptions(link, options, trimSettings);
-            var (path, date) = await downloader.DownloadTask(downloadOptions);
+            
+            // Use existing metadata if available
+            if (!videoMetadata.ContainsKey(link))
+            {
+                var metadata = await downloader.FetchMetadata(downloadOptions);
+                if (metadata != null)
+                {
+                    videoMetadata[link] = metadata;
+                }
+            }
+            
+            var (path, date) = await downloader.DownloadTask(downloadOptions, videoMetadata.GetValueOrDefault(link));
 
             if (path is null)
                 logger.Error("There was an error downloading the video");
@@ -306,20 +330,6 @@ public sealed class RootCommand(
         }
 
         foreach (var path in videos.Keys) AnsiConsole.MarkupLine($"Downloaded video to: [green]{path}[/]");
-    }
-
-    private async Task<TimeSpan?> GetVideoDuration(Uri uri, Settings options)
-    {
-        try
-        {
-            var downloadOptions = new DownloadOptions(uri, options);
-            return await downloader.GetDuration(downloadOptions);
-        }
-        catch (Exception ex)
-        {
-            logger.Error(ex, "Failed to get video duration");
-            return null;
-        }
     }
 
     private async Task Convert(IEnumerable<KeyValuePair<string, DateTime?>> videos, Settings options, TrimSettings? trimSettings)

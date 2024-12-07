@@ -20,9 +20,9 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
     private const string FetchError = "Failed to fetch url";
     private const string TrimTimeError = "Trim time exceeds video length";
 
-    public async Task<DownloadResult> Download()
+    public async Task<DownloadResult> Download(RunResult<VideoData>? fetchResult = null)
     {
-        var fetch = await FetchVideoData();
+        var fetch = fetchResult ?? await FetchVideoData();
         if (fetch is null)
         {
             _logger.Error(FetchError);

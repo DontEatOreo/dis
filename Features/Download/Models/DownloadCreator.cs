@@ -1,31 +1,37 @@
 using dis.Features.Common;
 using dis.Features.Download.Models.Interfaces;
+using Spectre.Console;
+using YoutubeDLSharp;
+using YoutubeDLSharp.Metadata;
 
 namespace dis.Features.Download.Models;
 
 public sealed class DownloadCreator(Globals globals, IDownloaderFactory factory) : IDownloader
 {
-    public async Task<DownloadResult> DownloadTask(DownloadOptions options)
+    public async Task<DownloadResult> DownloadTask(DownloadOptions options, RunResult<VideoData>? fetchResult)
     {
         PrepareTempDirectory();
 
         var videoDownloader = factory.Create(options);
 
-        var dlResult = await videoDownloader.Download();
+        var dlResult = await videoDownloader.Download(fetchResult);
         return dlResult.OutPath is null
             ? new DownloadResult(null, null)
             : dlResult;
     }
 
-    public async Task<TimeSpan?> GetDuration(DownloadOptions options)
+    public async Task<RunResult<VideoData>?> FetchMetadata(DownloadOptions options)
     {
         var result = await globals.YoutubeDl.RunVideoDataFetch(options.Uri.ToString());
         if (result.Success is false)
+        {
+            AnsiConsole.MarkupLine("[red]Failed to fetch video data[/]");
             throw new Exception();
-        if (result.Data.Duration.HasValue is false)
-            throw new Exception();
-        var duration = TimeSpan.FromSeconds(result.Data.Duration.Value);
-        return duration;
+        }
+        if (result.Data.Duration.HasValue) return result;
+
+        AnsiConsole.MarkupLine("[red]Video has no duration[/]");
+        throw new Exception();
     }
 
     /// <summary>
