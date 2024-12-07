@@ -11,8 +11,8 @@ public sealed class SliderState(TimeSpan duration)
 
     public void RoundPositions()
     {
-        StartPosition = Math.Round(StartPosition, 3);
-        EndPosition = Math.Round(EndPosition, 3);
+        StartPosition = Math.Round(StartPosition, 2);
+        EndPosition = Math.Round(EndPosition, 2);
     }
 
     public bool SelectStart()
@@ -81,7 +81,7 @@ public sealed class SliderState(TimeSpan duration)
     }
 
     public string FormatRange() =>
-        $@"{TimeSpan.FromSeconds(StartPosition):mm\:ss\.fff} - {TimeSpan.FromSeconds(EndPosition):mm\:ss\.fff}";
+        $@"{TimeSpan.FromSeconds(StartPosition):mm\:ss\.ff} - {TimeSpan.FromSeconds(EndPosition):mm\:ss\.ff}";
 
     public IEnumerable<string> GenerateSliderCharacters(int width)
     {
