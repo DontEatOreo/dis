@@ -30,7 +30,7 @@ public sealed class ProcessHandler(ILogger logger, CodecParser codecParser, Stre
         var parameters = new List<string> { $"-crf {o.Crf}" };
 
         // Add trim parameters first if provided
-        if (trimSettings is not null) 
+        if (trimSettings is not null)
             parameters.Insert(0, trimSettings.GetFFmpegArgs());
 
         // Add faststart for web playback formats

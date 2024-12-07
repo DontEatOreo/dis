@@ -195,10 +195,10 @@ public sealed class RootCommand(
                 var trimResult = slider.ShowSlider();
                 if (string.IsNullOrEmpty(trimResult))  // If cancelled, exit immediately
                     return 0;
-                    
+
                 var parts = trimResult.Split('-');
-                if (parts.Length == 2 && 
-                    double.TryParse(parts[0], out var start) && 
+                if (parts.Length == 2 &&
+                    double.TryParse(parts[0], out var start) &&
                     double.TryParse(parts[1], out var end))
                 {
                     downloadTrimSettings = new TrimSettings(start, end - start);
@@ -220,10 +220,10 @@ public sealed class RootCommand(
                 var trimResult = slider.ShowSlider();
                 if (string.IsNullOrEmpty(trimResult))  // If cancelled, exit immediately
                     return 0;
-                    
+
                 var parts = trimResult.Split('-');
-                if (parts.Length == 2 && 
-                    double.TryParse(parts[0], out var start) && 
+                if (parts.Length == 2 &&
+                    double.TryParse(parts[0], out var start) &&
                     double.TryParse(parts[1], out var end))
                 {
                     ffmpegTrimSettings = new TrimSettings(start, end - start);

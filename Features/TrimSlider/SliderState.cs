@@ -53,8 +53,8 @@ public sealed class SliderState(TimeSpan duration)
     }
 
     public (double min, double max) GetValidRange() =>
-        IsAdjustingStart 
-            ? (0, EndPosition - Constants.MillisecondStep) 
+        IsAdjustingStart
+            ? (0, EndPosition - Constants.MillisecondStep)
             : (StartPosition, duration.TotalSeconds);
 
     public void UpdatePosition(double seconds)
@@ -87,7 +87,7 @@ public sealed class SliderState(TimeSpan duration)
     {
         var startIndex = (int)(StartPosition / duration.TotalSeconds * width);
         var endIndex = (int)(EndPosition / duration.TotalSeconds * width);
-        
+
         // Ensure endIndex is visible when at maximum
         if (EndPosition >= duration.TotalSeconds && endIndex == width)
             endIndex = width - 1;

@@ -5,8 +5,8 @@ namespace dis.Features.TrimSlider;
 
 public sealed class TrimmingSlider(TimeSpan duration)
 {
-    private readonly TimeSpan _duration = duration > TimeSpan.Zero 
-        ? duration 
+    private readonly TimeSpan _duration = duration > TimeSpan.Zero
+        ? duration
         : throw new ArgumentException("Duration must be positive", nameof(duration));
 
     private readonly SliderState _state = new(duration);
@@ -19,7 +19,7 @@ public sealed class TrimmingSlider(TimeSpan duration)
 
             var key = AnsiConsole.Console.Input.ReadKey(true);
             if (key == null) continue;
-            
+
             if (_state.IsTypingNumber)
             {
                 HandleNumberInput(key.Value);
@@ -53,7 +53,7 @@ public sealed class TrimmingSlider(TimeSpan duration)
         ShowCursor();
     }
 
-    private void DrawInstructions(IAnsiConsole console) 
+    private void DrawInstructions(IAnsiConsole console)
         => console.Write(_state.IsTypingNumber
                 ? DisplayStrings.GetTimeInput(_state.NumberBuffer)
                 : DisplayStrings.Controls);
@@ -79,7 +79,7 @@ public sealed class TrimmingSlider(TimeSpan duration)
 
     private void ProcessTimeInput()
     {
-        if (!TimeParser.TryParseTimeInput(_state.NumberBuffer, out var seconds)) 
+        if (!TimeParser.TryParseTimeInput(_state.NumberBuffer, out var seconds))
             return;
 
         var (min, max) = _state.GetValidRange();
@@ -98,10 +98,10 @@ public sealed class TrimmingSlider(TimeSpan duration)
             return true;
         }
 
-        var step = (key.Modifiers & ConsoleModifiers.Shift) != 0 
-            ? Constants.MillisecondStep 
+        var step = (key.Modifiers & ConsoleModifiers.Shift) != 0
+            ? Constants.MillisecondStep
             : Constants.SecondStep;
-        
+
         return key.Key switch
         {
             ConsoleKey.D1 => SetResult(_state.SelectStart()),
@@ -121,7 +121,7 @@ public sealed class TrimmingSlider(TimeSpan duration)
     private void DrawSlider(IAnsiConsole console)
     {
         var slider = CreateSliderVisualization();
-        
+
         console.MarkupLine($"\nVideo duration: [blue]{FormatTime(_duration)}[/]");
         console.MarkupLine(
             $"Selected range: [green]{_state.FormatRange()}[/]\n");
@@ -132,21 +132,21 @@ public sealed class TrimmingSlider(TimeSpan duration)
     private string CreateSliderVisualization() =>
         string.Join("", _state.GenerateSliderCharacters(Constants.SliderWidth));
 
-    private static string FormatTime(TimeSpan time) => 
+    private static string FormatTime(TimeSpan time) =>
         $"{(int)time.TotalMinutes:D2}:{time.Seconds:D2}.{time.Milliseconds:D3}";
 
     private string FormatResult()
     {
-        return IsCancelled() 
-            ? string.Empty 
+        return IsCancelled()
+            ? string.Empty
             : $"{_state.StartPosition.ToString(CultureInfo.InvariantCulture)}-{_state.EndPosition.ToString(CultureInfo.InvariantCulture)}";
     }
 
     private bool IsCancelled() => _state.IsCancelled;
 
-    private static void HideCursor() 
+    private static void HideCursor()
         => AnsiConsole.Cursor.Hide();
 
-    private static void ShowCursor() 
+    private static void ShowCursor()
         => AnsiConsole.Cursor.Show();
 }

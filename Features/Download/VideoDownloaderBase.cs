@@ -96,11 +96,11 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
         await AnsiConsole.Status().StartAsync("Downloading...", async ctx =>
         {
             ctx.Spinner(Spinner.Known.Arrow);
-            
+
             var outputTemplate = _trimSettings != null
                 ? $"%(display_id)s-{_trimSettings.GetFilenamePart()}.%(ext)s"
                 : "%(display_id)s.%(ext)s";
-            
+
             Query.OptionSet.Output = Path.Combine(YoutubeDl.OutputFolder, outputTemplate);
 
             download = await YoutubeDl.RunVideoDownload(Query.Uri.ToString(),

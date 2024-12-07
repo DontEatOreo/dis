@@ -2,7 +2,7 @@ using Spectre.Console;
 
 namespace dis.Features.TrimSlider;
 
-public static class DisplayStrings 
+public static class DisplayStrings
 {
     private static Table GetTimeInputTable(string currentInput)
     {
@@ -11,8 +11,8 @@ public static class DisplayStrings
             .AddColumn(new TableColumn("Time Input").Centered().PadLeft(1).PadRight(1))
             .HideHeaders();
 
-        var currentValue = string.IsNullOrEmpty(currentInput) 
-            ? "█" 
+        var currentValue = string.IsNullOrEmpty(currentInput)
+            ? "█"
             : $"[underline]{currentInput}[/]█";
 
         table.AddRow($"[blue]Enter time value:[/] {currentValue}");
