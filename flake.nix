@@ -50,7 +50,8 @@
               makeWrapper ${pkgs.dotnetCorePackages.sdk_8_0}/bin/dotnet $out/bin/dis --add-flags $out/lib/dis/dis.dll
               wrapProgram "$out/bin/dis" \
                 --prefix PATH : ${pkgs.ffmpeg-full}/bin \
-                --prefix PATH : ${pkgs.yt-dlp}/bin
+                --prefix PATH : ${pkgs.yt-dlp}/bin \
+                --prefix LD_LIBRARY_PATH : ${pkgs.icu}/lib
             '';
 
             runtimeDeps = [ pkgs.icu ];
