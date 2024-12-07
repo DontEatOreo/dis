@@ -54,8 +54,6 @@
                 --prefix LD_LIBRARY_PATH : ${pkgs.icu}/lib
             '';
 
-            runtimeDeps = [ pkgs.icu ];
-
             meta = {
               homepage = "https://github.com/DontEatOreo/dis";
               license = pkgs.lib.licenses.agpl3Plus;
