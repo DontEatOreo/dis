@@ -11,11 +11,7 @@
   };
 
   outputs =
-    {
-      nixpkgs,
-      devenv,
-      ...
-    }@inputs:
+    inputs:
     let
       systems = [
         "aarch64-darwin"
@@ -23,14 +19,14 @@
         "x86_64-darwin"
         "x86_64-linux"
       ];
-      lib = nixpkgs.lib;
+      lib = inputs.nixpkgs.lib;
       forEachSystem = lib.genAttrs systems;
     in
     {
       packages = forEachSystem (
         system:
         let
-          pkgs = nixpkgs.legacyPackages.${system};
+          pkgs = inputs.nixpkgs.legacyPackages.${system};
         in
         {
           default = pkgs.buildDotnetModule {
@@ -71,10 +67,10 @@
       devShells = forEachSystem (
         system:
         let
-          pkgs = nixpkgs.legacyPackages.${system};
+          pkgs = inputs.nixpkgs.legacyPackages.${system};
         in
         {
-          default = devenv.lib.mkShell {
+          default = inputs.devenv.lib.mkShell {
             inherit inputs pkgs;
             modules = [
               {
