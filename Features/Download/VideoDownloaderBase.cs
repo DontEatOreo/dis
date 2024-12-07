@@ -4,6 +4,7 @@ using Serilog;
 using Spectre.Console;
 using YoutubeDLSharp;
 using YoutubeDLSharp.Metadata;
+using dis.Features.Common;
 
 namespace dis.Features.Download;
 
@@ -12,6 +13,7 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
     protected readonly YoutubeDL YoutubeDl = youtubeDl;
     protected readonly DownloadQuery Query = query;
     private readonly ILogger _logger = Log.Logger.ForContext<VideoDownloaderBase>();
+    private TrimSettings? _trimSettings;
 
     private const string LiveStreamError = "Live streams are not supported";
     private const string DownloadError = "Download failed";
@@ -94,6 +96,12 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
         await AnsiConsole.Status().StartAsync("Downloading...", async ctx =>
         {
             ctx.Spinner(Spinner.Known.Arrow);
+            
+            var outputTemplate = _trimSettings != null
+                ? $"%(display_id)s-{_trimSettings.GetFilenamePart()}.%(ext)s"
+                : "%(display_id)s.%(ext)s";
+            
+            Query.OptionSet.Output = Path.Combine(YoutubeDl.OutputFolder, outputTemplate);
 
             download = await YoutubeDl.RunVideoDownload(Query.Uri.ToString(),
                 overrideOptions: Query.OptionSet,
@@ -134,7 +142,12 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
         var validTimeRange = start <= end && (isEndInf || end <= fetchDuration);
 
         if (validTimeRange)
+        {
+            // Store the TrimSettings instance in the class field
+            _trimSettings = new TrimSettings(start, end - start);
+            Query.OptionSet.Output = $"%(display_id)s-{_trimSettings.GetFilenamePart()}.%(ext)s";
             return true;
+        }
 
         _logger.Error(TrimTimeError);
         return false;
