@@ -179,10 +179,10 @@ public sealed class RootCommand(
         var files = settings.Input
             .Where(File.Exists);
 
-        var paths = new Dictionary<string, DateTime?>();
+        List<string> paths = [];
         TrimSettings? downloadTrimSettings = null;
         TrimSettings? ffmpegTrimSettings = null;
-        var videoMetadata = new Dictionary<Uri, RunResult<VideoData>>();
+        Dictionary<Uri, RunResult<VideoData>> runResults = new();
 
         if (await CheckForFFmpegAndYtDlp() is false)
             return 1;
@@ -191,33 +191,34 @@ public sealed class RootCommand(
         var linksList = links.ToList();
         if (settings.Trim && linksList.Count != 0)
         {
-            var firstLink = linksList.First();
-            // Pre-fetch metadata for the first video
-            var downloadOptions = new DownloadOptions(firstLink, settings);
-            var metadata = await downloader.FetchMetadata(downloadOptions);
-            if (metadata != null)
+            // Pre-fetch metadata for all videos
+            foreach (var link in linksList)
             {
-                videoMetadata[firstLink] = metadata;
-                var duration = TimeSpan.FromSeconds(metadata.Data.Duration ?? 0);
-                if (duration > TimeSpan.Zero)
-                {
-                    var slider = new TrimmingSlider(duration);
-                    var trimResult = slider.ShowSlider();
-                    if (string.IsNullOrEmpty(trimResult))  // If cancelled, exit immediately
-                        return 0;
+                DownloadOptions downloadOptions = new(link, settings, null);
+                var runResult = await downloader.FetchMetadata(downloadOptions);
+                if (runResult != null) runResults[link] = runResult;
+            }
 
-                    var parts = trimResult.Split('-');
-                    if (parts.Length == 2 &&
-                        double.TryParse(parts[0], out var start) &&
-                        double.TryParse(parts[1], out var end))
-                    {
-                        downloadTrimSettings = new TrimSettings(start, end - start);
-                    }
-                }
+            // Use the first video with valid duration for trim settings
+            foreach (var result in runResults.Values)
+            {
+                var duration = TimeSpan.FromSeconds(result.Data.Duration ?? 0);
+                if (duration <= TimeSpan.Zero) continue;
+                var slider = new TrimmingSlider(duration);
+                var trimResult = slider.ShowSlider();
+                if (string.IsNullOrEmpty(trimResult))  // If canceled, exit immediately
+                    return 0;
+
+                var parts = trimResult.Split('-');
+                if (parts.Length != 2 ||
+                    !double.TryParse(parts[0], out var start) ||
+                    !double.TryParse(parts[1], out var end)) continue;
+                downloadTrimSettings = new TrimSettings(start, end - start);
+                break;
             }
         }
 
-        await Download(linksList, paths, settings, downloadTrimSettings, videoMetadata);
+        await Download(linksList, paths, settings, downloadTrimSettings, runResults);
 
         // Get trim settings for local files if trimming is enabled
         var filesList = files.ToList();
@@ -242,10 +243,22 @@ public sealed class RootCommand(
             }
         }
 
-        foreach (var file in filesList)
-            paths.TryAdd(file, null);
+        paths.AddRange(filesList);
 
-        await Convert(paths, settings, ffmpegTrimSettings);
+        // Only convert local files here - downloaded files are already converted with their metadata
+        var localFiles = filesList.Select(p => (p, (RunResult<VideoData>?)null));
+        await Convert(localFiles, settings, ffmpegTrimSettings);
+
+        // Cleanup temp directories after all operations are complete
+        var hasAny = globals.TempDir.Count is not 0;
+        if (hasAny)
+        {
+            globals.TempDir.ForEach(d =>
+            {
+                Directory.Delete(d, true);
+                AnsiConsole.MarkupLine($"Deleted temp dir: [red]{d}[/]");
+            });
+        }
 
         return 0;
     }
@@ -294,7 +307,7 @@ public sealed class RootCommand(
 
     private async Task Download(
         IEnumerable<Uri> links, 
-        Dictionary<string, DateTime?> videos, 
+        List<string> videos, 
         Settings options, 
         TrimSettings? trimSettings,
         Dictionary<Uri, RunResult<VideoData>> videoMetadata)
@@ -303,11 +316,13 @@ public sealed class RootCommand(
         if (list.Count is 0)
             return;
 
+        // Track downloaded video paths and their metadata
+        var pathToMetadata = new Dictionary<string, RunResult<VideoData>>();
+
         foreach (var link in list)
         {
             var downloadOptions = new DownloadOptions(link, options, trimSettings);
             
-            // Use existing metadata if available
             if (!videoMetadata.ContainsKey(link))
             {
                 var metadata = await downloader.FetchMetadata(downloadOptions);
@@ -317,43 +332,39 @@ public sealed class RootCommand(
                 }
             }
             
-            var (path, date) = await downloader.DownloadTask(downloadOptions, videoMetadata.GetValueOrDefault(link));
+            var result = await downloader.DownloadTask(downloadOptions, videoMetadata.GetValueOrDefault(link));
 
-            if (path is null)
+            if (result.OutPath is null)
                 logger.Error("There was an error downloading the video");
             else
             {
-                var added = videos.TryAdd(path, date);
-                if (added is false)
-                    logger.Error("Failed to add video to list: {Path}", path);
+                videos.Add(result.OutPath);
+                if (result.fetchResult != null)
+                {
+                    pathToMetadata[result.OutPath] = result.fetchResult;
+                }
             }
         }
 
-        foreach (var path in videos.Keys) AnsiConsole.MarkupLine($"Downloaded video to: [green]{path}[/]");
+        foreach (var path in videos) 
+            AnsiConsole.MarkupLine($"Downloaded video to: [green]{path}[/]");
+
+        // Convert videos with their metadata
+        await Convert(videos.Select(path => (path, pathToMetadata.GetValueOrDefault(path))), options, trimSettings);
     }
 
-    private async Task Convert(IEnumerable<KeyValuePair<string, DateTime?>> videos, Settings options, TrimSettings? trimSettings)
+    private async Task Convert(IEnumerable<(string path, RunResult<VideoData>?)> videos, Settings options, TrimSettings? trimSettings)
     {
-        foreach (var (path, date) in videos)
+        foreach (var (path, fetchResult) in videos)
         {
             try
             {
-                await converter.ConvertVideo(path, date, options, trimSettings);
+                await converter.ConvertVideo(path, fetchResult ?? null, options, trimSettings);
             }
             catch (Exception ex)
             {
                 logger.Error(ex, "Failed to convert video: {Path}", path);
             }
         }
-
-        var hasAny = globals.TempDir.Count is not 0;
-        if (hasAny is false)
-            return;
-
-        globals.TempDir.ForEach(d =>
-        {
-            Directory.Delete(d, true);
-            AnsiConsole.MarkupLine($"Deleted temp dir: [red]{d}[/]");
-        });
     }
 }

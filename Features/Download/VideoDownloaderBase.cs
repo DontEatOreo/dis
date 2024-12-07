@@ -20,23 +20,23 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
     private const string FetchError = "Failed to fetch url";
     private const string TrimTimeError = "Trim time exceeds video length";
 
-    public async Task<DownloadResult> Download(RunResult<VideoData>? fetchResult = null)
+    public async Task<DownloadResult> Download(RunResult<VideoData>? fetchResult)
     {
         var fetch = fetchResult ?? await FetchVideoData();
         if (fetch is null)
         {
             _logger.Error(FetchError);
-            return new DownloadResult(null, null);
+            return new DownloadResult(null, fetchResult);
         }
         if (fetch.Success is false)
         {
             _logger.Error(FetchError);
-            return new DownloadResult(null, null);
+            return new DownloadResult(null, fetchResult);
         }
         if (fetch.Data.IsLive is true)
         {
             _logger.Error(LiveStreamError);
-            return new DownloadResult(null, null);
+            return new DownloadResult(null, fetchResult);
         }
 
         var hasKeyframes = Query.OptionSet.ForceKeyframesAtCuts;
@@ -45,7 +45,7 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
             var timeSplit = Query.OptionSet.DownloadSections!.Values[0].Split('-');
             var validTimeRange = ValidTimeRange(timeSplit, fetch.Data.Duration);
             if (validTimeRange is false)
-                return new DownloadResult(null, null);
+                return new DownloadResult(null, fetchResult);
         }
 
         // Pre-download custom logic
@@ -54,11 +54,11 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
         // The downloading part can be overridden in child classes
         var dlResult = await DownloadVideo();
         if (dlResult is null)
-            return new DownloadResult(null, null);
+            return new DownloadResult(null, fetchResult);
         if (dlResult.Success is false)
         {
             _logger.Error(DownloadError);
-            return new DownloadResult(null, null);
+            return new DownloadResult(null, fetchResult);
         }
 
         // Post-download custom logic
@@ -68,8 +68,7 @@ public abstract class VideoDownloaderBase(YoutubeDL youtubeDl, DownloadQuery que
         var path = postNull
             ? Directory.GetFiles(YoutubeDl.OutputFolder).FirstOrDefault()
             : postDownload;
-        var date = fetch.Data.UploadDate ?? fetch.Data.ReleaseDate;
-        return new DownloadResult(path, date);
+        return new DownloadResult(path, fetchResult);
     }
 
     private async Task<RunResult<VideoData>?> FetchVideoData()

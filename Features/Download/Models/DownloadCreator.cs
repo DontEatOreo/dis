@@ -16,7 +16,7 @@ public sealed class DownloadCreator(Globals globals, IDownloaderFactory factory)
 
         var dlResult = await videoDownloader.Download(fetchResult);
         return dlResult.OutPath is null
-            ? new DownloadResult(null, null)
+            ? new DownloadResult(null, fetchResult)
             : dlResult;
     }
 

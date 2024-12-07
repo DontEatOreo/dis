@@ -4,6 +4,8 @@ using dis.Features.Conversion.Models;
 using Serilog;
 using Spectre.Console;
 using Xabe.FFmpeg;
+using YoutubeDLSharp;
+using YoutubeDLSharp.Metadata;
 
 namespace dis.Features.Conversion;
 
@@ -17,11 +19,11 @@ public sealed class Converter(
     /// Converts a video file to a specified format using FFmpeg.
     /// </summary>
     /// <param name="file">The path to the input video file.</param>
-    /// <param name="dateTime">The optional date and time to set for the output file.</param>
+    /// <param name="fetchResult">The fetched video data.</param>
     /// <param name="s">The options to use for the conversion.</param>
     /// <param name="trimSettings">The optional trim settings for the conversion.</param>
     /// <returns>A task that represents the asynchronous conversion operation.</returns>
-    public async Task ConvertVideo(string file, DateTime? dateTime, Settings s, TrimSettings? trimSettings)
+    public async Task ConvertVideo(string file, RunResult<VideoData>? fetchResult, Settings s, TrimSettings? trimSettings)
     {
         while (true)
         {
@@ -56,9 +58,8 @@ public sealed class Converter(
                             ctx.Refresh();
                         };
                         await conversion.Start();
-                    });
-                if (dateTime.HasValue) ProcessHandler.SetTimeStamps(outP, dateTime.Value);
-                if (dateTime.HasValue) ProcessHandler.SetTimeStamps(outP, dateTime.Value);
+                    });                
+                if (fetchResult?.Data.UploadDate != null) ProcessHandler.SetTimeStamps(outP, fetchResult.Data.UploadDate.Value);
             }
             catch (Exception)
             {
