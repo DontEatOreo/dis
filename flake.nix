@@ -22,7 +22,7 @@
         "x86_64-darwin"
         "x86_64-linux"
       ];
-      lib = inputs.nixpkgs.lib;
+      inherit (inputs.nixpkgs) lib;
       pkgs = lib.genAttrs systems (
         system:
         import inputs.nixpkgs {
