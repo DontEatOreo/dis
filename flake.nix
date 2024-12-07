@@ -23,7 +23,8 @@
         "x86_64-darwin"
         "x86_64-linux"
       ];
-      forEachSystem = nixpkgs.lib.genAttrs systems;
+      lib = nixpkgs.lib;
+      forEachSystem = lib.genAttrs systems;
     in
     {
       packages = forEachSystem (
@@ -50,7 +51,7 @@
               makeWrapper ${pkgs.dotnetCorePackages.sdk_8_0}/bin/dotnet "$out/bin/dis" --add-flags "$out/lib/dis/dis.dll"
               wrapProgram "$out/bin/dis" \
                 --prefix PATH : ${
-                  pkgs.lib.makeBinPath [
+                  lib.makeBinPath [
                     pkgs.ffmpeg-full
                     pkgs.yt-dlp
                   ]
@@ -60,9 +61,9 @@
 
             meta = {
               homepage = "https://github.com/DontEatOreo/dis";
-              license = pkgs.lib.licenses.agpl3Plus;
-              platforms = pkgs.lib.platforms.unix;
-              maintainers = [ pkgs.lib.maintainers.donteatoreo ];
+              license = lib.licenses.agpl3Plus;
+              platforms = lib.platforms.unix;
+              maintainers = [ lib.maintainers.donteatoreo ];
             };
           };
         }
