@@ -20,15 +20,18 @@
         "x86_64-linux"
       ];
       lib = inputs.nixpkgs.lib;
-      forEachSystem = lib.genAttrs systems;
+      pkgs = lib.genAttrs systems (
+        system:
+        import inputs.nixpkgs {
+          inherit system;
+          config = { };
+        }
+      );
+      forEachSystem = f: lib.genAttrs systems (system: f pkgs.${system} system);
     in
     {
       packages = forEachSystem (
-        system:
-        let
-          pkgs = inputs.nixpkgs.legacyPackages.${system};
-        in
-        {
+        pkgs: system: {
           default = pkgs.buildDotnetModule {
             pname = "dis";
             version = "10.0.0";
@@ -64,14 +67,11 @@
           };
         }
       );
+
       devShells = forEachSystem (
-        system:
-        let
-          pkgs = inputs.nixpkgs.legacyPackages.${system};
-        in
-        {
+        pkgs: system: {
           default = inputs.devenv.lib.mkShell {
-            inherit inputs pkgs;
+            inherit pkgs inputs;
             modules = [
               {
                 languages.dotnet = {
