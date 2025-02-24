@@ -350,7 +350,7 @@ public sealed class RootCommand(
             AnsiConsole.MarkupLine($"Downloaded video to: [green]{path}[/]");
 
         // Convert videos with their metadata
-        await Convert(videos.Select(path => (path, pathToMetadata.GetValueOrDefault(path))), options, trimSettings);
+        await Convert(videos.Select(path => (path, pathToMetadata.GetValueOrDefault(path))), options, null);
     }
 
     private async Task Convert(IEnumerable<(string path, RunResult<VideoData>?)> videos, Settings options, TrimSettings? trimSettings)
