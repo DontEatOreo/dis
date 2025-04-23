@@ -6,11 +6,18 @@
 
 ![292BEC87](https://github.com/user-attachments/assets/395cbfa1-f86c-403c-a40e-c33ee9200ce3)
 
-**dis** 🎥 is a simple CLI tool to compress videos for platforms like Discord and likewise. It uses [YT-DLP](https://github.com/yt-dlp/yt-dlp) to download videos from all sites that `yt-dlp` supports, such as YouTube, Twitter, Reddit, and more, and [FFmpeg](https://ffmpeg.org/download.html) for compression. It comes with a rich and easy to use TUI mode for trimming videos
+**dis** 🎥 is a simple CLI tool to compress videos for platforms like Discord
+and likewise. It uses [YT-DLP](https://github.com/yt-dlp/yt-dlp) to download
+videos from all sites that `yt-dlp` supports, such as YouTube, Twitter, Reddit,
+and more, and [FFmpeg](https://ffmpeg.org/download.html) for compression. It
+comes with a rich and easy to use TUI mode for trimming videos
 
 ## Nix Dev Environment
 
-**dis** 🎥 comes with a `nix develop` environment that carries all the  dependencies (dotnet, ffmpeg, and yt-dlp), allowing you to work on the project without having to manually install them. To activate this environment, all you need to do is:
+**dis** 🎥 comes with a `nix develop` environment that carries all the
+dependencies (dotnet, ffmpeg, and yt-dlp), allowing you to work on the project
+without having to manually install them. To activate this environment, all you
+need to do is:
 
 1. Have `nix` installed
 2. Have `flakes` and `nix-command` experimental features enabled
@@ -21,22 +28,26 @@
 
 ### .NET
 
-All you need to do is run `dotnet build`, then a `bin/` folder will be created that will contain all the build artifacts
+All you need to do is run `dotnet build`, then a `bin/` folder will be created
+that will contain all the build artifacts
 
 ### Building a Single File Executable
 
-You can build a single file executable
-which you can run without having dotnet preinstalled and that you can place anywhere.
-To do that all you need to do is:
+You can build a single file executable which you can run without having dotnet
+preinstalled and that you can place anywhere. To do that all you need to do is:
 
-1. `dotnet publish dis.csproj -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true --self-contained true --configuration Release --runtime <rid>` ([Know RIDs](https://learn.microsoft.com/en-us/dotnet/core/rid-catalog#known-rids))
+1. `dotnet publish dis.csproj -p:PublishSingleFile=true
+-p:IncludeNativeLibrariesForSelfExtract=true --self-contained
+true --configuration Release --runtime <rid>`
+([KnowRIDs](https://learn.microsoft.com/en-us/dotnet/core/rid-catalog#known-rids))
 2. Then you can find the executable at `bin/Release/net8.0/<rid>/`
 
 ### Nix
 
 ### Simply run `nix build .#default`
 
-Alternatively you can also invoke a `nix shell github:DontEatOreo/dis` with the required packages to build **dis** 🎥
+Alternatively you can also invoke a `nix shell github:DontEatOreo/dis` with the
+required packages to build **dis** 🎥
 
 ### Updating dependencies on Nix
 
@@ -46,9 +57,17 @@ Alternatively you can also invoke a `nix shell github:DontEatOreo/dis` with the 
 
 ## Installation
 
-To install **dis** 🎥, you need to have [FFmpeg](https://ffmpeg.org/download.html) and [YT-DLP](https://github.com/yt-dlp/yt-dlp) installed on your system. You can download them from their official websites or use your package manager of choice.
+To install **dis** 🎥, you need to have
+[FFmpeg](https://ffmpeg.org/download.html) and
+[YT-DLP](https://github.com/yt-dlp/yt-dlp) installed on your system. You can
+download them from their official websites or use your package manager of
+choice.
 
-You can then download the latest release of **dis** 🎥 from the [Releases](https://github.com/DontEatOreo/dis/releases) tab on GitHub. Alternatively, you can clone this repository and build the project yourself using [dotnet publish](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-publish).
+You can then download the latest release of **dis** 🎥 from
+the [Releases](https://github.com/DontEatOreo/dis/releases)
+tab on GitHub. Alternatively, you can clone this
+repository and build the project yourself using [dotnet
+publish](https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-publish)
 
 ### If you're using Nix
 
@@ -81,7 +100,8 @@ You will need to add **dis** 🎥 to your inputs and pass it down your outputs
 }
 ```
 
-After that in whichever `.nix` file is responsible for your packages you will need to add **dis** 🎥
+After that in whichever `.nix` file is responsible for your packages you will
+need to add **dis** 🎥
 
 Example:
 
@@ -100,8 +120,9 @@ Example:
 
 ## Usage
 
-To use **dis** 🎥, you need to provide an input video source using the `-i` (`--input`) option.
-The input source can be either a local file or an online URL (e.g., Discord Server, YouTube, Twitter, Reddit, etc...).
+To use **dis** 🎥, you need to provide an input video source using the `-i`
+(`--input`) option. The input source can be either a local file or an online URL
+(e.g., Discord Server, YouTube, Twitter, Reddit, etc...).
 
 You can also specify various options to customize the output video, such as:
 
@@ -118,7 +139,9 @@ You can also specify various options to customize the output video, such as:
 | `--random`                          | Randomize the output filename                                                                         | `false`       |
 | `--sponsor`                         | Remove the sponsor segments from the output video using [SponsorBlock](https://sponsor.ajay.app/) API | `False`       |
 
-The CRF is a video compression method that grants users control over the output video quality, with higher values resulting in lower quality and vice versa. It is recommended to avoid values below 22 or above 38.
+The CRF is a video compression method that grants users control over the output
+video quality, with higher values resulting in lower quality and vice versa. It
+is recommended to avoid values below 22 or above 38.
 
 ## Here are some examples of how to use **dis** 🎥
 
@@ -140,8 +163,10 @@ The CRF is a video compression method that grants users control over the output 
 
 ## Contributing
 
-If you want to contribute to **dis** 🎥, you are welcome to do so. You can report issues, request features, or submit pull requests on GitHub.
+If you want to contribute to **dis** 🎥, you are welcome to do so. You can
+report issues, request features, or submit pull requests on GitHub.
 
 ## License
 
-**dis** is licensed under the [AGPLv3](https://github.com/DontEatOreo/dis/blob/master/LICENSE).
+**dis** is licensed under the
+[AGPLv3](https://github.com/DontEatOreo/dis/blob/master/LICENSE).
