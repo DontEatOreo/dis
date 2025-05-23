@@ -58,7 +58,7 @@ public sealed class Converter(
                             ctx.Refresh();
                         };
                         await conversion.Start();
-                    });                
+                    });
                 if (fetchResult?.Data.UploadDate != null) ProcessHandler.SetTimeStamps(outP, fetchResult.Data.UploadDate.Value);
             }
             catch (Exception)

@@ -96,14 +96,14 @@ public sealed class RootCommand(
         if (validCrf is false)
             ValidationResult.Error($"CRF value must be between {min} and {max} (Avoid values below {defaultValue})");
         else switch (crf)
-        {
-            case < minRecommended:
-                AnsiConsole.MarkupLine($"[yellow]CRF values below {minRecommended} are not recommended[/]");
-                break;
-            case > maxRecommended:
-                AnsiConsole.MarkupLine($"[yellow]CRF values above {maxRecommended} are not recommended[/]");
-                break;
-        }
+            {
+                case < minRecommended:
+                    AnsiConsole.MarkupLine($"[yellow]CRF values below {minRecommended} are not recommended[/]");
+                    break;
+                case > maxRecommended:
+                    AnsiConsole.MarkupLine($"[yellow]CRF values above {maxRecommended} are not recommended[/]");
+                    break;
+            }
     }
 
     private static void ValidateAudioBitrate(int? audioBitrate)
@@ -322,7 +322,7 @@ public sealed class RootCommand(
         foreach (var link in list)
         {
             var downloadOptions = new DownloadOptions(link, options, trimSettings);
-            
+
             if (!videoMetadata.ContainsKey(link))
             {
                 var metadata = await downloader.FetchMetadata(downloadOptions);
@@ -331,7 +331,7 @@ public sealed class RootCommand(
                     videoMetadata[link] = metadata;
                 }
             }
-            
+
             var result = await downloader.DownloadTask(downloadOptions, videoMetadata.GetValueOrDefault(link));
 
             if (result.OutPath is null)
@@ -346,7 +346,7 @@ public sealed class RootCommand(
             }
         }
 
-        foreach (var path in videos) 
+        foreach (var path in videos)
             AnsiConsole.MarkupLine($"Downloaded video to: [green]{path}[/]");
 
         // Convert videos with their metadata
