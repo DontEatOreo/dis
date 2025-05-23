@@ -7,15 +7,15 @@
     src = ./.;
 
     projectFile = "./dis.csproj";
-    nugetDeps = ./deps.nix;
+    nugetDeps = ./deps.json;
 
-    dotnet-sdk = pkgs.dotnetCorePackages.sdk_8_0;
+    dotnet-sdk = pkgs.dotnetCorePackages.sdk_10_0;
     selfContainedBuild = true;
 
     executables = [ "dis" ];
 
     postFixup = ''
-      makeWrapper ${pkgs.dotnetCorePackages.sdk_8_0}/bin/dotnet \
+      makeWrapper ${pkgs.dotnetCorePackages.sdk_10_0}/bin/dotnet \
         "$out/bin/dis" --add-flags "$out/lib/dis/dis.dll"
       wrapProgram "$out/bin/dis" \
         --prefix PATH : ${

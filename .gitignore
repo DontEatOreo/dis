@@ -4,6 +4,7 @@
 *.userosscache
 *.suo
 *.lock.json
+!deps.json
 *.nupkg
 *.log
 *.bak
@@ -18,7 +19,6 @@
 *.dll
 *.exe
 *.pdb
-*.json
 *.rsp
 *.cache
 *.csproj.user
